@@ -1,26 +1,26 @@
 {
-  "project": "skhpsv2",
-  "repoRole": "prod",
-  "current": {
-    "env": "prod",
-    "label": "prod",
-    "version": "v0.1.2-prod-202606081341"
-  },
-  "environments": {
-    "prod": {
-      "label": "prod",
-      "repo": "skhpsv2",
-      "version": "v0.1.2-prod-202606081341"
-    },
-    "dev": {
-      "label": "\\u6e2c\\u8a66\\u7248",
-      "repo": "dev-skhpsv2",
-      "version": "not-created"
-    },
-    "local": {
-      "label": "local",
-      "repo": "skhpsv2",
-      "version": "v0.1.2-local-202606081341"
-    }
-  }
+    "project":  "skhpsv2",
+    "repoRole":  "prod",
+    "current":  {
+                    "env":  "prod",
+                    "label":  "prod",
+                    "version":  "v0.1.2-prod-202606081344"
+                },
+    "environments":  {
+                         "prod":  {
+                                      "label":  "prod",
+                                      "repo":  "skhpsv2",
+                                      "version":  "v0.1.2-prod-202606081344"
+                                  },
+                         "dev":  {
+                                     "label":  "\\u6e2c\\u8a66\\u7248",
+                                     "repo":  "dev-skhpsv2",
+                                     "version":  "not-created"
+                                 },
+                         "local":  {
+                                       "label":  "local",
+                                       "repo":  "skhpsv2",
+                                       "version":  "v0.1.2-local-202606081344"
+                                   }
+                     }
 }
