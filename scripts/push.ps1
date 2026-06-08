@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$CommitMessage = "",
   [switch]$ManualCommitMessage,
   [switch]$NoClaspDeploy,
@@ -140,6 +140,80 @@ function Update-VersionJson {
   Write-Host "version.json updated: $currentVersion -> $newVersion" -ForegroundColor Green
 }
 
+function Get-DeploymentIdFromText {
+  param([string]$Text)
+
+  if ([string]::IsNullOrWhiteSpace($Text)) {
+    return ""
+  }
+
+  if ($Text -match '(AKfy[a-zA-Z0-9_-]+)') {
+    return $Matches[1]
+  }
+
+  return ""
+}
+
+function Update-ConfigWebAppUrl {
+  param([string]$DeploymentId)
+
+  if ([string]::IsNullOrWhiteSpace($DeploymentId)) {
+    throw "Cannot update config.json because deployment id is empty."
+  }
+
+  $configPath = Join-Path $repoRoot "config.json"
+
+  if (!(Test-Path $configPath)) {
+    throw "config.json not found."
+  }
+
+  $newUrl = "https://script.google.com/macros/s/$DeploymentId/exec"
+
+  $config = Get-Content $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
+
+  if (-not $config.api) {
+    $config | Add-Member -MemberType NoteProperty -Name "api" -Value ([pscustomobject]@{})
+  }
+
+  $oldUrl = ""
+  if ($config.api.PSObject.Properties.Name -contains "webAppUrl") {
+    $oldUrl = [string]$config.api.webAppUrl
+    $config.api.webAppUrl = $newUrl
+  } else {
+    $config.api | Add-Member -MemberType NoteProperty -Name "webAppUrl" -Value $newUrl
+  }
+
+  $config |
+    ConvertTo-Json -Depth 20 |
+    Set-Content $configPath -Encoding UTF8
+
+  Write-Host ""
+  Write-Host "==== config.json api.webAppUrl updated ====" -ForegroundColor Cyan
+  Write-Host "Old: $oldUrl"
+  Write-Host "New: $newUrl"
+
+  return $newUrl
+}
+
+function Test-WebAppAllowedActions {
+  param([string]$WebAppUrl)
+
+  if ([string]::IsNullOrWhiteSpace($WebAppUrl)) {
+    return
+  }
+
+  Write-Host ""
+  Write-Host "==== Test deployed allowedActions ====" -ForegroundColor Cyan
+
+  try {
+    $testUrl = $WebAppUrl + "?action=__debug_unknown_action__&ts=" + [DateTimeOffset]::Now.ToUnixTimeMilliseconds()
+    $response = Invoke-RestMethod -Uri $testUrl -Method Get
+    $response.allowedActions
+  } catch {
+    Write-Host "AllowedActions test failed: $($_.Exception.Message)" -ForegroundColor Yellow
+  }
+}
+
 try {
   Write-Host "==== skhpsv2 push ====" -ForegroundColor Cyan
   Write-Host "Repo: $repoRoot"
@@ -176,6 +250,7 @@ try {
   } else {
     Write-Host "Skip VS Code save all." -ForegroundColor Yellow
   }
+
   $appsScriptDir = Join-Path $repoRoot "apps-script"
 
   Write-Host ""
@@ -252,6 +327,61 @@ try {
     Write-Host "sync-appscript-config-from-config.ps1 not found. Skip." -ForegroundColor Yellow
   }
 
+  $newWebAppUrl = ""
+
+  if ((Test-Yes $claspPushAnswer) -or (Test-Yes $claspDeployAnswer)) {
+    if (-not (Test-Path $appsScriptDir)) {
+      throw "apps-script folder not found."
+    }
+
+    $claspConfigPath = Join-Path $appsScriptDir ".clasp.json"
+
+    if (-not (Test-Path $claspConfigPath)) {
+      throw "apps-script/.clasp.json not found."
+    }
+
+    if (-not (Get-Command clasp -ErrorAction SilentlyContinue)) {
+      throw "clasp command not found."
+    }
+
+    Push-Location $appsScriptDir
+
+    try {
+      if (Test-Yes $claspPushAnswer) {
+        Write-Host ""
+        Write-Host "==== clasp push ====" -ForegroundColor Cyan
+        clasp push
+      }
+
+      if (Test-Yes $claspDeployAnswer) {
+        Write-Host ""
+        Write-Host "==== clasp deploy ====" -ForegroundColor Cyan
+
+        $deployOutput = & clasp deploy -d "$deployDescription" 2>&1
+        $deployText = ($deployOutput | Out-String)
+
+        Write-Host $deployText
+
+        $deploymentId = Get-DeploymentIdFromText $deployText
+
+        if ([string]::IsNullOrWhiteSpace($deploymentId)) {
+          throw "Cannot parse deployment id from clasp deploy output."
+        }
+
+        Pop-Location
+        $poppedForConfig = $true
+
+        $newWebAppUrl = Update-ConfigWebAppUrl -DeploymentId $deploymentId
+        Test-WebAppAllowedActions -WebAppUrl $newWebAppUrl
+
+        Push-Location $appsScriptDir
+      }
+    }
+    finally {
+      Pop-Location
+    }
+  }
+
   Write-Host ""
   Write-Host "==== Git status ====" -ForegroundColor Cyan
   git status --short
@@ -287,41 +417,6 @@ try {
     git push -u origin $branch
   }
 
-  if ((Test-Yes $claspPushAnswer) -or (Test-Yes $claspDeployAnswer)) {
-    if (-not (Test-Path $appsScriptDir)) {
-      throw "apps-script folder not found."
-    }
-
-    $claspConfigPath = Join-Path $appsScriptDir ".clasp.json"
-
-    if (-not (Test-Path $claspConfigPath)) {
-      throw "apps-script/.clasp.json not found."
-    }
-
-    if (-not (Get-Command clasp -ErrorAction SilentlyContinue)) {
-      throw "clasp command not found."
-    }
-
-    Push-Location $appsScriptDir
-
-    try {
-      if (Test-Yes $claspPushAnswer) {
-        Write-Host ""
-        Write-Host "==== clasp push ====" -ForegroundColor Cyan
-        clasp push
-      }
-
-      if (Test-Yes $claspDeployAnswer) {
-        Write-Host ""
-        Write-Host "==== clasp deploy ====" -ForegroundColor Cyan
-        clasp deploy -d "$deployDescription"
-      }
-    }
-    finally {
-      Pop-Location
-    }
-  }
-
   Write-Host ""
   Write-Host "==== Done ====" -ForegroundColor Green
   git status --short
@@ -335,4 +430,3 @@ try {
 finally {
   Pop-Location
 }
-
