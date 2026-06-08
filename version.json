@@ -4,13 +4,13 @@
     "current":  {
                     "env":  "prod",
                     "label":  "prod",
-                    "version":  "v0.1.2-prod-202606081426"
+                    "version":  "v0.1.2-prod-202606081432"
                 },
     "environments":  {
                          "prod":  {
                                       "label":  "prod",
                                       "repo":  "skhpsv2",
-                                      "version":  "v0.1.2-prod-202606081426"
+                                      "version":  "v0.1.2-prod-202606081432"
                                   },
                          "dev":  {
                                      "label":  "\\u6e2c\\u8a66\\u7248",
@@ -20,7 +20,7 @@
                          "local":  {
                                        "label":  "local",
                                        "repo":  "skhpsv2",
-                                       "version":  "v0.1.2-local-202606081426"
+                                       "version":  "v0.1.2-local-202606081432"
                                    }
                      }
 }
