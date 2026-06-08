@@ -1,25 +1,26 @@
 {
   "project": "skhpsv2",
-  "defaultEnv": "dev",
+  "repoRole": "prod",
   "current": {
-    "env": "dev",
-    "version": "v0.1.2-dev-202606081225"
+    "env": "prod",
+    "label": "正式版",
+    "version": "v0.1.2-prod-202606081238"
   },
   "environments": {
-    "dev": {
-      "label": "測試版",
-      "site": "dev-skhps",
-      "version": "v0.1.2-dev-202606081225"
-    },
     "prod": {
       "label": "正式版",
-      "site": "skhps",
-      "version": "not-released"
+      "repo": "skhpsv2",
+      "version": "v0.1.2-prod-202606081238"
+    },
+    "dev": {
+      "label": "測試版",
+      "repo": "dev-skhpsv2",
+      "version": "not-created"
     },
     "local": {
       "label": "本機",
-      "site": "localhost",
-      "version": "v0.1.2-dev-202606081225"
+      "repo": "skhpsv2",
+      "version": "v0.1.2-local-202606081238"
     }
   }
 }

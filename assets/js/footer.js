@@ -172,13 +172,17 @@
       })
       .then(function (data) {
         const current = data.current || {};
-        const envKey = current.env || data.defaultEnv || getRuntimeEnv() || 'dev';
+        const envKey = current.env || data.repoRole || data.defaultEnv || 'prod';
         const envInfo =
           data.environments && data.environments[envKey]
             ? data.environments[envKey]
             : {};
 
-        const label = envInfo.label || current.label || envKey;
+        const label =
+          current.label ||
+          envInfo.label ||
+          envKey;
+
         const version =
           current.version ||
           envInfo.version ||
@@ -280,3 +284,4 @@
     initFooter();
   }
 })();
+
