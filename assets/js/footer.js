@@ -30,7 +30,7 @@
     item.setAttribute('data-footer-item', id);
     item.setAttribute('data-state', state || 'neutral');
     item.innerHTML =
-      '<strong>' + escapeHtml(label) + '</strong>' +
+      '<strong>' + escapeHtml(label) + '：</strong>' +
       '<span>' + escapeHtml(value || 'checking') + '</span>';
     return item;
   }
@@ -46,7 +46,7 @@
 
     item.setAttribute('data-state', state || 'neutral');
     item.innerHTML =
-      '<strong>' + escapeHtml(label) + '</strong>' +
+      '<strong>' + escapeHtml(label) + '：</strong>' +
       '<span>' + escapeHtml(value || '') + '</span>';
   }
 
@@ -197,3 +197,4 @@
     initFooter();
   }
 })();
+
