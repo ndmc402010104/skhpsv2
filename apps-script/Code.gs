@@ -6,7 +6,7 @@ function doGet(e) {
   var action = e && e.parameter && e.parameter.action;
 
   if (action === 'health') {
-    return outputJson_(getBackendStatus());
+    return outputJsonOrJsonp_(getBackendStatus(), e && e.parameter && e.parameter.callback);
   }
 
   return showUiSettingPage_();
@@ -23,4 +23,5 @@ function showUiSettingPage_() {
     .setTitle('skhpsv2 UI 設定')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
+
 
