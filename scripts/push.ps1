@@ -388,26 +388,10 @@ try {
         Write-Host ""
         Write-Host "==== clasp deploy ====" -ForegroundColor Cyan
 
-        $deployOutput = & $deploymentId = Get-ConfigDeploymentId
+        $deploymentId = Get-ConfigDeploymentId
         Write-Host "Deployment ID from config.json: $deploymentId"
         clasp deploy -i $deploymentId -d "$deployDescription" 2>&1
-        $deployText = ($deployOutput | Out-String)
-
-        Write-Host $deployText
-
-        $deploymentId = ""
-
-        if ([string]::IsNullOrWhiteSpace($deploymentId)) {
-          throw "Cannot parse deployment id from clasp deploy output."
-        }
-
-        Pop-Location
-        $poppedForConfig = $true
-
-        $newWebAppUrl = ""
-        
-
-        Push-Location $appsScriptDir
+Push-Location $appsScriptDir
       }
     }
     finally {
@@ -463,4 +447,5 @@ try {
 finally {
   Pop-Location
 }
+
 
