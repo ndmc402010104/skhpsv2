@@ -18,8 +18,7 @@
   }
 
   function getDescription(input) {
-    var row = input.closest("tr");
-    var label = row ? row.querySelector("strong") : input.previousElementSibling;
+    var label = input.closest("tr") ? input.closest("tr").querySelector("strong") : input.previousElementSibling;
 
     if (label && label.tagName && label.tagName.toLowerCase() === "strong") {
       return label.getAttribute("title") || label.textContent || "";
@@ -32,7 +31,7 @@
     return Array.prototype.slice.call(scope.querySelectorAll("[data-class-name][data-property]"))
       .map(function (input) {
         return {
-          component: scope.getAttribute("data-css-setting-component") || "",
+          component: scope.getAttribute("data-css-setting-component") || "base",
           className: input.getAttribute("data-class-name") || "",
           property: input.getAttribute("data-property") || "",
           value: input.value || "",
@@ -40,7 +39,7 @@
         };
       })
       .filter(function (row) {
-        return row.component && row.className && row.property;
+        return row.className && row.property;
       });
   }
 
@@ -52,15 +51,11 @@
   }
 
   function saveToSheet(scope, button) {
-    var tabKey = scope.getAttribute("data-css-setting-tab-key") || "";
-
-    if (!tabKey) {
-      setStatus(scope, "儲存失敗：缺少 data-css-setting-tab-key。");
-      return;
-    }
-
     if (!window.SKHPSBackend || typeof window.SKHPSBackend.call !== "function") {
       setStatus(scope, "儲存失敗：找不到 SKHPSBackend.call，請確認 backend-client.js 已載入。");
+      dispatch(scope, "skhps-css-setting-save-error", {
+        error: "missing SKHPSBackend.call"
+      });
       return;
     }
 
@@ -68,6 +63,9 @@
 
     if (!rows.length) {
       setStatus(scope, "沒有可儲存的欄位。");
+      dispatch(scope, "skhps-css-setting-save-error", {
+        error: "no rows"
+      });
       return;
     }
 
@@ -75,7 +73,7 @@
     setStatus(scope, "寫回 Google Sheet 中...");
 
     window.SKHPSBackend.call("saveCssSheetRows", {
-      tabKey: tabKey,
+      tabKey: scope.getAttribute("data-css-setting-tab-key") || "baseStyle",
       rows: rows
     })
       .then(function (response) {
@@ -84,6 +82,13 @@
         }
 
         setStatus(scope, "已寫回 Sheet：" + response.appendedRows + " 筆，updatedAt=" + response.updatedAt);
+
+        rows.forEach(function (row) {
+          var input = scope.querySelector(
+            '[data-class-name="' + row.className + '"][data-property="' + row.property + '"]'
+          );
+          if (input) input.readOnly = true;
+        });
 
         dispatch(scope, "skhps-css-setting-save-success", {
           response: response,

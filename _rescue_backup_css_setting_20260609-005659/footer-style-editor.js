@@ -192,7 +192,7 @@
       "<button type='button' data-css-setting-action='edit'>編輯</button> ",
       "<button type='button' data-css-setting-action='save'>儲存</button> ",
       "<button type='button' data-css-setting-action='default'>恢復 default</button> ",
-      
+      "<button type='button' data-css-setting-action='reload-sheet'>回到 Sheet 值</button>",
       "</p>",
       "</section>"
     ].join("");

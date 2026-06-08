@@ -380,6 +380,38 @@
     };
   }
 
+  function loadLocalDraft() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function saveLocalDraft(map) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      savedAt: new Date().toISOString(),
+      current: map
+    }));
+  }
+
+  function clearLocalDraft() {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  function mergeLocalDraft(maps) {
+    var draft = loadLocalDraft();
+
+    if (draft && draft.current) {
+      maps.current = draft.current;
+      maps.hasLocalDraft = true;
+      maps.localSavedAt = draft.savedAt || "";
+    }
+
+    return maps;
+  }
+
   function applyMap(map) {
     Object.keys(map).forEach(function (className) {
       Object.keys(map[className] || {}).forEach(function (property) {
@@ -491,7 +523,7 @@
 
   function renderGroup(group, maps) {
     return [
-      "<section class='base-editor-section' data-css-setting-editor data-css-setting-core='on' data-css-setting-sheet-save='on' data-css-setting-component='base' data-css-setting-tab-key='baseStyle' data-css-setting-scope='" + escapeHtml(group.className) + "'>",
+      "<section class='base-editor-section' data-css-setting-editor='" + escapeHtml(group.className) + "'>",
       "<h2>" + escapeHtml(group.title) + "</h2>",
       "<div class='base-table-wrap'>",
       "<table class='base-table'>",
@@ -510,7 +542,7 @@
       "<button type='button' data-css-setting-action='edit'>編輯</button>",
       "<button type='button' data-css-setting-action='save'>儲存</button>",
       "<button type='button' data-css-setting-action='default'>恢復 default</button>",
-      
+      "<button type='button' data-css-setting-action='reload-sheet'>回到 Sheet 值</button>",
       "</div>",
       "<p class='base-status' data-css-setting-status>預覽模式：修改會即時套用，按儲存後保留在本機。</p>",
       "</td>",
@@ -523,13 +555,22 @@
   }
 
   function renderGlobalToolbar(maps) {
+    var note = maps.hasLocalDraft
+      ? "目前使用本機暫存版本：" + escapeHtml(maps.localSavedAt || "")
+      : "目前使用 Sheet effective values。";
+
     return [
       "<section class='skh-section skh-surface'>",
       "<h2>儲存狀態</h2>",
-      "<p class='base-save-note' id='baseSaveNote'>目前使用 Sheet effective values；儲存會寫回 Google Sheet。</p>",
+      "<p class='base-save-note' id='baseSaveNote'>" + note + "</p>",
+      "<p>",
+      "<button type='button' data-css-setting-global-action='save-all'>儲存全部到本機</button> ",
+      "<button type='button' data-css-setting-global-action='clear-local'>清除本機暫存，回到 Sheet</button>",
+      "</p>",
       "</section>"
     ].join("");
   }
+
   function render(root, maps) {
     currentMap = clone(maps.current);
     applyMap(currentMap);
@@ -542,10 +583,6 @@
       }).join(""),
       "</div>"
     ].join("");
-
-    if (window.SKHPSCssSettingEditorCore && typeof window.SKHPSCssSettingEditorCore.init === "function") {
-      window.SKHPSCssSettingEditorCore.init(root);
-    }
   }
 
   function loadMaps() {
@@ -563,8 +600,8 @@
       })
       .then(function (csv) {
         var rows = parseCsv(csv);
-        var maps = buildMaps(rows);
-        setStatus("已套用 Sheet effective values。");
+        var maps = mergeLocalDraft(buildMaps(rows));
+        setStatus(maps.hasLocalDraft ? "已套用本機暫存版本。" : "已套用 Sheet effective values。");
         return maps;
       });
   }
@@ -588,8 +625,63 @@
   }
 
   function bind() {
-    if (document.__skhpsBaseStyleInputBound) return;
-    document.__skhpsBaseStyleInputBound = true;
+    document.addEventListener("click", function (event) {
+      var actionButton = event.target.closest("[data-css-setting-action]");
+      if (actionButton) {
+        var editor = actionButton.closest("[data-css-setting-editor]");
+        if (!editor) return;
+
+        var action = actionButton.getAttribute("data-css-setting-action");
+        var inputs = Array.prototype.slice.call(editor.querySelectorAll("[data-css-var]"));
+        var status = editor.querySelector("[data-css-setting-status]");
+
+        if (action === "edit") {
+          inputs.forEach(function (input) {
+            input.readOnly = false;
+          });
+          if (status) status.textContent = "編輯中：每次修改會即時套用到本頁。";
+          if (inputs[0]) inputs[0].focus();
+        }
+
+        if (action === "save") {
+          inputs.forEach(function (input) {
+            input.readOnly = true;
+          });
+          saveLocalDraft(currentMap);
+          if (status) status.textContent = "已儲存到本機 localStorage。";
+          var note = el("baseSaveNote");
+          if (note) note.textContent = "目前使用本機暫存版本：" + new Date().toISOString();
+        }
+
+        if (action === "default") {
+          inputs.forEach(function (input) {
+            input.value = input.getAttribute("data-default") || "";
+            liveApplyInput(input);
+          });
+          if (status) status.textContent = "已恢復 default 並即時套用；按儲存後保留在本機。";
+        }
+
+        if (action === "reload-sheet") {
+          rerenderFromSheet();
+        }
+      }
+
+      var globalButton = event.target.closest("[data-css-setting-global-action]");
+      if (globalButton) {
+        var globalAction = globalButton.getAttribute("data-css-setting-global-action");
+
+        if (globalAction === "save-all") {
+          saveLocalDraft(currentMap);
+          var note = el("baseSaveNote");
+          if (note) note.textContent = "目前使用本機暫存版本：" + new Date().toISOString();
+          setStatus("已儲存全部到本機。");
+        }
+
+        if (globalAction === "clear-local") {
+          rerenderFromSheet();
+        }
+      }
+    });
 
     document.addEventListener("input", function (event) {
       var input = event.target.closest("[data-css-var]");
@@ -597,6 +689,7 @@
       liveApplyInput(input);
     });
   }
+
   function boot() {
     injectCss();
     bind();
