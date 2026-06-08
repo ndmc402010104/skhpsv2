@@ -4,7 +4,7 @@
   "title": "整外資訊系統首頁",
   "versionUrl": "version.json",
   "api": {
-    "webAppUrl": "https://script.google.com/macros/s/AKfycbxTmZaFGiV53YO1diNv4EldXBgx-47Huxbrt2dyah3AqyneBuasHFOKuBFCVPbF_sOJ8w/exec"
+    "webAppUrl": "https://script.google.com/macros/s/AKfycbzlqvydDMfoFKb66O3XDNGCfmSy082lb0_J-HWHSLqftTuN_H-4qqW9Z0tPEUdYtbjA-w/exec"
   },
   "pages": [
     {
@@ -29,7 +29,32 @@
   },
   "sheets": {
     "mainSpreadsheetId": "1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50",
-    "mainGid": "311728002",
-    "mainUrl": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=311728002#gid=311728002"
+    "mainUrl": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit",
+    "cssSheets": {
+      "baseStyle": {
+        "key": "baseStyle",
+        "title": "基礎樣式",
+        "tabGid": "311728002",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=311728002#gid=311728002"
+      },
+      "headerStyle": {
+        "key": "headerStyle",
+        "title": "Header",
+        "tabGid": "",
+        "url": ""
+      },
+      "footerStyle": {
+        "key": "footerStyle",
+        "title": "Footer",
+        "tabGid": "",
+        "url": ""
+      },
+      "buttonStyle": {
+        "key": "buttonStyle",
+        "title": "按鈕",
+        "tabGid": "0",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=0#gid=0"
+      }
+    }
   }
 }

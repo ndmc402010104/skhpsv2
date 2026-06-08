@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!--
 檔案位置：skhpsv2/css-setting.html
 -->
@@ -20,7 +20,26 @@
     </nav>
 
     <section>
-      <h2>頁面準備中</h2>
+      <h2>Sheet 內容檢查</h2>
+
+      <p>
+        <button type="button" data-css-sheet-key="baseStyle">讀取基礎樣式</button>
+      </p>
+
+      <p>
+        <button type="button" data-css-sheet-key="headerStyle">讀取 Header</button>
+      </p>
+
+      <p>
+        <button type="button" data-css-sheet-key="footerStyle">讀取 Footer</button>
+      </p>
+
+      <p>
+        <button type="button" data-css-sheet-key="buttonStyle">讀取按鈕</button>
+      </p>
+
+      <h3>Google Sheet CSV 原始內容</h3>
+      <pre id="cssSheetResult">尚未讀取。按上方按鈕後會直接貼出 Google Sheet CSV 回傳內容。</pre>
     </section>
   </main>
 
@@ -30,6 +49,325 @@
 
   <script src="assets/js/config.js"></script>
   <script src="assets/js/backend-client.js"></script>
-  <script src="assets/js/footer.js"></script>
+<!-- skhpsv2-css-setting-sheet-csv-start -->
+<script>
+(function () {
+  var configCache = null;
+
+  function getText(el) {
+    return (el && (el.textContent || el.innerText) || "").trim();
+  }
+
+  function detectTabKey(el) {
+    var raw = [
+      el.getAttribute("data-tab-key"),
+      el.getAttribute("data-tabkey"),
+      el.getAttribute("data-key"),
+      el.id,
+      el.name,
+      getText(el)
+    ].join(" ");
+
+    if (/baseStyle|基礎樣式|讀取基礎樣式/.test(raw)) return "baseStyle";
+    if (/headerStyle|Header|讀取 Header|讀取Header/.test(raw)) return "headerStyle";
+    if (/footerStyle|Footer|讀取 Footer|讀取Footer/.test(raw)) return "footerStyle";
+    if (/buttonStyle|按鈕|讀取按鈕/.test(raw)) return "buttonStyle";
+
+    return "";
+  }
+
+  function loadConfig() {
+    if (configCache) return Promise.resolve(configCache);
+
+    return fetch("config.json", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("config.json HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (config) {
+        configCache = config;
+        return config;
+      });
+  }
+
+  function findObjectByPropertyName(root, targetKey) {
+    var visited = [];
+
+    function walk(value, path) {
+      if (!value || typeof value !== "object") return null;
+
+      if (visited.indexOf(value) >= 0) return null;
+      visited.push(value);
+
+      if (Object.prototype.hasOwnProperty.call(value, targetKey)) {
+        return {
+          path: path ? path + "." + targetKey : targetKey,
+          value: value[targetKey]
+        };
+      }
+
+      if (Array.isArray(value)) {
+        for (var i = 0; i < value.length; i++) {
+          var arrayResult = walk(value[i], path + "[" + i + "]");
+          if (arrayResult) return arrayResult;
+        }
+        return null;
+      }
+
+      var keys = Object.keys(value);
+      for (var j = 0; j < keys.length; j++) {
+        var key = keys[j];
+        var result = walk(value[key], path ? path + "." + key : key);
+        if (result) return result;
+      }
+
+      return null;
+    }
+
+    return walk(root, "");
+  }
+
+  function getSpreadsheetId(config) {
+    if (config && config.sheets && config.sheets.mainSpreadsheetId) {
+      return config.sheets.mainSpreadsheetId;
+    }
+
+    var url = config && config.sheets && config.sheets.mainUrl ? config.sheets.mainUrl : "";
+    var match = url.match(/\/spreadsheets\/d\/([^\/]+)/);
+
+    if (match && match[1]) return match[1];
+
+    return "";
+  }
+
+  function getTabInfo(config, tabKey) {
+    var found = findObjectByPropertyName(config, tabKey);
+    var tab = found && found.value && typeof found.value === "object" ? found.value : null;
+
+    if (!tab) {
+      return {
+        foundPath: found ? found.path : "",
+        title: tabKey,
+        tabGid: "",
+        raw: found ? found.value : null
+      };
+    }
+
+    return {
+      foundPath: found.path,
+      title: tab.title || tab.name || tabKey,
+      tabGid: (
+        tab.tabGid !== undefined ? tab.tabGid :
+        tab.gid !== undefined ? tab.gid :
+        tab.sheetGid !== undefined ? tab.sheetGid :
+        ""
+      ),
+      raw: tab
+    };
+  }
+
+  function csvExportUrl(spreadsheetId, gid) {
+    return "https://docs.google.com/spreadsheets/d/" +
+      encodeURIComponent(spreadsheetId) +
+      "/export?format=csv&gid=" +
+      encodeURIComponent(gid);
+  }
+
+  function getOutputArea() {
+    var output =
+      document.getElementById("ajaxResult") ||
+      document.getElementById("result") ||
+      document.getElementById("output") ||
+      document.querySelector("pre");
+
+    if (!output) {
+      output = document.createElement("pre");
+      output.id = "sheetCsvRawOutput";
+      output.style.whiteSpace = "pre-wrap";
+      output.style.wordBreak = "break-word";
+      output.style.border = "1px solid #999";
+      output.style.padding = "12px";
+      output.style.minHeight = "240px";
+
+      var main = document.querySelector("main") || document.body;
+      main.appendChild(output);
+    }
+
+    return output;
+  }
+
+  function getStatusArea() {
+    var status =
+      document.getElementById("ajaxStatus") ||
+      document.getElementById("status") ||
+      document.getElementById("resultStatus");
+
+    if (!status) {
+      status = document.createElement("p");
+      status.id = "sheetCsvRawStatus";
+
+      var output = getOutputArea();
+      output.parentNode.insertBefore(status, output);
+    }
+
+    return status;
+  }
+
+  function printText(statusText, text) {
+    var status = getStatusArea();
+    var output = getOutputArea();
+
+    status.textContent = statusText;
+    output.textContent = text;
+    output.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function readSheetCsv(tabKey) {
+    printText("讀取 config.json 中：tabKey = " + tabKey, "");
+
+    loadConfig()
+      .then(function (config) {
+        var spreadsheetId = getSpreadsheetId(config);
+        var tabInfo = getTabInfo(config, tabKey);
+
+        if (!spreadsheetId) {
+          printText(
+            "找不到 spreadsheetId",
+            "錯誤：config.json 找不到 sheets.mainSpreadsheetId，也無法從 sheets.mainUrl 解析。\n\n目前 config.json：\n" +
+            JSON.stringify(config, null, 2)
+          );
+          return null;
+        }
+
+        if (tabInfo.tabGid === undefined || tabInfo.tabGid === null || tabInfo.tabGid === "") {
+          printText(
+            tabInfo.title + " / " + tabKey + "：tabGid 尚未設定",
+            "tabKey=" + tabKey + "\n" +
+            "foundPath=" + (tabInfo.foundPath || "NOT_FOUND") + "\n" +
+            "message=tabGid 尚未設定或沒有找到 tabKey\n\n" +
+            "找到的原始設定：\n" +
+            JSON.stringify(tabInfo.raw, null, 2)
+          );
+          return null;
+        }
+
+        var url = csvExportUrl(spreadsheetId, tabInfo.tabGid);
+
+        return fetch(url, { cache: "no-store" })
+          .then(function (res) {
+            return res.text().then(function (text) {
+              return {
+                status: res.status,
+                statusText: res.statusText,
+                title: tabInfo.title,
+                tabKey: tabKey,
+                foundPath: tabInfo.foundPath,
+                gid: tabInfo.tabGid,
+                url: url,
+                text: text
+              };
+            });
+          });
+      })
+      .then(function (result) {
+        if (!result) return;
+
+        var header =
+          "title=" + result.title + "\n" +
+          "tabKey=" + result.tabKey + "\n" +
+          "foundPath=" + result.foundPath + "\n" +
+          "gid=" + result.gid + "\n" +
+          "httpStatus=" + result.status + " " + result.statusText + "\n" +
+          "url=" + result.url + "\n" +
+          "----- Google Sheet CSV raw text -----\n";
+
+        printText(
+          "已讀取 Google Sheet CSV：" + result.title + " / tabKey = " + result.tabKey,
+          header + result.text
+        );
+      })
+      .catch(function (error) {
+        printText(
+          "讀取失敗：tabKey = " + tabKey,
+          "tabKey=" + tabKey + "\nerror=" + error.message
+        );
+      });
+  }
+
+  document.addEventListener("click", function (event) {
+    var target = event.target.closest("button, a");
+    if (!target) return;
+
+    var tabKey = detectTabKey(target);
+    if (!tabKey) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    readSheetCsv(tabKey);
+  }, true);
+})();
+</script>
+<!-- skhpsv2-css-setting-sheet-csv-end -->
+<script src="assets/js/footer.js"></script>
+
+  <script>
+    (function(){
+      function show(value){
+        var result = document.getElementById("cssSheetResult");
+
+        if(!result){
+          return;
+        }
+
+        result.textContent =
+          typeof value === "string"
+            ? value
+            : JSON.stringify(value, null, 2);
+      }
+
+      function readCssSheet(tabKey){
+        show("讀取中：" + tabKey);
+
+        if(!window.SKHPSConfig || !window.SKHPSBackend){
+          show({
+            ok: false,
+            error: "SKHPSConfig or SKHPSBackend is not loaded."
+          });
+          return;
+        }
+
+        window.SKHPSConfig.loadConfig()
+          .then(function(){
+            return window.SKHPSBackend.call("getCssSheetPreview", {
+              tabKey: tabKey
+            });
+          })
+          .then(function(response){
+            show(response);
+          })
+          .catch(function(error){
+            show({
+              ok: false,
+              error: error && error.message ? error.message : String(error)
+            });
+          });
+      }
+
+      document.querySelectorAll("[data-css-sheet-key]").forEach(function(button){
+        button.addEventListener("click", function(){
+          readCssSheet(button.getAttribute("data-css-sheet-key"));
+        });
+      });
+
+      window.SKHPSCssSettingPage = {
+        readCssSheet: readCssSheet
+      };
+    })();
+  </script>
 </body>
 </html>
+
+
+

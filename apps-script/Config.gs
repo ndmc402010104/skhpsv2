@@ -6,7 +6,7 @@
   },
   sheets: {
     mainSpreadsheetId: '1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50',
-    mainGid: '311728002'
+    mainGid: ''
   }
 };
 

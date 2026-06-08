@@ -28,7 +28,8 @@ function routeAction_(action, params) {
   var allowedActions = [
     'health',
     'checkRequiredServices',
-    'sheetStatus'
+    'sheetStatus',
+    'getCssSheetPreview'
   ];
 
   if (allowedActions.indexOf(action) === -1) {
@@ -77,12 +78,38 @@ function routeAction_(action, params) {
     };
   }
 
+  if (action === 'getCssSheetPreview') {
+    var payload = parsePayload_(params);
+    var tabKey = params.tabKey || payload.tabKey || '';
+
+    return {
+      ok: true,
+      action: action,
+      app: 'skhpsv2',
+      env: getServerEnv_(),
+      data: getCssSheetPreview_(tabKey),
+      serverTime: getServerTime_()
+    };
+  }
+
   return {
     ok: false,
     action: action,
     error: 'UNHANDLED_ACTION',
     serverTime: getServerTime_()
   };
+}
+
+function parsePayload_(params) {
+  if (!params || !params.payload) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(params.payload);
+  } catch (error) {
+    return {};
+  }
 }
 
 function getServerEnv_() {
