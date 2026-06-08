@@ -1,0 +1,72 @@
+<section class="skh-card">
+  <span class="skh-badge skh-badge--info">Base / Apps Script</span>
+  <h2>00 基礎樣式</h2>
+
+  <p>
+    這是從 Apps Script 後端
+    <code>getUiSettingPageContent('UiSettingBase')</code>
+    載入的第一個 UI 設定子頁。
+  </p>
+
+  <div class="skh-alert skh-alert--success">
+    <strong>Apps Script AJAX 測試成功：</strong>
+    父頁 uiset.html 已透過 google.script.run 載入本子頁。
+  </div>
+
+  <h3>整外科務系統CSS樣式 / Base Tokens Preview</h3>
+
+  <div class="uiset-token-summary">
+    <div class="uiset-token-card">
+      <strong>Brand Primary</strong>
+      <div class="uiset-color-row">
+        <span class="uiset-swatch" style="background:var(--skh-color-primary)"></span>
+        <code>--skh-color-primary</code>
+      </div>
+    </div>
+
+    <div class="uiset-token-card">
+      <strong>Page Background</strong>
+      <div class="uiset-color-row">
+        <span class="uiset-swatch" style="background:var(--skh-color-bg)"></span>
+        <code>--skh-color-bg</code>
+      </div>
+    </div>
+
+    <div class="uiset-token-card">
+      <strong>Surface</strong>
+      <div class="uiset-color-row">
+        <span class="uiset-swatch" style="background:var(--skh-color-surface)"></span>
+        <code>--skh-color-surface</code>
+      </div>
+    </div>
+
+    <div class="uiset-token-card">
+      <strong>Warning</strong>
+      <div class="uiset-color-row">
+        <span class="uiset-swatch" style="background:var(--skh-color-warning)"></span>
+        <code>--skh-color-warning</code>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="skh-mt-4">Component Smoke Test</h3>
+
+  <div class="ui-test-row">
+    <button class="skh-btn skh-btn--primary">Primary Button</button>
+    <button class="skh-btn skh-btn--secondary">Secondary Button</button>
+    <button class="skh-btn skh-btn--danger">Danger Button</button>
+  </div>
+
+  <script>
+    (function(){
+      window.setTimeout(function(){
+        window.dispatchEvent(new CustomEvent('skh-ui-setting-ready', {
+          detail: {
+            page: 'base',
+            source: 'apps-script'
+          }
+        }));
+      }, 120);
+    })();
+  </script>
+</section>

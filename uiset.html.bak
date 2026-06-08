@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!--
+檔案位置：skhpsv2/uiset.html
+時間戳記：2026-06-08 00:00 UTC+8
+用途：skhpsv2 UI 設定中心父頁；負責左側選單、非同步載入設定子頁、插入 HTML 後執行子頁 script，並等待 ready event 後 reveal。
+-->
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>skhpsv2 UI 設定</title>
+
+  <link rel="stylesheet" href="assets/css/00-skhps-tokens.css" />
+  <link rel="stylesheet" href="assets/css/01-skhps-reset.css" />
+  <link rel="stylesheet" href="assets/css/02-skhps-base.css" />
+  <link rel="stylesheet" href="assets/css/03-skhps-layout.css" />
+  <link rel="stylesheet" href="assets/css/04-skhps-components.css" />
+  <link rel="stylesheet" href="assets/css/05-skhps-forms.css" />
+  <link rel="stylesheet" href="assets/css/06-skhps-tables.css" />
+  <link rel="stylesheet" href="assets/css/07-skhps-feedback.css" />
+  <link rel="stylesheet" href="assets/css/08-skhps-utilities.css" />
+  <link rel="stylesheet" href="assets/css/99-ui-test.css" />
+  <link rel="stylesheet" href="assets/css/22-uiset.css" />
+</head>
+
+<body class="uiset-body">
+  <div class="skh-app-shell">
+    <header class="skh-header">
+      <div>
+        <div class="skh-eyebrow">UI Setting</div>
+        <h1 class="skh-page-title">skhpsv2 UI 設定</h1>
+        <p class="skh-page-subtitle">以父頁容器載入各 UI 設定子頁；第一階段先穩定外觀與 AJAX-like loader。</p>
+      </div>
+
+      <a class="skh-btn skh-btn--ghost" href="#" data-route="portal.admin">回後台</a>
+    </header>
+
+    <main class="skh-main">
+      <section class="skh-alert skh-alert--info">
+        <strong>目前階段：</strong>
+        先建立 UI 設定中心外觀與子頁載入流程。第一個子頁為「00 基礎樣式」，目前使用 fallback 內容測試 loader；之後接 Apps Script 後端與 Sheet「整外科務系統CSS樣式」。
+      </section>
+
+      <section class="uiset-layout">
+        <nav class="uiset-sidebar skh-card" id="uiset-sidebar" aria-label="UI 設定選單"></nav>
+
+        <div class="uiset-content skh-card" id="uiset-content">
+          <div class="uiset-empty">
+            請從左側選單選擇 UI 設定項目
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="skh-footer">
+      <span>skhpsv2 / UI 設定</span>
+      <span>AJAX-like child page loader</span>
+      <span>v0.1.1</span>
+    </footer>
+  </div>
+
+  <script src="assets/js/skhps-runtime.js"></script>
+  <script src="assets/js/skhps-route-config.js"></script>
+  <script src="assets/js/skhps-router.js"></script>
+  <script src="assets/js/ui-setting-route-config.js"></script>
+  <script src="assets/js/ui-setting-loader.js"></script>
+</body>
+</html>
