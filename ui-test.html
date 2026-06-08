@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<!--
+檔案位置：skhpsv2/ui-test.html
+時間戳記：2026-06-08 00:00 UTC+8
+用途：skhpsv2 CSS / UI Design System 測試頁；以 Base → Role → Size → Shape → State → Group → 實際案例展示元件。
+-->
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>skhpsv2 UI Test</title>
+  <link rel="stylesheet" href="assets/css/00-skhps-tokens.css" />
+  <link rel="stylesheet" href="assets/css/01-skhps-reset.css" />
+  <link rel="stylesheet" href="assets/css/02-skhps-base.css" />
+  <link rel="stylesheet" href="assets/css/03-skhps-layout.css" />
+  <link rel="stylesheet" href="assets/css/04-skhps-components.css" />
+  <link rel="stylesheet" href="assets/css/05-skhps-forms.css" />
+  <link rel="stylesheet" href="assets/css/06-skhps-tables.css" />
+  <link rel="stylesheet" href="assets/css/07-skhps-feedback.css" />
+  <link rel="stylesheet" href="assets/css/08-skhps-utilities.css" />
+  <link rel="stylesheet" href="assets/css/99-ui-test.css" />
+</head>
+<body class="ui-test-body">
+  <div class="skh-app-shell">
+    <header class="skh-header">
+      <div>
+        <div class="skh-eyebrow">Design System</div>
+        <h1 class="skh-page-title">skhpsv2 CSS / UI 測試頁</h1>
+        <p class="skh-page-subtitle">Base → Role → Size → Shape → State → Group → 實際案例</p>
+      </div>
+      <a class="skh-btn skh-btn--ghost" href="admin.html">回後台</a>
+    </header>
+
+    <main class="skh-main ui-test-main">
+      <section class="ui-test-section">
+        <h2>1. Design Tokens</h2>
+        <div class="ui-test-token-grid">
+          <div class="ui-test-color-token ui-test-color-token--primary">Primary</div>
+          <div class="ui-test-color-token ui-test-color-token--success">Success</div>
+          <div class="ui-test-color-token ui-test-color-token--warning">Warning</div>
+          <div class="ui-test-color-token ui-test-color-token--danger">Danger</div>
+        </div>
+      </section>
+
+      <section class="ui-test-section">
+        <h2>2. Typography</h2>
+        <div class="skh-card">
+          <h1>H1 頁面標題</h1>
+          <h2>H2 區塊標題</h2>
+          <h3>H3 小標題</h3>
+          <p>這是一段一般內文，用來測試字距、行高與閱讀性。</p>
+          <p class="skh-text-muted">這是一段 muted 輔助文字。</p>
+        </div>
+      </section>
+
+      <section class="ui-test-section">
+        <h2>3. Buttons</h2>
+
+        <h3>Base</h3>
+        <div class="ui-test-row">
+          <button class="skh-btn">Base Button</button>
+        </div>
+
+        <h3>Role</h3>
+        <div class="ui-test-row">
+          <button class="skh-btn skh-btn--primary">Primary</button>
+          <button class="skh-btn skh-btn--secondary">Secondary</button>
+          <button class="skh-btn skh-btn--danger">Danger</button>
+          <button class="skh-btn skh-btn--ghost">Ghost</button>
+        </div>
+
+        <h3>Size</h3>
+        <div class="ui-test-row">
+          <button class="skh-btn skh-btn--primary skh-btn--sm">Small</button>
+          <button class="skh-btn skh-btn--primary">Default</button>
+          <button class="skh-btn skh-btn--primary skh-btn--lg">Large</button>
+        </div>
+
+        <h3>Shape / State / Group</h3>
+        <div class="ui-test-row">
+          <button class="skh-btn skh-btn--primary skh-btn--pill">Pill</button>
+          <button class="skh-btn skh-btn--secondary" disabled>Disabled</button>
+          <div class="skh-btn-group">
+            <button class="skh-btn skh-btn--secondary">左</button>
+            <button class="skh-btn skh-btn--secondary">中</button>
+            <button class="skh-btn skh-btn--secondary">右</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="ui-test-section">
+        <h2>4. Cards / Badges</h2>
+        <div class="skh-grid skh-grid--3">
+          <article class="skh-card">
+            <span class="skh-badge skh-badge--info">Info</span>
+            <h3>一般卡片</h3>
+            <p>用於 Portal 入口與後台工具入口。</p>
+          </article>
+          <article class="skh-card">
+            <span class="skh-badge skh-badge--success">Success</span>
+            <h3>成功狀態</h3>
+            <p>用於完成、可用、正常連線。</p>
+          </article>
+          <article class="skh-card">
+            <span class="skh-badge skh-badge--warning">Warning</span>
+            <h3>警告狀態</h3>
+            <p>用於測試版、未連線、待確認。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="ui-test-section">
+        <h2>5. Forms</h2>
+        <div class="skh-card skh-form">
+          <label class="skh-field">
+            <span class="skh-label">姓名</span>
+            <input class="skh-input" type="text" placeholder="請輸入姓名" />
+          </label>
+
+          <label class="skh-field">
+            <span class="skh-label">職級</span>
+            <select class="skh-select">
+              <option>VS</option>
+              <option>R5</option>
+              <option>PGY1</option>
+              <option>Clerk</option>
+            </select>
+          </label>
+
+          <label class="skh-field">
+            <span class="skh-label">備註</span>
+            <textarea class="skh-textarea" rows="3" placeholder="請輸入備註"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="ui-test-section">
+        <h2>6. Tables</h2>
+        <div class="skh-table-wrap">
+          <table class="skh-table">
+            <thead>
+              <tr>
+                <th>職級</th>
+                <th>姓名</th>
+                <th>員工編號</th>
+                <th>狀態</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>VS</td>
+                <td>王小明</td>
+                <td>M000001</td>
+                <td><span class="skh-badge skh-badge--success">已簽到</span></td>
+              </tr>
+              <tr>
+                <td>PGY1</td>
+                <td>林小美</td>
+                <td>M000002</td>
+                <td><span class="skh-badge skh-badge--warning">待確認</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ui-test-section">
+        <h2>7. Feedback</h2>
+        <div class="skh-alert skh-alert--info">這是一般提示訊息。</div>
+        <div class="skh-alert skh-alert--success">這是成功訊息。</div>
+        <div class="skh-alert skh-alert--danger">這是錯誤訊息。</div>
+        <div class="skh-empty-state">目前沒有資料。</div>
+      </section>
+
+      <section class="ui-test-section">
+        <h2>8. 實際案例 placeholder</h2>
+        <div class="skh-card">
+          <h3>晨會 QR 簽到入口</h3>
+          <p>此區塊之後會作為 QR 簽到系統入口樣式基準。</p>
+          <button class="skh-btn skh-btn--primary skh-btn--lg">晨會 QR 簽到</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="skh-footer">
+      <span>skhpsv2 ui-test</span>
+      <span>CSS Design System</span>
+      <span>v0.1.0</span>
+    </footer>
+  </div>
+
+  <script src="assets/js/skhps-runtime.js"></script>
+  <script src="assets/js/ui-test.js"></script>
+</body>
+</html>

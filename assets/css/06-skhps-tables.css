@@ -1,0 +1,32 @@
+.skh-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--skh-color-border);
+  border-radius: var(--skh-radius-lg);
+  background: var(--skh-color-surface);
+}
+
+.skh-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.skh-table th,
+.skh-table td {
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid var(--skh-color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.skh-table th {
+  background: var(--skh-color-surface-soft);
+  color: var(--skh-color-text);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.skh-table tr:last-child td {
+  border-bottom: 0;
+}

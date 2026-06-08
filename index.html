@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!--
+檔案位置：skhpsv2/index.html
+時間戳記：2026-06-08 00:00 UTC+8
+用途：skhpsv2 第一階段 Portal 前台外觀測試；只展示晨會 QR 簽到入口，不連接後端。
+-->
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新光整形外科室系統 v2</title>
+  <link rel="stylesheet" href="assets/css/00-skhps-tokens.css" />
+  <link rel="stylesheet" href="assets/css/01-skhps-reset.css" />
+  <link rel="stylesheet" href="assets/css/02-skhps-base.css" />
+  <link rel="stylesheet" href="assets/css/03-skhps-layout.css" />
+  <link rel="stylesheet" href="assets/css/04-skhps-components.css" />
+  <link rel="stylesheet" href="assets/css/05-skhps-forms.css" />
+  <link rel="stylesheet" href="assets/css/06-skhps-tables.css" />
+  <link rel="stylesheet" href="assets/css/07-skhps-feedback.css" />
+  <link rel="stylesheet" href="assets/css/08-skhps-utilities.css" />
+  <link rel="stylesheet" href="assets/css/20-portal.css" />
+</head>
+<body class="portal-body">
+  <div class="skh-app-shell">
+    <header class="skh-header">
+      <div>
+        <div class="skh-eyebrow">SKHPS v2</div>
+        <h1 class="skh-page-title">新光整形外科室系統</h1>
+        <p class="skh-page-subtitle">Portal shell / CSS foundation preview</p>
+      </div>
+      <a class="skh-btn skh-btn--ghost" href="admin.html">後台</a>
+    </header>
+
+    <main class="skh-main">
+      <section class="portal-hero skh-card">
+        <div class="portal-hero__content">
+          <span class="skh-badge skh-badge--info">第一階段</span>
+          <h2>晨會 QR 簽到</h2>
+          <p>此按鈕目前只作為 UI placeholder，暫不連接舊系統或後端 API。</p>
+          <a class="skh-btn skh-btn--primary skh-btn--lg" href="#" aria-disabled="true">晨會 QR 簽到</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="skh-footer">
+      <span>skhpsv2</span>
+      <span>CSS / UI foundation</span>
+      <span>v0.1.0</span>
+    </footer>
+  </div>
+
+  <script src="assets/js/skhps-runtime.js"></script>
+  <script src="assets/js/version.js"></script>
+  <script src="assets/js/portal-main.js"></script>
+</body>
+</html>

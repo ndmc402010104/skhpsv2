@@ -1,0 +1,27 @@
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--skh-space-4);
+}
+
+.admin-tool-card {
+  display: grid;
+  gap: var(--skh-space-3);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.admin-tool-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--skh-shadow-md);
+}
+
+.admin-tool-card h2,
+.admin-tool-card p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}

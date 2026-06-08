@@ -1,0 +1,54 @@
+.ui-test-main {
+  display: grid;
+  gap: var(--skh-space-8);
+}
+
+.ui-test-section {
+  display: grid;
+  gap: var(--skh-space-4);
+}
+
+.ui-test-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--skh-space-3);
+}
+
+.ui-test-token-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--skh-space-3);
+}
+
+.ui-test-color-token {
+  min-height: 5rem;
+  padding: var(--skh-space-4);
+  border-radius: var(--skh-radius-lg);
+  display: flex;
+  align-items: end;
+  color: white;
+  font-weight: 800;
+}
+
+.ui-test-color-token--primary {
+  background: var(--skh-color-primary);
+}
+
+.ui-test-color-token--success {
+  background: var(--skh-color-success);
+}
+
+.ui-test-color-token--warning {
+  background: var(--skh-color-warning);
+}
+
+.ui-test-color-token--danger {
+  background: var(--skh-color-danger);
+}
+
+@media (max-width: 720px) {
+  .ui-test-token-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
