@@ -1,13 +1,15 @@
 # File: skhpsv2/scripts/push-v2.ps1
-# Purpose: One-stop skhpsv2 push workflow.
+# Timestamp: 2026-06-08 15:33 UTC+8
+# Purpose: One-stop skhpsv2 push workflow. GitHub Pages frontend push, then ALWAYS Apps Script backend clasp push + deploy unless -SkipAppScriptDeploy is explicitly used.
 # Flow:
-# 1. Ask all choices upfront.
+# 1. Ask version bump and commit message upfront.
 # 2. Update version.json.
 # 3. Git add / commit / push.
-# 4. Optionally clasp push + clasp deploy.
+# 4. Push Apps Script backend from apps-script/ and deploy to the configured Web App deployment ID.
 # Notes:
 # - Root folder is GitHub Pages frontend area.
 # - Apps Script files stay under apps-script/.
+# - .clasp.json must stay under apps-script/.
 # - ASCII-only script text to avoid PowerShell encoding damage.
 
 param(
@@ -395,14 +397,14 @@ try {
     }
   }
 
+  # Default rule for skhpsv2:
+  # Always push + deploy Apps Script backend after Git push.
+  # Use -SkipAppScriptDeploy only for emergency frontend-only pushes.
   if ($SkipAppScriptDeploy) {
     $shouldDeploy = $false
   }
-  elseif ($DeployAppScript) {
-    $shouldDeploy = $true
-  }
   else {
-    $shouldDeploy = Read-YesNo -Prompt "Deploy Apps Script after Git push?" -Default $false
+    $shouldDeploy = $true
   }
 
   Write-Host ""
@@ -411,7 +413,7 @@ try {
   Write-Host "  Version bump : $Bump"
   Write-Host "  New version  : $previewVersion"
   Write-Host "  Commit msg   : $Message"
-  Write-Host "  Deploy GAS   : $shouldDeploy"
+  Write-Host "  Deploy GAS   : $shouldDeploy (default always deploy unless -SkipAppScriptDeploy)"
   Write-Host ""
 
   $confirm = Read-YesNo -Prompt "Start workflow now?" -Default $true
