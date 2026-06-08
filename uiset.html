@@ -68,11 +68,45 @@
     </footer>
   </div>
 
+    <script>
+    window.markUiSetScriptLoadedFromHtml = function () {
+      var box = document.getElementById('skhps-uiset-script-health-light');
+      if (!box) return;
+
+      box.style.border = '1px solid #d1fae5';
+      box.style.background = '#ecfdf5';
+      box.style.color = '#065f46';
+      box.innerHTML =
+        '<div style="display:flex;align-items:center;gap:8px;font-weight:700;">' +
+          '<span style="width:12px;height:12px;border-radius:999px;background:#22c55e;display:inline-block;box-shadow:0 0 0 4px rgba(34,197,94,.16);"></span>' +
+          '<span>UIset Script 載入成功</span>' +
+        '</div>' +
+        '<div style="margin-top:4px;">assets/js/ui-setting-loader.js 已被瀏覽器接收到。</div>' +
+        '<div style="font-size:12px;opacity:.8;">載入時間：' + new Date().toLocaleString('zh-TW') + '</div>';
+    };
+
+    window.markUiSetScriptLoadFailedFromHtml = function () {
+      var box = document.getElementById('skhps-uiset-script-health-light');
+      if (!box) return;
+
+      box.style.border = '1px solid #fecaca';
+      box.style.background = '#fef2f2';
+      box.style.color = '#991b1b';
+      box.innerHTML =
+        '<div style="display:flex;align-items:center;gap:8px;font-weight:700;">' +
+          '<span style="width:12px;height:12px;border-radius:999px;background:#ef4444;display:inline-block;box-shadow:0 0 0 4px rgba(239,68,68,.16);"></span>' +
+          '<span>UIset Script 載入失敗</span>' +
+        '</div>' +
+        '<div style="margin-top:4px;">瀏覽器沒有成功載入 assets/js/ui-setting-loader.js。</div>' +
+        '<div style="font-size:12px;opacity:.8;">請檢查路徑、GitHub Pages 快取或 404。</div>';
+    };
+  </script>
   <script src="assets/js/skhps-runtime.js"></script>
   <script src="assets/js/skhps-route-config.js"></script>
   <script src="assets/js/skhps-router.js"></script>
   <script src="assets/js/ui-setting-route-config.js"></script>
-  <script src="assets/js/ui-setting-loader.js"></script>
+  <script src="assets/js/ui-setting-loader.js" onload="window.markUiSetScriptLoadedFromHtml && window.markUiSetScriptLoadedFromHtml()" onerror="window.markUiSetScriptLoadFailedFromHtml && window.markUiSetScriptLoadFailedFromHtml()"></script>
 </body>
 </html>
+
 
