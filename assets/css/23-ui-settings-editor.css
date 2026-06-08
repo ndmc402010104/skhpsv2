@@ -1,199 +1,595 @@
 /*
 檔案位置：skhpsv2/assets/css/23-ui-settings-editor.css
-時間戳記：2026-06-08 14:36 UTC+8
-用途：UI 設定中心前端 partial 編輯器樣式；模仿舊 UiStyle Theme Editor 的表格、控制區、preview 與 playground 呈現方式。
+時間戳記：2026-06-08 14:47 UTC+8
+用途：UI 設定中心 base.html 測試排版；先讓 GitHub 前端 partial 可視化，不處理真正 Sheet 儲存。
 */
 
-.testSection{
+.uiset-page-wrapper{
+  min-width:0;
+}
+
+.uiset-page-wrapper .testSection{
   display:grid;
-  gap:16px;
+  gap:18px;
+  min-width:0;
 }
 
-.testNote{
-  color:var(--skh-color-muted, #64748b);
-  font-weight:600;
-  line-height:1.7;
+.uiset-page-wrapper .testSection > h2{
+  margin:0 0 2px;
+  color:#0f172a;
+  font-size:22px;
+  font-weight:850;
 }
 
-.testTableScroll{
+.uiset-page-wrapper .testNote{
+  margin:0;
+  padding:14px 16px;
+  border:1px solid #dbe4ef;
+  border-radius:16px;
+  background:#f8fafc;
+  color:#475569;
+  font-size:14px;
+  font-weight:650;
+  line-height:1.8;
+}
+
+.uiset-page-wrapper .skh-alert{
+  border-radius:16px;
+}
+
+/* ===== editor table shell ===== */
+
+.uiset-page-wrapper .testTableScroll{
   width:100%;
   max-width:100%;
   overflow-x:auto;
   overflow-y:visible;
   -webkit-overflow-scrolling:touch;
-  border:1px solid var(--skh-border-color, #cbd5e1);
-  border-radius:12px;
-  background:#fff;
-  margin-top:12px;
-  margin-bottom:20px;
-}
-
-.testTable{
-  min-width:1120px;
-  table-layout:auto;
-  width:100%;
-  border-collapse:collapse;
-}
-
-.testTable th,
-.testTable td{
-  padding:14px;
-  border-bottom:1px solid #e2e8f0;
-  vertical-align:top;
-  text-align:left;
-}
-
-.testTable th{
-  background:#f8fafc;
-  color:#334155;
-  font-size:13px;
-  font-weight:800;
-}
-
-.testTable .colUsage{width:18%;}
-.testTable .colDemo{width:18%;}
-.testTable .colControl{width:44%;}
-.testTable .colCss{width:20%;}
-
-.themeControlGrid{
-  display:grid;
-  gap:10px;
-  min-width:0;
-}
-
-.themeControlRow{
-  display:grid;
-  grid-template-columns:minmax(88px,126px) minmax(0,1fr);
-  align-items:start;
-  gap:10px;
-  min-width:0;
-}
-
-.themeControlRow label{
-  font-size:13px;
-  font-weight:800;
-  color:#334155;
-  min-width:0;
-  padding-top:8px;
-}
-
-.themeField{
-  min-width:0;
-  width:100%;
-  display:grid;
-  gap:6px;
-}
-
-.themeField input,
-.themeField select{
-  min-width:0;
-  width:100%;
-  height:36px;
-  padding:2px 8px;
-  border:1px solid #cbd5e1;
-  border-radius:8px;
-  background:#fff;
-  box-sizing:border-box;
-  font-size:13px;
-}
-
-.themeColorBox{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 44px;
-  gap:6px;
-  align-items:center;
-  min-width:0;
-}
-
-.themeColorBox input[type="color"]{
-  width:44px;
-  height:36px;
-  padding:2px;
-}
-
-.themeCssPreview{
-  width:100%;
-  min-height:160px;
-  padding:12px;
   border:1px solid #dbe4ef;
-  border-radius:10px;
-  font-family:monospace;
-  font-size:12px;
-  resize:vertical;
-  box-sizing:border-box;
+  border-radius:18px;
+  background:#ffffff;
+  box-shadow:0 12px 30px rgba(15,23,42,.07);
+  margin:0;
+}
+
+.uiset-page-wrapper .testTable{
+  width:100%;
+  min-width:980px;
+  border-collapse:separate;
+  border-spacing:0;
+  table-layout:fixed;
+  background:#ffffff;
+}
+
+.uiset-page-wrapper .testTable th{
+  padding:13px 14px;
+  border-bottom:1px solid #dbe4ef;
   background:#f8fafc;
   color:#334155;
-  opacity:1;
-  overflow:auto;
+  font-size:13px;
+  font-weight:850;
+  text-align:left;
+  white-space:nowrap;
 }
 
-.themeCssPreview:disabled{
-  opacity:1;
-  cursor:not-allowed;
+.uiset-page-wrapper .testTable td{
+  padding:16px 14px;
+  border-bottom:1px solid #eef2f7;
+  background:#ffffff;
+  color:#334155;
+  font-size:13px;
+  line-height:1.65;
+  vertical-align:top;
 }
 
-.playgroundPanel{
+.uiset-page-wrapper .testTable tr:last-child td{
+  border-bottom:0;
+}
+
+.uiset-page-wrapper .testTable tbody tr:hover td{
+  background:#fbfdff;
+}
+
+.uiset-page-wrapper .testTable .colUsage{width:22%;}
+.uiset-page-wrapper .testTable .colDemo{width:22%;}
+.uiset-page-wrapper .testTable .colControl{width:36%;}
+.uiset-page-wrapper .testTable .colCss{width:20%;}
+
+/* 壓掉舊 UiStyleTest 的硬 min-width，避免右側內容爆掉 */
+.uiset-page-wrapper .testTable td:nth-child(2),
+.uiset-page-wrapper .testTable th:nth-child(2),
+.uiset-page-wrapper .testTable td:nth-child(3),
+.uiset-page-wrapper .testTable th:nth-child(3),
+.uiset-page-wrapper .testTable td:nth-child(4),
+.uiset-page-wrapper .testTable th:nth-child(4){
+  min-width:0 !important;
+}
+
+.uiset-page-wrapper .testTable td:first-child strong{
+  display:block;
+  margin-bottom:6px;
+  color:#0f172a;
+  font-size:14px;
+  font-weight:850;
+}
+
+.uiset-page-wrapper .skh-muted{
+  color:#64748b;
+}
+
+/* ===== preview ===== */
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-card,
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-surface,
+.uiset-page-wrapper #basePlaygroundPreview{
+  border:1px solid #dbe4ef;
+  border-radius:16px;
+  background:#ffffff;
+  box-shadow:0 8px 20px rgba(15,23,42,.06);
+}
+
+.uiset-page-wrapper .skh-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+
+.uiset-page-wrapper .skh-stack{
+  display:grid;
+  gap:10px;
+}
+
+.uiset-page-wrapper .skh-code,
+.uiset-page-wrapper code{
+  display:inline-block;
+  max-width:100%;
+  padding:2px 7px;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#344f9f;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  font-size:12px;
+  line-height:1.5;
+  word-break:break-word;
+}
+
+/* ===== controls ===== */
+
+.uiset-page-wrapper .themeControlGrid{
   display:grid;
   gap:12px;
   min-width:0;
 }
 
-.playgroundGroup{
+.uiset-page-wrapper .themeControlRow{
+  display:grid;
+  grid-template-columns:112px minmax(0,1fr);
+  gap:10px;
+  align-items:start;
+  min-width:0;
+  padding:10px;
+  border:1px solid #eef2f7;
+  border-radius:14px;
+  background:#fbfdff;
+}
+
+.uiset-page-wrapper .themeControlRow label{
+  min-width:0;
+  padding-top:7px;
+  color:#334155;
+  font-size:12px;
+  font-weight:850;
+  line-height:1.4;
+}
+
+.uiset-page-wrapper .themeField{
+  display:grid;
+  gap:6px;
+  min-width:0;
+  width:100%;
+}
+
+.uiset-page-wrapper .themeField input,
+.uiset-page-wrapper .themeField select{
+  width:100%;
+  min-width:0;
+  height:36px;
+  padding:4px 9px;
+  border:1px solid #cbd5e1;
+  border-radius:10px;
+  background:#ffffff;
+  color:#0f172a;
+  box-sizing:border-box;
+  font-size:13px;
+  outline:none;
+}
+
+.uiset-page-wrapper .themeField input:focus,
+.uiset-page-wrapper .themeField select:focus{
+  border-color:#344f9f;
+  box-shadow:0 0 0 3px rgba(52,79,159,.12);
+}
+
+.uiset-page-wrapper .themeColorBox{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 44px;
+  gap:8px;
+  align-items:center;
+  min-width:0;
+}
+
+.uiset-page-wrapper .themeColorBox input[type="color"]{
+  width:44px;
+  height:36px;
+  padding:2px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.uiset-page-wrapper .themeSplit2{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 72px;
+  gap:8px;
+  min-width:0;
+}
+
+.uiset-page-wrapper .themeShadowBox{
+  display:grid;
+  gap:8px;
+  min-width:0;
+}
+
+.uiset-page-wrapper .themeShadowGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  min-width:0;
+}
+
+.uiset-page-wrapper .themeTokenHelp{
+  grid-column:2;
+  margin-top:-4px;
+  color:#64748b;
+  font-size:12px;
+  line-height:1.5;
+}
+
+/* ===== css textarea ===== */
+
+.uiset-page-wrapper .themeCssPreview{
+  width:100%;
+  min-height:150px;
+  max-height:260px;
+  padding:12px;
+  border:1px solid #dbe4ef;
+  border-radius:14px;
+  background:#f8fafc;
+  color:#334155;
+  opacity:1;
+  overflow:auto;
+  resize:vertical;
+  box-sizing:border-box;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  font-size:12px;
+  line-height:1.55;
+}
+
+.uiset-page-wrapper .themeCssPreview:disabled,
+.uiset-page-wrapper .themeControlRow input:disabled,
+.uiset-page-wrapper .themeControlRow select:disabled{
+  opacity:1;
+  cursor:not-allowed;
+}
+
+/* ===== playground ===== */
+
+.uiset-page-wrapper .playgroundPanel{
+  display:grid;
+  gap:12px;
+  min-width:0;
+}
+
+.uiset-page-wrapper .playgroundGroup{
   display:flex;
   flex-wrap:wrap;
   align-items:center;
   gap:8px;
   min-width:0;
+  padding:10px;
+  border:1px solid #eef2f7;
+  border-radius:14px;
+  background:#fbfdff;
 }
 
-.playgroundLabel{
-  flex:0 0 64px;
+.uiset-page-wrapper .playgroundLabel{
+  flex:0 0 72px;
   color:#334155;
-  font-size:13px;
-  font-weight:800;
+  font-size:12px;
+  font-weight:850;
 }
 
-@media(max-width:900px){
-  .testTable{
-    min-width:1180px;
-  }
+/* ===== buttons compatibility ===== */
 
-  .testTable th:first-child,
-  .testTable td:first-child{
-    position:sticky;
-    left:0;
-    z-index:2;
-    background:#fff;
-    box-shadow:6px 0 10px rgba(15,23,42,.04);
-  }
-
-  .testTable th:first-child{
-    background:#f8fafc;
-    z-index:3;
-  }
+.uiset-page-wrapper .skh-btn-sm,
+.uiset-page-wrapper .skh-btn--sm{
+  min-height:30px;
+  padding:5px 10px;
+  border-radius:999px;
+  font-size:12px;
 }
 
-@media(max-width:640px){
-  .themeControlRow{
-    grid-template-columns:1fr;
-  }
-
-  .playgroundLabel{
-    flex:1 0 100%;
-  }
+.uiset-page-wrapper .skh-btn-selected{
+  box-shadow:0 0 0 3px rgba(52,79,159,.14);
 }
 
-.testTableScroll::-webkit-scrollbar{
+/* ===== loading / status ===== */
+
+.uiset-page-wrapper #baseEditorRoot{
+  position:relative;
+  min-height:220px;
+}
+
+.uiset-page-wrapper #baseEditorRoot.is-theme-loading{
+  display:grid;
+  place-items:center;
+}
+
+.uiset-page-wrapper #baseEditorRoot.is-theme-loading > :not(.themeLoadingCard){
+  display:none;
+}
+
+.uiset-page-wrapper .themeLoadingCard{
+  width:min(420px,100%);
+  display:grid;
+  justify-items:center;
+  gap:14px;
+  padding:30px 28px;
+  border:1px solid #dbe4ef;
+  border-radius:18px;
+  background:#ffffff;
+  box-shadow:0 14px 34px rgba(15,23,42,.08);
+  box-sizing:border-box;
+  color:#64748b;
+}
+
+.uiset-page-wrapper .themeLoadingSpinner{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  border:4px solid #dbeafe;
+  border-top-color:#2563eb;
+  animation:themeSpin .75s linear infinite;
+}
+
+.uiset-page-wrapper .themeLoadingTitle{
+  font-weight:850;
+  color:#334155;
+}
+
+.uiset-page-wrapper .themeLoadingBar{
+  width:100%;
+  height:6px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#e2e8f0;
+}
+
+.uiset-page-wrapper .themeLoadingBar::before{
+  content:"";
+  display:block;
+  width:42%;
+  height:100%;
+  border-radius:999px;
+  background:#2563eb;
+  animation:themeBar 1.15s ease-in-out infinite;
+}
+
+.uiset-page-wrapper #baseThemeStatus{
+  padding:12px 14px;
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  background:#f8fafc;
+}
+
+/* ===== scrollbar ===== */
+
+.uiset-page-wrapper .testTableScroll::-webkit-scrollbar{
   height:14px;
 }
 
-.testTableScroll::-webkit-scrollbar-thumb{
+.uiset-page-wrapper .testTableScroll::-webkit-scrollbar-thumb{
   background:#94a3b8;
   border-radius:999px;
   border:3px solid #f8fafc;
 }
 
-.testTableScroll::-webkit-scrollbar-track{
+.uiset-page-wrapper .testTableScroll::-webkit-scrollbar-track{
   background:#f1f5f9;
   border-radius:999px;
+}
+
+/* ===== animation ===== */
+
+@keyframes themeSpin{
+  to{transform:rotate(360deg);}
+}
+
+@keyframes themeBar{
+  0%{transform:translateX(-120%);}
+  55%{transform:translateX(80%);}
+  100%{transform:translateX(240%);}
+}
+
+/* ===== responsive ===== */
+
+@media(max-width:1100px){
+  .uiset-page-wrapper .testTable{
+    min-width:920px;
+  }
+
+  .uiset-page-wrapper .themeShadowGrid{
+    grid-template-columns:minmax(0,1fr);
+  }
+}
+
+@media(max-width:900px){
+  .uiset-page-wrapper .testTable{
+    min-width:860px;
+  }
+
+  .uiset-page-wrapper .testTable th:first-child,
+  .uiset-page-wrapper .testTable td:first-child{
+    position:sticky;
+    left:0;
+    z-index:3;
+    background:#ffffff;
+    box-shadow:8px 0 14px rgba(15,23,42,.05);
+  }
+
+  .uiset-page-wrapper .testTable th:first-child{
+    z-index:5;
+    background:#f8fafc;
+  }
+}
+
+@media(max-width:640px){
+  .uiset-page-wrapper .testSection{
+    gap:14px;
+  }
+
+  .uiset-page-wrapper .testNote{
+    padding:12px;
+    font-size:13px;
+  }
+
+  .uiset-page-wrapper .testTable{
+    min-width:780px;
+  }
+
+  .uiset-page-wrapper .themeControlRow{
+    grid-template-columns:1fr;
+  }
+
+  .uiset-page-wrapper .themeTokenHelp{
+    grid-column:1;
+  }
+
+  .uiset-page-wrapper .playgroundLabel{
+    flex:1 0 100%;
+  }
+
+  .uiset-page-wrapper .themeCssPreview{
+    min-height:120px;
+  }
+}
+
+/* =========================================================
+   時間戳記：2026-06-08 14:51 UTC+8
+   用途：恢復基礎模式下方表格「演示」欄；
+   上方 Live Demo 已移除，演示回到原本表格欄位。
+========================================================= */
+
+.uiset-page-wrapper .testTable th:nth-child(2),
+.uiset-page-wrapper .testTable td:nth-child(2){
+  display:table-cell !important;
+}
+
+.uiset-page-wrapper .testTable .colUsage{
+  width:18% !important;
+}
+
+.uiset-page-wrapper .testTable .colDemo{
+  width:18% !important;
+}
+
+.uiset-page-wrapper .testTable .colControl{
+  width:44% !important;
+}
+
+.uiset-page-wrapper .testTable .colCss{
+  width:20% !important;
+}
+
+.uiset-page-wrapper .testTable{
+  min-width:980px !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2),
+.uiset-page-wrapper .testTable th:nth-child(2){
+  min-width:150px !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(3),
+.uiset-page-wrapper .testTable th:nth-child(3){
+  min-width:360px !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(4),
+.uiset-page-wrapper .testTable th:nth-child(4){
+  min-width:220px !important;
+}
+
+/* =========================================================
+   時間戳記：2026-06-08 14:52 UTC+8
+   用途：讓下方表格「演示」欄真的吃 CSS variables；
+   補舊 UiStyleTest class 與 skhpsv2 class 的相容樣式。
+========================================================= */
+
+.uiset-page-wrapper .testTable td:nth-child(2){
+  color:var(--skh-page-text, #0f172a) !important;
+  font-family:var(--skh-font-family, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
+  font-size:var(--skh-font-size, 14px) !important;
+  line-height:var(--skh-line-height, 1.6) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-text-primary{
+  color:var(--skh-primary, #344f9f) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-text-success{
+  color:var(--skh-success, #15803d) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-text-warning{
+  color:var(--skh-warning, #b45309) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-text-danger{
+  color:var(--skh-danger, #b42318) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-muted{
+  color:var(--skh-page-muted, #64748b) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-surface,
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-card{
+  background:var(--skh-surface-bg, #ffffff) !important;
+  border:1px solid var(--skh-surface-border, #cbd5e1) !important;
+  border-radius:var(--skh-radius, 10px) !important;
+  box-shadow:var(--skh-surface-shadow, 0 8px 24px rgba(15,23,42,.06)) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-row{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:center !important;
+  gap:var(--skh-space-sm, 8px) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-stack{
+  display:grid !important;
+  gap:var(--skh-space-md, 12px) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-code,
+.uiset-page-wrapper .testTable td:nth-child(2) code{
+  background:var(--skh-primary-soft, #eef3ff) !important;
+  color:var(--skh-primary, #344f9f) !important;
+  border-radius:var(--skh-radius-sm, 6px) !important;
+}
+
+.uiset-page-wrapper .testTable td:nth-child(2) .skh-btn{
+  transition:var(--skh-transition, .18s ease) !important;
 }

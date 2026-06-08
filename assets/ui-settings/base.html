@@ -1,169 +1,4083 @@
 <!--
 檔案位置：skhpsv2/assets/ui-settings/base.html
-時間戳記：2026-06-08 14:36 UTC+8
-用途：skhpsv2 UI 設定中心「基礎模式」前端 partial；由 GitHub 前端 loader 非同步載入，不再依賴 apps-script/UiSettingBase.html。
--->
+時間戳記：2026-06-08 14:40 UTC+8
+用途：skhpsv2 UI 設定中心「基礎模式」前端 partial；顯示與編輯 00_基礎 Sheet 的 Brand / Page / Surface / Radius / Spacing / Font / Motion / Layout tokens。初次 render 後會先套 fallback，再自動讀取 Sheet 設定覆蓋，避免 color input 停在瀏覽器預設 #000000。
 
+依賴後端檔案：
+- 共用設定檔/UI設定/00_基礎/UiStyleCssSetting.gs
+
+依賴後端函式：
+- getBaseCssSettings()：讀取目前系統設定。
+- getBaseDefaultCssSettings()：讀取 default 設定。
+- saveBaseCssSetting(className, property, value)：儲存目前系統設定。
+- saveBaseDefaultCssSetting(className, property, value)：儲存新的 default 設定。
+
+初始化流程：
+1. bootBaseEditor()
+2. render() 建立編輯器 DOM。
+3. init() 建立前端 state。
+4. bind() 綁定按鈕、input、CSS textarea 事件。
+5. applyLoaded(localThemeData(), localThemeData()) 先套本頁 fallback，讓色票立即不是 #000000。
+6. loadBaseTheme() 呼叫後端 getBaseCssSettings() / getBaseDefaultCssSettings()。
+7. applyLoaded(currentData, defaultData) 將 Sheet 設定寫入 state、CSS variables、color input、CSS preview。
+8. dispatchUiStyleReady() 發出 skh-ui-style-ready / skh-ui-test-ready，通知父頁「Sheet Theme 已套用，可以顯示畫面」。
+
+2026-06-01 除錯紀錄：
+- 症狀：UiStyleTest 初次載入時 Brand 色票全為 #000000，按下「編輯」後才變成 Sheet 顏色。
+- 根因：本頁只定義 window.loadBaseTheme()，但 render 後沒有主動呼叫。
+- 第一階段修正：bootBaseEditor() render/init/bind 後，先套 fallback，再主動呼叫 window.loadBaseTheme()。
+- 第二階段修正：父頁 skh-ui-test-page.html 會等本頁發出 skh-ui-test-ready 才 reveal，避免使用者看到 fallback → Sheet 顏色跳動。
+- 若復發：優先檢查 bootBaseEditor() 是否執行，以及 loadBaseTheme() 是否成功進到 applyLoaded() / writeInputs() / dispatchUiStyleReady()。
+-->
 <section class="testSection">
+
   <h2></h2>
 
   <p class="testNote">
-    基礎模式 Theme Editor：用來管理全站 Brand / Page / Surface / Radius / Spacing / Font / Motion / Layout tokens。
-    這一版先建立 GitHub 前端 partial 呈現方式，後續再接 Apps Script API 與 Sheet 設定。
+    基礎模式 Theme Editor：用和 Button Builder 相同的設計思維管理全站基礎 token。Brand / Page / Surface / Radius / Spacing / Font / Motion / Layout 都可編輯、復原、恢復 default、設為新 default、儲存。
   </p>
 
-  <div class="skh-alert skh-alert--info">
-    <strong>目前階段：</strong>
-    前端 partial 已從 <code>assets/ui-settings/base.html</code> 載入。
-    先確認 AJAX-like loader、標題覆蓋、版面呈現與 ready event；後續再接 Sheet 讀寫。
-  </div>
+  <div id="baseEditorRoot"></div>
+
+  <h3 class="testSubhead">H. 基礎樣式 Playground</h3>
 
   <div class="testTableScroll">
     <table class="testTable">
       <thead>
         <tr>
-          <th class="colUsage">用途 / Token</th>
+          <th class="colUsage">用途 / CSS</th>
           <th class="colDemo">演示</th>
           <th class="colControl">控制</th>
-          <th class="colCss">目前 CSS / HTML</th>
+          <th class="colCss">目前 HTML</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>
-            <strong>A. Brand / 品牌色</strong><br>
-            <span class="skh-muted">主要色、成功、警告、危險色。</span>
-          </td>
-          <td>
-            <div class="skh-row">
-              <span class="skh-badge skh-badge--info">Primary</span>
-              <span class="skh-text-success">Success</span>
-              <span class="skh-text-warning">Warning</span>
-              <span class="skh-text-danger">Danger</span>
+            <strong>基礎樣式自由組合</strong><br>
+            測試 surface、text、spacing、row / stack 的組合。<br>
+            <div style="margin-top:12px;">
+              <code>.skh-surface</code><br>
+              <code>.skh-row / .skh-stack</code>
             </div>
           </td>
           <td>
-            <div class="themeControlGrid">
-              <div class="themeControlRow">
-                <label>Primary</label>
-                <div class="themeField themeColorBox">
-                  <input type="text" value="#344f9f" />
-                  <input type="color" value="#344f9f" />
-                </div>
-              </div>
-              <div class="themeControlRow">
-                <label>Success</label>
-                <div class="themeField themeColorBox">
-                  <input type="text" value="#15803d" />
-                  <input type="color" value="#15803d" />
-                </div>
-              </div>
-            </div>
-          </td>
-          <td>
-            <textarea class="themeCssPreview" readonly disabled>:root{
-  --skh-color-primary:#344f9f;
-  --skh-color-success:#15803d;
-}</textarea>
-          </td>
-        </tr>
-
-        <tr>
-          <td>
-            <strong>B. Surface / 卡片表面</strong><br>
-            <span class="skh-muted">背景、邊框、陰影與圓角。</span>
-          </td>
-          <td>
-            <div class="skh-card" style="padding:16px;">
-              <strong>Preview Card</strong><br>
-              <span class="skh-muted">這是卡片表面預覽。</span>
-            </div>
-          </td>
-          <td>
-            <div class="themeControlGrid">
-              <div class="themeControlRow">
-                <label>Radius</label>
-                <div class="themeField">
-                  <input type="text" value="10px" />
-                </div>
-              </div>
-              <div class="themeControlRow">
-                <label>Shadow</label>
-                <div class="themeField">
-                  <select>
-                    <option>md</option>
-                    <option>sm</option>
-                    <option>lg</option>
-                    <option>none</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </td>
-          <td>
-            <textarea class="themeCssPreview" readonly disabled>.skh-card{
-  border-radius:10px;
-  box-shadow:var(--skh-shadow-md);
-}</textarea>
-          </td>
-        </tr>
-
-        <tr>
-          <td>
-            <strong>C. Playground</strong><br>
-            <span class="skh-muted">測試 surface、文字、spacing、row / stack 的組合。</span>
-          </td>
-          <td>
-            <div id="basePlaygroundPreview" class="skh-card skh-stack" style="padding:16px;">
+            <div id="basePlaygroundPreview" class="skh-surface skh-stack" style="padding:16px;">
               <strong>Playground Card</strong>
               <span class="skh-muted">這是基礎樣式組合。</span>
               <div class="skh-row">
-                <span class="skh-code">.skh-card</span>
+                <span class="skh-code">.skh-surface</span>
                 <span class="skh-code">.skh-stack</span>
               </div>
             </div>
           </td>
           <td>
             <div class="playgroundPanel">
-              <div class="playgroundGroup">
+              <div class="playgroundGroup" data-base-free-group="surface">
                 <div class="playgroundLabel">Surface</div>
-                <button class="skh-btn skh-btn--primary skh-btn--sm">Surface</button>
-                <button class="skh-btn skh-btn--secondary skh-btn--sm">None</button>
+                <button class="skh-btn skh-btn-selected skh-btn-sm" data-base-free-value="skh-surface">Surface</button>
+                <button class="skh-btn skh-btn-secondary skh-btn-sm" data-base-free-value="">None</button>
               </div>
 
-              <div class="playgroundGroup">
+              <div class="playgroundGroup" data-base-free-group="layout">
                 <div class="playgroundLabel">Layout</div>
-                <button class="skh-btn skh-btn--primary skh-btn--sm">Stack</button>
-                <button class="skh-btn skh-btn--secondary skh-btn--sm">Row</button>
+                <button class="skh-btn skh-btn-selected skh-btn-sm" data-base-free-value="skh-stack">Stack</button>
+                <button class="skh-btn skh-btn-secondary skh-btn-sm" data-base-free-value="skh-row">Row</button>
+              </div>
+
+              <div class="playgroundGroup" data-base-free-group="tone">
+                <div class="playgroundLabel">Tone</div>
+                <button class="skh-btn skh-btn-selected skh-btn-sm" data-base-free-value="">Default</button>
+                <button class="skh-btn skh-btn-secondary skh-btn-sm" data-base-free-value="skh-muted">Muted</button>
+                <button class="skh-btn skh-btn-secondary skh-btn-sm" data-base-free-value="skh-text-primary">Primary</button>
+                <button class="skh-btn skh-btn-secondary skh-btn-sm" data-base-free-value="skh-text-danger">Danger</button>
+                <button class="skh-btn skh-btn-secondary skh-btn-sm" data-base-free-value="skh-text-success">Success</button>
               </div>
             </div>
           </td>
           <td>
-            <textarea class="themeCssPreview" readonly disabled><div class="skh-card skh-stack">
-  Playground Card
-</div></textarea>
+            <textarea id="basePlaygroundHtml" class="themeCssPreview" readonly disabled></textarea>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div id="baseThemeStatus" style="margin-top:16px;color:#64748b;font-weight:600;">
-    前端 partial 已載入。下一步再接 Sheet 設定。
-  </div>
+  <div id="baseThemeStatus" style="margin-top:16px;color:#64748b;font-weight:600;"></div>
+
 </section>
+
+<style>
+.testTableScroll{
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:visible;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid #cbd5e1;
+  border-radius:10px;
+  background:#fff;
+  margin-top:12px;
+  margin-bottom:20px;
+}
+
+.testTableScroll > .testTable{
+  border:0;
+  margin:0;
+}
+
+.testTable{
+  min-width:1120px;
+  table-layout:auto;
+  width:100%;
+}
+
+.testTable .colUsage{width:18%;}
+.testTable .colDemo{width:16%;}
+.testTable .colControl{width:46%;}
+.testTable .colCss{width:20%;}
+
+.testTable td:nth-child(3),
+.testTable th:nth-child(3){
+  min-width:420px;
+}
+
+.testTable td:nth-child(2),
+.testTable th:nth-child(2){
+  min-width:150px;
+}
+
+.testTable td:nth-child(4),
+.testTable th:nth-child(4){
+  min-width:220px;
+}
+
+.testTable td{
+  vertical-align:top;
+}
+
+.themeControlGrid{
+  display:grid;
+  gap:10px;
+  min-width:0;
+}
+
+#baseEditorRoot{
+  position:relative;
+  min-height:280px;
+}
+
+#baseEditorRoot.is-theme-loading{
+  display:grid;
+  place-items:center;
+}
+
+#baseEditorRoot.is-theme-loading > :not(.themeLoadingCard){
+  display:none;
+}
+
+.themeLoadingCard{
+  width:min(380px,100%);
+  display:grid;
+  justify-items:center;
+  gap:14px;
+  padding:30px 28px;
+  border:1px solid #dbe4ef;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 14px 34px rgba(15,23,42,.08);
+  box-sizing:border-box;
+  color:#64748b;
+}
+
+.themeLoadingSpinner{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  border:4px solid #dbeafe;
+  border-top-color:#2563eb;
+  animation:themeSpin .75s linear infinite;
+}
+
+.themeLoadingTitle{
+  font-weight:800;
+  color:#334155;
+}
+
+.themeLoadingTitle::after{
+  content:"";
+  display:inline-block;
+  width:1.5em;
+  text-align:left;
+  animation:themeDots 1.2s steps(4,end) infinite;
+}
+
+.themeLoadingNote{
+  font-size:13px;
+  line-height:1.5;
+  text-align:center;
+}
+
+.themeLoadingBar{
+  width:100%;
+  height:6px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#e2e8f0;
+}
+
+.themeLoadingBar::before{
+  content:"";
+  display:block;
+  width:42%;
+  height:100%;
+  border-radius:999px;
+  background:#2563eb;
+  animation:themeBar 1.15s ease-in-out infinite;
+}
+
+#baseThemeStatus.is-loading::before{
+  content:"";
+  display:inline-block;
+  width:14px;
+  height:14px;
+  margin-right:8px;
+  border-radius:50%;
+  border:2px solid #dbeafe;
+  border-top-color:#2563eb;
+  vertical-align:-2px;
+  animation:themeSpin .75s linear infinite;
+}
+
+#baseThemeStatus.is-loading::after{
+  content:"";
+  display:inline-block;
+  width:1.5em;
+  text-align:left;
+  animation:themeDots 1.2s steps(4,end) infinite;
+}
+
+#baseEditorRoot [data-action-pending="1"],
+#baseEditorRoot .is-action-loading{
+  position:relative;
+  cursor:wait;
+  opacity:.86;
+}
+
+#baseEditorRoot [data-action-pending="1"]::before,
+#baseEditorRoot .is-action-loading::before{
+  content:"";
+  display:inline-block;
+  width:14px;
+  height:14px;
+  margin-right:7px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.45);
+  border-top-color:currentColor;
+  vertical-align:-2px;
+  animation:themeSpin .75s linear infinite;
+}
+
+@keyframes themeSpin{
+  to{transform:rotate(360deg);}
+}
+
+@keyframes themeDots{
+  0%{content:"";}
+  25%{content:".";}
+  50%{content:"..";}
+  75%,
+  100%{content:"...";}
+}
+
+@keyframes themeBar{
+  0%{transform:translateX(-120%);}
+  55%{transform:translateX(80%);}
+  100%{transform:translateX(240%);}
+}
+
+.themeControlRow{
+  display:grid;
+  grid-template-columns:minmax(88px,126px) minmax(0,1fr);
+  align-items:start;
+  gap:10px;
+  min-width:0;
+}
+
+.themeControlRow label{
+  font-size:13px;
+  font-weight:800;
+  color:#334155;
+  min-width:0;
+  padding-top:8px;
+}
+
+.themeField{
+  min-width:0;
+  width:100%;
+  display:grid;
+  gap:6px;
+}
+
+.themeField input,
+.themeField select{
+  min-width:0;
+  width:100%;
+  height:36px;
+  padding:2px 8px;
+  border:1px solid #cbd5e1;
+  border-radius:8px;
+  background:#fff;
+  opacity:1;
+  box-sizing:border-box;
+  font-size:13px;
+}
+
+.themeField input[type="text"]{
+  font-family:monospace;
+}
+
+.themeSplit2{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 72px;
+  gap:6px;
+  align-items:center;
+  min-width:0;
+}
+
+.themeColorBox{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 44px;
+  gap:6px;
+  align-items:center;
+  min-width:0;
+}
+
+.themeColorBox input[type="color"]{
+  width:44px;
+  height:36px;
+  padding:2px;
+}
+
+.themeShadowBox{
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+
+.themeShadowGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  min-width:0;
+}
+
+.themeTokenHelp{
+  grid-column:2;
+  color:#64748b;
+  font-size:12px;
+  line-height:1.4;
+  margin-top:-4px;
+}
+
+.themeCssPreview{
+  width:100%;
+  min-height:180px;
+  padding:12px;
+  border:1px solid #dbe4ef;
+  border-radius:10px;
+  font-family:monospace;
+  font-size:12px;
+  resize:vertical;
+  box-sizing:border-box;
+  background:#f8fafc;
+  opacity:1;
+  overflow:auto;
+}
+
+.themeControlRow input:disabled,
+.themeControlRow select:disabled,
+.themeCssPreview:disabled{
+  opacity:1;
+  cursor:not-allowed;
+}
+
+.playgroundPanel{
+  display:grid;
+  gap:12px;
+  min-width:0;
+}
+
+.playgroundGroup{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+
+.playgroundLabel{
+  flex:0 0 64px;
+  color:#334155;
+  font-size:13px;
+  font-weight:800;
+}
+
+@media(max-width:1200px){
+  .testTable td:nth-child(3),
+  .testTable th:nth-child(3){
+    min-width:360px;
+  }
+
+  .themeShadowGrid{
+    grid-template-columns:minmax(0,1fr);
+  }
+}
+
+@media(max-width:900px){
+  .testTable{
+    min-width:1180px;
+  }
+
+  .testTable th:first-child,
+  .testTable td:first-child{
+    position:sticky;
+    left:0;
+    z-index:2;
+    background:#fff;
+    box-shadow:6px 0 10px rgba(15,23,42,.04);
+  }
+
+  .testTable th:first-child{
+    background:#f8fafc;
+    z-index:3;
+  }
+}
+
+@media(max-width:640px){
+  .testTable td:nth-child(3),
+  .testTable th:nth-child(3){
+    min-width:320px;
+  }
+
+  .themeControlRow{
+    grid-template-columns:1fr;
+  }
+
+  .themeTokenHelp{
+    grid-column:1;
+  }
+
+  .playgroundLabel{
+    flex:1 0 100%;
+  }
+}
+
+.testTableScroll::-webkit-scrollbar{
+  height:14px;
+}
+
+.testTableScroll::-webkit-scrollbar-thumb{
+  background:#94a3b8;
+  border-radius:999px;
+  border:3px solid #f8fafc;
+}
+
+.testTableScroll::-webkit-scrollbar-track{
+  background:#f1f5f9;
+  border-radius:999px;
+}
+</style>
 
 <script>
 (function(){
+
+  /*
+    UiStyleTest 前端責任邊界
+
+    本檔負責：
+    - 建立 Theme Editor 畫面。
+    - 從 00_基礎 Sheet 讀取 current/default token。
+    - 將 token 寫入 CSS variables、表單 input、CSS preview。
+    - 儲存 current/default token。
+
+    本檔不負責：
+    - 左側頁面選單。
+    - 動態 include 其他測試頁。
+    - 跨元件全域 ThemeLoader 的 button/form/table 設定。
+
+    資料流：
+    00_基礎 Sheet
+      ↓ UiStyleCssSetting.gs
+    getBaseCssSettings() / getBaseDefaultCssSettings()
+      ↓ google.script.run
+    loadBaseTheme()
+      ↓
+    applyLoaded()
+      ↓
+    writeInputs() + writeCss() + setVars()
+  */
+
+  var SHADOW_PRESETS = {
+    none:'none',
+    sm:'0 2px 6px rgba(15,23,42,.06)',
+    md:'0 8px 20px rgba(15,23,42,.08)',
+    lg:'0 12px 30px rgba(15,23,42,.12)',
+    xl:'0 18px 45px rgba(15,23,42,.16)'
+  };
+
+  var RADIUS_PRESETS = {
+    none:'0px',
+    sm:'6px',
+    md:'10px',
+    lg:'14px',
+    xl:'18px',
+    pill:'999px'
+  };
+
+  var UNIT_OPTIONS = ['px','rem','em','%','vh','vw'];
+
+  var CONFIG = [
+    {
+      section:'A. Brand / 品牌色',
+      key:'brand',
+      className:'brand',
+      selector:':root brand tokens',
+      label:'品牌核心色',
+      desc:'全站主要語意色，Button / Alert / Badge 後續都會跟著這些 token。',
+      fallback:{
+        primary:'#344f9f',
+        primarySoft:'#eef3ff',
+        danger:'#b42318',
+        success:'#15803d',
+        warning:'#b45309'
+      },
+      props:[
+        {key:'primary',label:'primary',type:'color'},
+        {key:'primarySoft',label:'primary soft',type:'color'},
+        {key:'danger',label:'danger',type:'color'},
+        {key:'success',label:'success',type:'color'},
+        {key:'warning',label:'warning',type:'color'}
+      ],
+      preview:[
+        ['Primary','skh-text-primary'],
+        ['Danger','skh-text-danger'],
+        ['Success','skh-text-success'],
+        ['Warning','skh-text-warning']
+      ]
+    },
+    {
+      section:'B. Page / 頁面',
+      key:'page',
+      className:'page',
+      selector:'body',
+      label:'頁面基底',
+      desc:'整個網頁的背景、文字、次要文字。',
+      fallback:{
+        bg:'#f4f7fb',
+        text:'#0f172a',
+        muted:'#64748b'
+      },
+      props:[
+        {key:'bg',label:'background',type:'color'},
+        {key:'text',label:'text',type:'color'},
+        {key:'muted',label:'muted',type:'color'}
+      ],
+      preview:[
+        ['一般文字',''],
+        ['Muted','skh-muted']
+      ]
+    },
+    {
+      section:'C. Surface / 卡片表面',
+      key:'surface',
+      className:'surface',
+      selector:'.skh-surface',
+      label:'卡片表面',
+      desc:'卡片、面板、彈窗、區塊容器的共用表面樣式。',
+      fallback:{
+        bg:'#ffffff',
+        border:'#cbd5e1',
+        shadow:'0 8px 24px rgba(15,23,42,.06)'
+      },
+      props:[
+        {key:'bg',label:'background',type:'color'},
+        {key:'border',label:'border-color',type:'color'},
+        {key:'shadow',label:'shadow',type:'shadow'}
+      ],
+      previewSurface:true
+    },
+    {
+      section:'D. Radius / 圓角',
+      key:'radius',
+      className:'radius',
+      selector:':root radius tokens',
+      label:'全站圓角',
+      desc:'控制各元件預設圓角階層。',
+      fallback:{
+        base:'10px',
+        sm:'6px',
+        lg:'16px',
+        pill:'999px'
+      },
+      props:[
+        {key:'base',label:'base',type:'radius'},
+        {key:'sm',label:'sm',type:'radius'},
+        {key:'lg',label:'lg',type:'radius'},
+        {key:'pill',label:'pill',type:'radius'}
+      ],
+      previewRadius:true
+    },
+    {
+      section:'E. Spacing / 間距',
+      key:'space',
+      className:'space',
+      selector:':root spacing tokens',
+      label:'全站間距',
+      desc:'控制 gap、padding、section spacing 的階層。',
+      fallback:{
+        xs:'4px',
+        sm:'8px',
+        md:'12px',
+        lg:'16px',
+        xl:'24px'
+      },
+      props:[
+        {key:'xs',label:'xs',type:'unit',unit:'px'},
+        {key:'sm',label:'sm',type:'unit',unit:'px'},
+        {key:'md',label:'md',type:'unit',unit:'px'},
+        {key:'lg',label:'lg',type:'unit',unit:'px'},
+        {key:'xl',label:'xl',type:'unit',unit:'px'}
+      ],
+      previewSpacing:true
+    },
+    {
+      section:'F. Font / 字體',
+      key:'font',
+      className:'font',
+      selector:'body font tokens',
+      label:'全站字體',
+      desc:'控制全站字體家族、尺寸、字重、行高。',
+      fallback:{
+        family:'system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
+        size:'14px',
+        sizeSm:'13px',
+        sizeLg:'16px',
+        weight:'500',
+        weightBold:'700',
+        lineHeight:'1.6'
+      },
+      props:[
+        {key:'family',label:'font-family',type:'fontFamily'},
+        {key:'size',label:'font-size',type:'unit',unit:'px'},
+        {key:'sizeSm',label:'font-size-sm',type:'unit',unit:'px'},
+        {key:'sizeLg',label:'font-size-lg',type:'unit',unit:'px'},
+        {key:'weight',label:'font-weight',type:'fontWeight'},
+        {key:'weightBold',label:'font-bold',type:'fontWeight'},
+        {key:'lineHeight',label:'line-height',type:'number',step:'0.1'}
+      ],
+      previewFont:true
+    },
+    {
+      section:'G. Motion / 動畫',
+      key:'motion',
+      className:'motion',
+      selector:':root motion tokens',
+      label:'全站 transition',
+      desc:'控制 hover、active、狀態切換的基礎速度。',
+      fallback:{
+        duration:'.18s',
+        easing:'ease'
+      },
+      props:[
+        {key:'duration',label:'duration',type:'duration'},
+        {key:'easing',label:'easing',type:'enum',options:[
+          ['ease','ease'],
+          ['linear','linear'],
+          ['ease-in','ease-in'],
+          ['ease-out','ease-out'],
+          ['ease-in-out','ease-in-out']
+        ]}
+      ],
+      previewMotion:true
+    },
+    {
+      section:'H. Layout / 版面',
+      key:'layout',
+      className:'layout',
+      selector:'.skh-container / .skh-section',
+      label:'全站版面',
+      desc:'控制容器最大寬度、頁面 padding、區塊間距。',
+      fallback:{
+        containerMaxWidth:'1200px',
+        containerPadding:'24px',
+        sectionGap:'24px'
+      },
+      props:[
+        {key:'containerMaxWidth',label:'container max',type:'unit',unit:'px'},
+        {key:'containerPadding',label:'container padding',type:'unit',unit:'px'},
+        {key:'sectionGap',label:'section gap',type:'unit',unit:'px'}
+      ],
+      previewLayout:true
+    }
+  ];
+
+  var state = {};
+  var isBusy = false;
+  var MAX_HISTORY = 20;
+  var activeActionButton = null;
+  var resetWriteSerial = 0;
+  var pendingNativeColorInput = null;
+
+  /*
+    Native color picker action guard.
+
+    input[type="color"] 選色後若直接點「恢復 default / 復原上一動」，
+    Chrome 可能會在 action 執行後才補送 change / blur。reset 類動作要短暫忽略
+    這些晚到事件；save 類動作則先等 picker 收尾，再同步目前控制器值。
+  */
+  var actionGuard = {
+    key:null,
+    action:null,
+    suppressUntil:0
+  };
+
+  var ACTION_DELAY_MS = 40;
+  var ACTION_SUPPRESS_MS = 280;
+  var ACTION_SETTLE_TIMEOUT_MS = 320;
+
+  function getEl(id){ return document.getElementById(id); }
+
+  function kebab(v){
+    return String(v).replace(/[A-Z]/g,function(m){ return '-' + m.toLowerCase(); });
+  }
+
+  function clone(o){
+    var x = {};
+    Object.keys(o || {}).forEach(function(k){ x[k] = o[k]; });
+    return x;
+  }
+
+  function same(a,b,key){
+    return CONFIG_BY_KEY[key].props.every(function(p){
+      return String(a[p.key]) === String(b[p.key]);
+    });
+  }
+
+  function isDirty(key){ return !same(state[key].current,state[key].original,key); }
+  function isDefault(key){ return same(state[key].current,state[key].defaultValue,key); }
+  function systemIsDefault(key){ return same(state[key].original,state[key].defaultValue,key); }
+
+  function cssVar(key,prop){
+    var cfg = CONFIG_BY_KEY[key];
+    var map = {
+      brand:{
+        primary:'--skh-primary',
+        primarySoft:'--skh-primary-soft',
+        danger:'--skh-danger',
+        success:'--skh-success',
+        warning:'--skh-warning'
+      },
+      page:{
+        bg:'--skh-page-bg',
+        text:'--skh-page-text',
+        muted:'--skh-page-muted'
+      },
+      surface:{
+        bg:'--skh-surface-bg',
+        border:'--skh-surface-border',
+        shadow:'--skh-surface-shadow'
+      },
+      radius:{
+        base:'--skh-radius',
+        sm:'--skh-radius-sm',
+        lg:'--skh-radius-lg',
+        pill:'--skh-radius-pill'
+      },
+      space:{
+        xs:'--skh-space-xs',
+        sm:'--skh-space-sm',
+        md:'--skh-space-md',
+        lg:'--skh-space-lg',
+        xl:'--skh-space-xl'
+      },
+      font:{
+        family:'--skh-font-family',
+        size:'--skh-font-size',
+        sizeSm:'--skh-font-size-sm',
+        sizeLg:'--skh-font-size-lg',
+        weight:'--skh-font-weight',
+        weightBold:'--skh-font-weight-bold',
+        lineHeight:'--skh-line-height'
+      },
+      motion:{
+        duration:'--skh-transition-duration',
+        easing:'--skh-transition-easing'
+      },
+      layout:{
+        containerMaxWidth:'--skh-container-max-width',
+        containerPadding:'--skh-container-padding',
+        sectionGap:'--skh-section-gap'
+      }
+    };
+
+    return map[key] && map[key][prop]
+      ? map[key][prop]
+      : '--skh-' + cfg.className + '-' + kebab(prop);
+  }
+
+  function inputId(key,prop){ return key + '_' + prop + '_input'; }
+  function unitId(key,prop){ return key + '_' + prop + '_unit'; }
+  function modeId(key,prop){ return key + '_' + prop + '_mode'; }
+  function customId(key,prop){ return key + '_' + prop + '_custom'; }
+  function auxId(key,prop,name){ return key + '_' + prop + '_' + name; }
+  function cssId(key){ return key + '_cssPreview'; }
+
+  function parseUnitValue(value,defaultUnit){
+    value = String(value || '').trim();
+
+    if(value === '0'){
+      return {num:'0',unit:defaultUnit || 'px'};
+    }
+
+    var m = value.match(/^(-?\d+(?:\.\d+)?)([a-z%]*)$/i);
+
+    if(m){
+      return {
+        num:m[1],
+        unit:m[2] || defaultUnit || 'px'
+      };
+    }
+
+    return {
+      num:value,
+      unit:defaultUnit || 'px'
+    };
+  }
+
+  function normalizeValue(value,fallback,type){
+    value = String(value || '').trim();
+
+    if(type === 'color'){
+      if(/^#[0-9a-fA-F]{6}$/.test(value)) return value.toLowerCase();
+      if(/^#[0-9a-fA-F]{3}$/.test(value)){
+        return ('#' + value[1]+value[1] + value[2]+value[2] + value[3]+value[3]).toLowerCase();
+      }
+      if(value === 'transparent') return 'transparent';
+      if(value === 'currentColor') return 'currentColor';
+      if(/^var\(.+\)$/.test(value)) return value;
+      if(/^rgba?\(.+\)$/.test(value)) return value;
+    }
+
+    return value || fallback;
+  }
+
+  function readFromData(data,key,fallback){
+    var cfg = CONFIG_BY_KEY[key];
+    var src = data && data[cfg.className] ? data[cfg.className] : {};
+    var out = {};
+
+    cfg.props.forEach(function(p){
+      out[p.key] = normalizeValue(
+        src[p.key],
+        fallback[p.key],
+        p.type
+      );
+    });
+
+    return out;
+  }
+
+  function setVars(key,vals){
+    var cfg = CONFIG_BY_KEY[key];
+
+    cfg.props.forEach(function(p){
+      document.documentElement.style.setProperty(
+        cssVar(key,p.key),
+        vals[p.key]
+      );
+    });
+
+    if(key === 'motion'){
+      document.documentElement.style.setProperty(
+        '--skh-transition',
+        vals.duration + ' ' + vals.easing
+      );
+    }
+  }
+
+  function colorPickerFallback(value){
+    value = String(value || '');
+
+    if(/^#[0-9a-fA-F]{6}$/.test(value)) return value;
+    if(/^#[0-9a-fA-F]{3}$/.test(value)){
+      return ('#' + value[1]+value[1] + value[2]+value[2] + value[3]+value[3]).toLowerCase();
+    }
+
+    return '#ffffff';
+  }
+
+  function detectColorMode(value){
+    value = String(value || '').trim();
+
+    if(value === 'transparent') return 'transparent';
+    if(value === 'currentColor') return 'currentColor';
+    if(value === 'var(--skh-primary)') return 'systemPrimary';
+    if(/^rgba?\(.+\)$/.test(value)) return 'custom';
+    if(/^var\(.+\)$/.test(value)) return 'custom';
+    if(/^#[0-9a-fA-F]{3,6}$/.test(value)) return 'color';
+
+    return 'custom';
+  }
+
+  function shadowPresetName(value){
+    value = String(value || '').trim();
+
+    for(var key in SHADOW_PRESETS){
+      if(SHADOW_PRESETS[key] === value) return key;
+    }
+
+    return 'custom';
+  }
+
+  function radiusPresetName(value){
+    value = String(value || '').trim();
+
+    for(var key in RADIUS_PRESETS){
+      if(RADIUS_PRESETS[key] === value) return key;
+    }
+
+    return 'custom';
+  }
+
+  function parseBoxShadow(value){
+    value = String(value || '').trim();
+
+    if(value === 'none'){
+      return {
+        x:'0',
+        xUnit:'px',
+        y:'0',
+        yUnit:'px',
+        blur:'0',
+        blurUnit:'px',
+        color:'rgba(15,23,42,.08)'
+      };
+    }
+
+    var m = value.match(/^(-?\d+(?:\.\d+)?)([a-z%]*)\s+(-?\d+(?:\.\d+)?)([a-z%]*)\s+(-?\d+(?:\.\d+)?)([a-z%]*)\s+(.+)$/i);
+
+    if(m){
+      return {
+        x:m[1],
+        xUnit:m[2] || 'px',
+        y:m[3],
+        yUnit:m[4] || 'px',
+        blur:m[5],
+        blurUnit:m[6] || 'px',
+        color:m[7]
+      };
+    }
+
+    return {
+      x:'0',
+      xUnit:'px',
+      y:'8',
+      yUnit:'px',
+      blur:'24',
+      blurUnit:'px',
+      color:'rgba(15,23,42,.06)'
+    };
+  }
+
+  function parseDuration(value){
+    value = String(value || '').trim();
+
+    var m = value.match(/^(-?\d+(?:\.\d+)?)(ms|s)$/i);
+
+    if(m){
+      return {
+        num:m[1],
+        unit:m[2]
+      };
+    }
+
+    return {
+      num:'.18',
+      unit:'s'
+    };
+  }
+
+  function writeInputs(key,vals){
+    var cfg = CONFIG_BY_KEY[key];
+
+    cfg.props.forEach(function(p){
+      var input = getEl(inputId(key,p.key));
+      var unit = getEl(unitId(key,p.key));
+      var mode = getEl(modeId(key,p.key));
+      var custom = getEl(customId(key,p.key));
+
+      if(p.type === 'unit'){
+        var parsed = parseUnitValue(vals[p.key],p.unit || 'px');
+        if(input) input.value = parsed.num;
+        if(unit) unit.value = parsed.unit;
+        return;
+      }
+
+      if(p.type === 'duration'){
+        var duration = parseDuration(vals[p.key]);
+        if(input) input.value = duration.num;
+        if(unit) unit.value = duration.unit;
+        return;
+      }
+
+      if(p.type === 'number'){
+        if(input) input.value = vals[p.key];
+        return;
+      }
+
+      if(p.type === 'enum'){
+        if(input) input.value = vals[p.key];
+        return;
+      }
+
+      if(p.type === 'fontFamily'){
+        if(input) input.value = vals[p.key];
+        return;
+      }
+
+      if(p.type === 'fontWeight'){
+        if(input) input.value = vals[p.key];
+        if(mode){
+          var allowed = ['400','500','600','700','800'];
+          mode.value = allowed.indexOf(String(vals[p.key])) >= 0
+            ? String(vals[p.key])
+            : '700';
+        }
+        return;
+      }
+
+      if(p.type === 'shadow'){
+        var shadowMode = shadowPresetName(vals[p.key]);
+        if(mode) mode.value = shadowMode;
+
+        var shadow = parseBoxShadow(vals[p.key]);
+
+        var xInput = getEl(auxId(key,p.key,'x'));
+        var xUnit = getEl(auxId(key,p.key,'xUnit'));
+        var yInput = getEl(auxId(key,p.key,'y'));
+        var yUnit = getEl(auxId(key,p.key,'yUnit'));
+        var blurInput = getEl(auxId(key,p.key,'blur'));
+        var blurUnit = getEl(auxId(key,p.key,'blurUnit'));
+        var colorModeInput = getEl(auxId(key,p.key,'colorMode'));
+        var colorInput = getEl(auxId(key,p.key,'color'));
+
+        if(xInput) xInput.value = shadow.x;
+        if(xUnit) xUnit.value = shadow.xUnit;
+        if(yInput) yInput.value = shadow.y;
+        if(yUnit) yUnit.value = shadow.yUnit;
+        if(blurInput) blurInput.value = shadow.blur;
+        if(blurUnit) blurUnit.value = shadow.blurUnit;
+
+        var detected = detectColorMode(shadow.color);
+        if(colorModeInput) colorModeInput.value = detected;
+        if(colorInput) colorInput.value = colorPickerFallback(shadow.color);
+        if(custom) custom.value = shadow.color;
+
+        return;
+      }
+
+      if(p.type === 'radius'){
+        var radiusMode = radiusPresetName(vals[p.key]);
+        if(mode) mode.value = radiusMode;
+
+        var parsedRadius = parseUnitValue(vals[p.key],'px');
+
+        if(input) input.value = parsedRadius.num;
+        if(unit) unit.value = parsedRadius.unit;
+        return;
+      }
+
+      if(p.type === 'color'){
+        var colorMode = detectColorMode(vals[p.key]);
+        if(mode) mode.value = colorMode;
+
+        if(input) input.value = colorPickerFallback(vals[p.key]);
+        if(custom) custom.value = vals[p.key];
+
+        return;
+      }
+
+      if(input) input.value = vals[p.key];
+    });
+
+    updateControlVisibility(key);
+  }
+
+  function readInputs(key){
+    var cfg = CONFIG_BY_KEY[key];
+    var out = {};
+
+    cfg.props.forEach(function(p){
+      var input = getEl(inputId(key,p.key));
+      var unit = getEl(unitId(key,p.key));
+      var mode = getEl(modeId(key,p.key));
+      var custom = getEl(customId(key,p.key));
+
+      if(p.type === 'unit'){
+        out[p.key] =
+          (input ? input.value : '') +
+          (unit ? unit.value : (p.unit || 'px'));
+        return;
+      }
+
+      if(p.type === 'duration'){
+        out[p.key] =
+          (input ? input.value : '') +
+          (unit ? unit.value : 's');
+        return;
+      }
+
+      if(p.type === 'number'){
+        out[p.key] =
+          input
+          ? input.value
+          : state[key].defaultValue[p.key];
+        return;
+      }
+
+      if(p.type === 'enum'){
+        out[p.key] =
+          input
+          ? input.value
+          : state[key].defaultValue[p.key];
+        return;
+      }
+
+      if(p.type === 'fontFamily'){
+        out[p.key] =
+          input
+          ? input.value
+          : state[key].defaultValue[p.key];
+        return;
+      }
+
+      if(p.type === 'fontWeight'){
+        out[p.key] =
+          input
+          ? input.value
+          : state[key].defaultValue[p.key];
+        return;
+      }
+
+      if(p.type === 'shadow'){
+        var shadowMode =
+          mode
+          ? mode.value
+          : 'custom';
+
+        if(shadowMode !== 'custom'){
+          out[p.key] = SHADOW_PRESETS[shadowMode];
+          return;
+        }
+
+        var xInput = getEl(auxId(key,p.key,'x'));
+        var xUnit = getEl(auxId(key,p.key,'xUnit'));
+        var yInput = getEl(auxId(key,p.key,'y'));
+        var yUnit = getEl(auxId(key,p.key,'yUnit'));
+        var blurInput = getEl(auxId(key,p.key,'blur'));
+        var blurUnit = getEl(auxId(key,p.key,'blurUnit'));
+        var colorModeInput = getEl(auxId(key,p.key,'colorMode'));
+        var colorInput = getEl(auxId(key,p.key,'color'));
+
+        var shadowColorMode =
+          colorModeInput
+          ? colorModeInput.value
+          : 'custom';
+
+        var shadowColor;
+
+        if(shadowColorMode === 'transparent'){
+          shadowColor = 'transparent';
+        }
+        else if(shadowColorMode === 'currentColor'){
+          shadowColor = 'currentColor';
+        }
+        else if(shadowColorMode === 'systemPrimary'){
+          shadowColor = 'var(--skh-primary)';
+        }
+        else if(shadowColorMode === 'custom'){
+          shadowColor =
+            custom
+            ? custom.value
+            : 'rgba(15,23,42,.08)';
+        }
+        else{
+          shadowColor =
+            colorInput
+            ? colorInput.value
+            : '#0f172a';
+        }
+
+        out[p.key] =
+          (xInput ? xInput.value : '0') +
+          (xUnit ? xUnit.value : 'px') +
+          ' ' +
+          (yInput ? yInput.value : '8') +
+          (yUnit ? yUnit.value : 'px') +
+          ' ' +
+          (blurInput ? blurInput.value : '24') +
+          (blurUnit ? blurUnit.value : 'px') +
+          ' ' +
+          shadowColor;
+
+        return;
+      }
+
+      if(p.type === 'radius'){
+        var radiusMode =
+          mode
+          ? mode.value
+          : 'custom';
+
+        if(radiusMode === 'custom'){
+          out[p.key] =
+            (input ? input.value : '') +
+            (unit ? unit.value : 'px');
+        }
+        else{
+          out[p.key] =
+            RADIUS_PRESETS[radiusMode];
+        }
+
+        return;
+      }
+
+      if(p.type === 'color'){
+        var colorModeInput =
+          mode
+          ? mode.value
+          : 'color';
+
+        if(colorModeInput === 'transparent'){
+          out[p.key] = 'transparent';
+        }
+        else if(colorModeInput === 'currentColor'){
+          out[p.key] = 'currentColor';
+        }
+        else if(colorModeInput === 'systemPrimary'){
+          out[p.key] = 'var(--skh-primary)';
+        }
+        else if(colorModeInput === 'custom'){
+          out[p.key] =
+            custom
+            ? custom.value
+            : state[key].defaultValue[p.key];
+        }
+        else{
+          out[p.key] =
+            input
+            ? input.value
+            : state[key].defaultValue[p.key];
+        }
+
+        return;
+      }
+
+      out[p.key] =
+        input
+        ? input.value
+        : state[key].defaultValue[p.key];
+    });
+
+    return out;
+  }
+
+  function updateControlVisibility(key){
+    var cfg = CONFIG_BY_KEY[key];
+
+    cfg.props.forEach(function(p){
+      var input = getEl(inputId(key,p.key));
+      var unit = getEl(unitId(key,p.key));
+      var mode = getEl(modeId(key,p.key));
+      var custom = getEl(customId(key,p.key));
+
+      if(p.type === 'color'){
+        var colorMode =
+          mode
+          ? mode.value
+          : 'color';
+
+        if(input) input.style.display = colorMode === 'color' ? '' : 'none';
+        if(custom) custom.style.display = colorMode === 'custom' ? '' : 'none';
+      }
+
+      if(p.type === 'shadow'){
+        var shadowMode =
+          mode
+          ? mode.value
+          : 'custom';
+
+        var box = getEl(auxId(key,p.key,'box'));
+        var colorModeInput = getEl(auxId(key,p.key,'colorMode'));
+        var colorInput = getEl(auxId(key,p.key,'color'));
+
+        if(box) box.style.display = shadowMode === 'custom' ? '' : 'none';
+
+        var shadowColorMode =
+          colorModeInput
+          ? colorModeInput.value
+          : 'custom';
+
+        if(colorInput) colorInput.style.display = shadowColorMode === 'color' ? '' : 'none';
+        if(custom) custom.style.display = shadowColorMode === 'custom' ? '' : 'none';
+      }
+
+      if(p.type === 'radius'){
+        var radiusMode =
+          mode
+          ? mode.value
+          : 'custom';
+
+        if(input) input.style.display = radiusMode === 'custom' ? '' : 'none';
+        if(unit) unit.style.display = radiusMode === 'custom' ? '' : 'none';
+      }
+    });
+  }
+
+  function cssText(key,vals){
+    if(key === 'brand'){
+      return ':root{\n' +
+        '  --skh-primary:' + vals.primary + ';\n' +
+        '  --skh-primary-soft:' + vals.primarySoft + ';\n' +
+        '  --skh-danger:' + vals.danger + ';\n' +
+        '  --skh-success:' + vals.success + ';\n' +
+        '  --skh-warning:' + vals.warning + ';\n' +
+        '}';
+    }
+
+    if(key === 'page'){
+      return 'body{\n' +
+        '  background:' + vals.bg + ';\n' +
+        '  color:' + vals.text + ';\n' +
+        '}\n\n.skh-muted{\n' +
+        '  color:' + vals.muted + ';\n' +
+        '}';
+    }
+
+    if(key === 'surface'){
+      return '.skh-surface{\n' +
+        '  background:' + vals.bg + ';\n' +
+        '  border-color:' + vals.border + ';\n' +
+        '  box-shadow:' + vals.shadow + ';\n' +
+        '}';
+    }
+
+    if(key === 'radius'){
+      return ':root{\n' +
+        '  --skh-radius:' + vals.base + ';\n' +
+        '  --skh-radius-sm:' + vals.sm + ';\n' +
+        '  --skh-radius-lg:' + vals.lg + ';\n' +
+        '  --skh-radius-pill:' + vals.pill + ';\n' +
+        '}';
+    }
+
+    if(key === 'space'){
+      return ':root{\n' +
+        '  --skh-space-xs:' + vals.xs + ';\n' +
+        '  --skh-space-sm:' + vals.sm + ';\n' +
+        '  --skh-space-md:' + vals.md + ';\n' +
+        '  --skh-space-lg:' + vals.lg + ';\n' +
+        '  --skh-space-xl:' + vals.xl + ';\n' +
+        '}';
+    }
+
+    if(key === 'font'){
+      return 'body{\n' +
+        '  font-family:' + vals.family + ';\n' +
+        '  font-size:' + vals.size + ';\n' +
+        '  font-weight:' + vals.weight + ';\n' +
+        '  line-height:' + vals.lineHeight + ';\n' +
+        '}';
+    }
+
+    if(key === 'motion'){
+      return ':root{\n' +
+        '  --skh-transition:' + vals.duration + ' ' + vals.easing + ';\n' +
+        '}';
+    }
+
+    if(key === 'layout'){
+      return '.skh-container{\n' +
+        '  max-width:' + vals.containerMaxWidth + ';\n' +
+        '  padding:' + vals.containerPadding + ' 0;\n' +
+        '}\n\n.skh-section{\n' +
+        '  margin-bottom:' + vals.sectionGap + ';\n' +
+        '}';
+    }
+
+    return '';
+  }
+
+  function parseCss(key){
+    return clone(state[key].current);
+  }
+
+  function writeCss(key,vals){
+    var el = getEl(cssId(key));
+    if(el) el.value = cssText(key,vals);
+  }
+
+  function setStatus(msg,tone){
+    var el = getEl('baseThemeStatus');
+    if(!el) return;
+    el.textContent = msg || '';
+    el.style.color = tone === 'error' ? '#b42318' : (tone === 'success' ? '#15803d' : '#64748b');
+    el.classList.toggle('is-loading',tone === 'loading');
+  }
+
+  function showThemeLoading(message){
+    var root = getEl('baseEditorRoot');
+    if(!root) return;
+
+    root.classList.add('is-theme-loading');
+
+    if(!root.querySelector('.themeLoadingCard')){
+      var card = document.createElement('div');
+      card.className = 'themeLoadingCard';
+      card.innerHTML =
+        '<div class="themeLoadingSpinner"></div>' +
+        '<div class="themeLoadingTitle"></div>' +
+        '<div class="themeLoadingNote">正在跟 Sheet 讀取目前設定與 default，完成後才會顯示編輯器。</div>' +
+        '<div class="themeLoadingBar"></div>';
+      root.insertBefore(card,root.firstChild);
+    }
+
+    var title = root.querySelector('.themeLoadingTitle');
+    if(title) title.textContent = message || '讀取 Sheet 設定中';
+  }
+
+  function hideThemeLoading(){
+    var root = getEl('baseEditorRoot');
+    if(!root) return;
+
+    var card = root.querySelector('.themeLoadingCard');
+    if(card && card.parentNode){
+      card.parentNode.removeChild(card);
+    }
+
+    root.classList.remove('is-theme-loading');
+  }
+
+  function show(id,on){
+    var el = getEl(id);
+    if(el) el.style.display = on ? '' : 'none';
+  }
+
+  function refresh(key){
+    var s = state[key];
+    if(!s) return;
+
+    var btn = getEl(key + '_editButton');
+    if(btn) btn.textContent = s.isEditing ? '返回' : '編輯';
+
+    show(
+      key + '_undoButton',
+      s.isEditing &&
+        s.undoStack.length > 0 &&
+        !same(
+          s.current,
+          s.undoStack[s.undoStack.length - 1],
+          key
+        )
+    );
+    show(key + '_restoreSystemButton', s.isEditing && isDirty(key) && !systemIsDefault(key));
+    show(key + '_restoreDefaultButton', s.isEditing);
+    show(key + '_setDefaultButton', s.isEditing && !isDefault(key));
+    show(key + '_saveButton', s.isEditing && isDirty(key));
+    show(key + '_cssApplyButton', s.cssDirty);
+    show(key + '_cssSaveButton', s.cssDirty || isDirty(key));
+  }
+
+  function setInputsEnabled(key,on){
+    var cfg = CONFIG_BY_KEY[key];
+
+    cfg.props.forEach(function(p){
+      var controls = [
+        getEl(inputId(key,p.key)),
+        getEl(unitId(key,p.key)),
+        getEl(modeId(key,p.key)),
+        getEl(customId(key,p.key)),
+        getEl(auxId(key,p.key,'x')),
+        getEl(auxId(key,p.key,'xUnit')),
+        getEl(auxId(key,p.key,'y')),
+        getEl(auxId(key,p.key,'yUnit')),
+        getEl(auxId(key,p.key,'blur')),
+        getEl(auxId(key,p.key,'blurUnit')),
+        getEl(auxId(key,p.key,'colorMode')),
+        getEl(auxId(key,p.key,'color'))
+      ];
+
+      controls.forEach(function(el){
+        if(!el) return;
+        el.disabled = !on;
+        el.style.opacity = '1';
+        el.style.cursor = on ? 'pointer' : 'not-allowed';
+      });
+    });
+
+    updateControlVisibility(key);
+  }
+
+  function setCssLocked(key,locked){
+    var el = getEl(cssId(key));
+    var btn = getEl(key + '_cssEditButton');
+    if(!el) return;
+
+    el.disabled = locked;
+    el.readOnly = locked;
+    el.style.background = locked ? '#f8fafc' : '#fff';
+    el.style.borderColor = locked ? '#dbe4ef' : '#93c5fd';
+    el.style.opacity = '1';
+    el.style.cursor = locked ? 'not-allowed' : 'text';
+
+    if(btn) btn.textContent = locked ? '編輯 CSS' : '取消編輯';
+
+    if(locked){
+      state[key].cssEditSnapshot = null;
+      state[key].cssDirty = false;
+    }
+
+    refresh(key);
+  }
+
+  function setBusy(busy,msg){
+    isBusy = !!busy;
+
+    if(!isBusy){
+      clearActiveActionButton();
+    }
+
+    CONFIG.forEach(function(cfg){
+      var key = cfg.key;
+
+      [
+        key+'_editButton',
+        key+'_undoButton',
+        key+'_restoreSystemButton',
+        key+'_restoreDefaultButton',
+        key+'_setDefaultButton',
+        key+'_saveButton',
+        key+'_cssEditButton',
+        key+'_cssApplyButton',
+        key+'_cssSaveButton'
+      ].forEach(function(id){
+        var el = getEl(id);
+        if(el) el.disabled = isBusy;
+      });
+
+      if(state[key]){
+        setInputsEnabled(key,state[key].isEditing && !isBusy);
+      }
+    });
+
+    if(msg) setStatus(msg,'loading');
+  }
+
+  function apply(key,vals,opt){
+    opt = opt || {};
+
+    if(opt.recordHistory){
+      pushUndoSnapshot(key,state[key].current);
+    }
+
+    state[key].current = clone(vals);
+    setVars(key,state[key].current);
+    writeInputs(key,state[key].current);
+    writeCss(key,state[key].current);
+
+    if(opt.lockCss !== false){
+      setCssLocked(key,true);
+    }
+
+    refresh(key);
+    updateBasePlayground();
+  }
+
+  function commitHistoryState(key,snap){
+    if(!snap) return;
+
+    var h = state[key].history;
+
+    if(h.length && same(h[h.length - 1],snap,key)) return;
+
+    h.push(clone(snap));
+
+    if(h.length > MAX_HISTORY){
+      h.shift();
+    }
+  }
+
+  function resetHistory(key,snap){
+    state[key].history = [];
+    commitHistoryState(
+      key,
+      snap || state[key].current
+    );
+    state[key].colorDragSnapshot = null;
+  }
+
+  function pushUndoSnapshot(key,snap){
+    if(!snap) return;
+
+    var stack = state[key].undoStack;
+
+    if(
+      stack.length &&
+      same(stack[stack.length - 1],snap,key)
+    ){
+      return;
+    }
+
+    stack.push(clone(snap));
+
+    if(stack.length > MAX_HISTORY){
+      stack.shift();
+    }
+  }
+
+  function resetUndoStack(key){
+    state[key].undoStack = [];
+    state[key].colorDragSnapshot = null;
+  }
+
+  function clearUndo(key){
+    resetHistory(key,state[key].current);
+    resetUndoStack(key);
+  }
+
+  function syncPendingInputs(key){
+    var s = state[key];
+
+    if(
+      isBusy ||
+      !s ||
+      !s.isEditing
+    ){
+      return;
+    }
+
+    var vals = readInputs(key);
+
+    if(same(vals,s.current,key)){
+      commitHistoryState(key,s.current);
+      return;
+    }
+
+    if(
+      s.colorDragSnapshot &&
+      !same(s.colorDragSnapshot,vals,key)
+    ){
+      pushUndoSnapshot(key,s.colorDragSnapshot);
+    }
+    else{
+      pushUndoSnapshot(key,s.current);
+    }
+
+    apply(
+      key,
+      vals,
+      {
+        recordHistory:false,
+        lockCss:false
+      }
+    );
+
+    commitHistoryState(key,state[key].current);
+  }
+
+  function nowMs(){
+    return new Date().getTime();
+  }
+
+  function isControlEventSuppressed(key){
+    return (
+      actionGuard.key === key &&
+      actionGuard.suppressUntil &&
+      nowMs() < actionGuard.suppressUntil
+    );
+  }
+
+  function beginSuppressingControlEvents(key,action){
+    actionGuard.key = key;
+    actionGuard.action = action || null;
+    actionGuard.suppressUntil =
+      nowMs() + ACTION_SUPPRESS_MS;
+  }
+
+  function extendSuppressingControlEvents(key){
+    if(actionGuard.key !== key) return;
+
+    actionGuard.suppressUntil =
+      nowMs() + ACTION_SUPPRESS_MS;
+  }
+
+  function clearSuppressingControlEvents(key){
+    if(actionGuard.key !== key) return;
+
+    actionGuard.key = null;
+    actionGuard.action = null;
+    actionGuard.suppressUntil = 0;
+  }
+
+  function captureSuppressedControlEvent(key){
+    var s = state[key];
+
+    if(
+      actionGuard.action !== 'restoreDefaultButton' ||
+      !s ||
+      !s.isEditing
+    ){
+      return;
+    }
+
+    var latest = readInputs(key);
+
+    if(
+      same(latest,s.current,key) ||
+      same(latest,s.defaultValue,key)
+    ){
+      return;
+    }
+
+    pushUndoSnapshot(key,latest);
+
+    apply(
+      key,
+      s.defaultValue,
+      {
+        recordHistory:false,
+        lockCss:false
+      }
+    );
+  }
+
+  function blurActiveControl(){
+    var active = document.activeElement;
+
+    if(
+      active &&
+      typeof active.blur === 'function' &&
+      active !== document.body
+    ){
+      active.blur();
+    }
+  }
+
+  function isNativeColorInput(el){
+    return !!(
+      el &&
+      el.tagName === 'INPUT' &&
+      String(el.type || '').toLowerCase() === 'color'
+    );
+  }
+
+  function colorInputBelongsToKey(el,key){
+    return !!(
+      el &&
+      key &&
+      String(el.id || '').indexOf(key + '_') === 0
+    );
+  }
+
+  function waitForNativePickerCommit(key){
+    return new Promise(function(resolve){
+      var active = document.activeElement;
+      var target = null;
+
+      if(
+        isNativeColorInput(pendingNativeColorInput) &&
+        colorInputBelongsToKey(pendingNativeColorInput,key)
+      ){
+        target = pendingNativeColorInput;
+      }
+      else if(
+        isNativeColorInput(active) &&
+        colorInputBelongsToKey(active,key)
+      ){
+        target = active;
+      }
+
+      var done = false;
+      var timer = null;
+
+      function cleanup(){
+        if(!target) return;
+        target.removeEventListener('input',finish,true);
+        target.removeEventListener('change',finish,true);
+        target.removeEventListener('blur',finish,true);
+      }
+
+      function finish(){
+        if(done) return;
+
+        done = true;
+        cleanup();
+
+        if(timer){
+          clearTimeout(timer);
+          timer = null;
+        }
+
+        pendingNativeColorInput = null;
+
+        requestAnimationFrame(function(){
+          requestAnimationFrame(resolve);
+        });
+      }
+
+      if(!target){
+        blurActiveControl();
+        setTimeout(finish,ACTION_DELAY_MS);
+        return;
+      }
+
+      target.addEventListener('input',finish,true);
+      target.addEventListener('change',finish,true);
+      target.addEventListener('blur',finish,true);
+
+      if(typeof target.blur === 'function'){
+        target.blur();
+      }
+
+      timer = setTimeout(finish,ACTION_SETTLE_TIMEOUT_MS);
+    });
+  }
+
+  function flushPendingInputBeforeAction(key){
+    syncPendingInputs(key);
+
+    if(state[key]){
+      var s = state[key];
+
+      if(
+        s.colorDragSnapshot &&
+        !same(s.colorDragSnapshot,s.current,key)
+      ){
+        pushUndoSnapshot(key,s.colorDragSnapshot);
+      }
+
+      state[key].colorDragSnapshot = null;
+    }
+
+    refresh(key);
+  }
+
+  function commitControlValuesAsUndoTarget(key){
+    var s = state[key];
+
+    if(
+      isBusy ||
+      !s ||
+      !s.isEditing
+    ){
+      return;
+    }
+
+    var latest = readInputs(key);
+
+    if(!same(latest,s.current,key)){
+      if(
+        s.colorDragSnapshot &&
+        !same(s.colorDragSnapshot,latest,key)
+      ){
+        pushUndoSnapshot(key,s.colorDragSnapshot);
+      }
+      else{
+        pushUndoSnapshot(key,s.current);
+      }
+
+      s.current = clone(latest);
+      setVars(key,s.current);
+      writeCss(key,s.current);
+      commitHistoryState(key,s.current);
+    }
+    else{
+      commitHistoryState(key,s.current);
+    }
+
+    s.colorDragSnapshot = null;
+  }
+
+  function resetNativeColorPickerState(key,vals){
+    var cfg = CONFIG_BY_KEY[key];
+
+    if(!cfg) return;
+
+    cfg.props.forEach(function(p){
+      var colorInput = null;
+      var nextValue = '';
+
+      if(p.type === 'color'){
+        colorInput = getEl(inputId(key,p.key));
+        nextValue = colorPickerFallback(vals[p.key]);
+      }
+
+      if(p.type === 'shadow'){
+        colorInput = getEl(auxId(key,p.key,'color'));
+        nextValue = colorPickerFallback(
+          parseBoxShadow(vals[p.key]).color
+        );
+      }
+
+      if(
+        !colorInput ||
+        colorInput.type !== 'color'
+      ){
+        return;
+      }
+
+      /*
+        Chrome 的原生色票在未失焦時可能還握著 pending value。
+        暫時切成 text 再切回 color，可以斷開原生 picker 對此 input 的補寫。
+      */
+      try{
+        var wasDisabled = colorInput.disabled;
+        colorInput.blur();
+        colorInput.type = 'text';
+        colorInput.value = nextValue;
+        void colorInput.offsetWidth;
+        colorInput.type = 'color';
+        colorInput.disabled = wasDisabled;
+        colorInput.value = nextValue;
+      }
+      catch(error){
+        colorInput.value = nextValue;
+      }
+    });
+  }
+
+  function forceWriteDefaultAfterNativePicker(key,serial){
+    var s = state[key];
+
+    if(
+      !s ||
+      !s.isEditing ||
+      serial !== resetWriteSerial
+    ){
+      return;
+    }
+
+    s.current = clone(s.defaultValue);
+    setVars(key,s.current);
+    resetNativeColorPickerState(key,s.current);
+    writeInputs(key,s.current);
+    writeCss(key,s.current);
+    refresh(key);
+    updateBasePlayground();
+  }
+
+  function scheduleDefaultRewrite(key){
+    var serial = ++resetWriteSerial;
+
+    forceWriteDefaultAfterNativePicker(key,serial);
+
+    [0,60,140,260,420].forEach(function(delay){
+      setTimeout(function(){
+        forceWriteDefaultAfterNativePicker(key,serial);
+      },delay);
+    });
+  }
+
+  function isResetLikeAction(action,key){
+    if(action === 'undoButton') return true;
+    if(action === 'restoreSystemButton') return true;
+    if(action === 'restoreDefaultButton') return true;
+
+    if(action === 'editButton'){
+      return !!(
+        state[key] &&
+        state[key].isEditing
+      );
+    }
+
+    return false;
+  }
+
+  function setActionButtonBusy(btn,on){
+    if(!btn) return;
+
+    btn.disabled = !!on;
+
+    if(on){
+      btn.setAttribute('data-action-pending','1');
+      btn.classList.add('skh-btn-loading');
+      btn.classList.add('is-action-loading');
+      activeActionButton = btn;
+    }
+    else{
+      var originalText = btn.getAttribute('data-original-text');
+
+      if(originalText !== null){
+        btn.textContent = originalText;
+        btn.removeAttribute('data-original-text');
+      }
+
+      btn.removeAttribute('data-action-pending');
+      btn.classList.remove('skh-btn-loading');
+      btn.classList.remove('is-action-loading');
+
+      if(activeActionButton === btn){
+        activeActionButton = null;
+      }
+    }
+  }
+
+  function actionLoadingText(action){
+    if(action === 'saveButton') return '儲存中';
+    if(action === 'cssSaveButton') return '儲存 CSS 中';
+    if(action === 'setDefaultButton') return '設定 default 中';
+    if(action === 'restoreDefaultButton') return '恢復中';
+    if(action === 'restoreSystemButton') return '恢復中';
+    if(action === 'undoButton') return '復原中';
+    return '';
+  }
+
+  function clearActiveActionButton(){
+    if(!activeActionButton) return;
+
+    setActionButtonBusy(activeActionButton,false);
+  }
+
+  function beginActionLoading(btn,text){
+    if(!btn) return;
+
+    if(text && !btn.getAttribute('data-original-text')){
+      btn.setAttribute('data-original-text',btn.textContent || '');
+    }
+
+    setActionButtonBusy(btn,true);
+
+    if(text){
+      btn.textContent = text;
+    }
+  }
+
+  function endActionLoading(btn){
+    if(btn){
+      setActionButtonBusy(btn,false);
+      return;
+    }
+
+    clearActiveActionButton();
+  }
+
+  function runAction(key,action,btn){
+    if(action !== 'restoreDefaultButton'){
+      resetWriteSerial++;
+    }
+
+    if(action === 'editButton') toggleEdit(key);
+    if(action === 'undoButton') undoChange(key);
+    if(action === 'restoreSystemButton') restoreSystem(key);
+    if(action === 'restoreDefaultButton') restoreDefault(key,{force:true});
+    if(action === 'setDefaultButton') saveAsDefault(key,btn);
+    if(action === 'saveButton') saveTheme(key,btn);
+    if(action === 'cssEditButton') toggleCssEdit(key);
+    if(action === 'cssApplyButton') applyFromCss(key);
+    if(action === 'cssSaveButton') saveTheme(key,btn);
+  }
+
+  function runActionAfterNativePickerSettles(key,action,btn){
+    var suppressLateColorEvents =
+      isResetLikeAction(action,key);
+
+    if(action === 'restoreDefaultButton'){
+      beginActionLoading(btn,actionLoadingText(action));
+
+      waitForNativePickerCommit(key).then(function(){
+        /*
+          先等 Chrome 原生 color picker 回傳 input/change/blur 或短 timeout。
+          commitControlValuesAsUndoTarget() 會把該顏色收進 undoStack；
+          接著才恢復 default，避免第一下被 pending color 覆寫。
+        */
+        commitControlValuesAsUndoTarget(key);
+        beginSuppressingControlEvents(key,action);
+        resetNativeColorPickerState(key,state[key].defaultValue);
+        restoreDefault(key,{force:true});
+        scheduleDefaultRewrite(key);
+        extendSuppressingControlEvents(key);
+
+        setTimeout(function(){
+          scheduleDefaultRewrite(key);
+          clearSuppressingControlEvents(key);
+          setActionButtonBusy(btn,false);
+        },ACTION_SUPPRESS_MS);
+      });
+
+      return;
+    }
+
+    var loadingText = actionLoadingText(action);
+    beginActionLoading(btn,loadingText);
+
+    waitForNativePickerCommit(key).then(function(){
+      if(suppressLateColorEvents){
+        /*
+          重要：reset / undo 不能在 color input 回傳前就 suppress。
+          使用者選完色票直接按 action 時，blur/change 正是把新色票寫進
+          undoStack 的那一步；要先讓它完成，再開始忽略 reset 之後晚到的事件。
+        */
+        flushPendingInputBeforeAction(key);
+        beginSuppressingControlEvents(key,action);
+        runAction(key,action,btn);
+        extendSuppressingControlEvents(key);
+
+        setTimeout(function(){
+          if(action === 'restoreDefaultButton'){
+            scheduleDefaultRewrite(key);
+          }
+
+          clearSuppressingControlEvents(key);
+          setActionButtonBusy(btn,false);
+        },ACTION_SUPPRESS_MS);
+
+        return;
+      }
+
+      flushPendingInputBeforeAction(key);
+      runAction(key,action,btn);
+
+      if(isBusy){
+        return;
+      }
+
+      setActionButtonBusy(btn,false);
+    });
+  }
+
+  function jobs(key,vals){
+    var cfg = CONFIG_BY_KEY[key];
+
+    return cfg.props.map(function(p){
+      return {
+        className:cfg.className,
+        property:p.key,
+        value:vals[p.key]
+      };
+    });
+  }
+
+  function saveJobs(list,i,fn,done){
+    if(i >= list.length){
+      if(typeof done === 'function') done();
+      return;
+    }
+
+    var job = list[i];
+
+    google.script.run
+      .withSuccessHandler(function(){
+        saveJobs(list,i + 1,fn,done);
+      })
+      .withFailureHandler(function(err){
+        setBusy(false);
+        setStatus('儲存失敗：' + (err && err.message ? err.message : err),'error');
+      })[fn](job.className,job.property,job.value);
+  }
+
+  function renderOptions(select,options){
+    options.forEach(function(opt){
+      var option = document.createElement('option');
+      option.value = opt[0];
+      option.textContent = opt[1];
+      select.appendChild(option);
+    });
+  }
+
+  function renderUnitControl(key,p){
+    var wrap = document.createElement('div');
+    wrap.className = 'themeField themeSplit2';
+
+    var input = document.createElement('input');
+    input.id = inputId(key,p.key);
+    input.type = 'number';
+    input.step = p.step || '1';
+    input.disabled = true;
+
+    var unit = document.createElement('select');
+    unit.id = unitId(key,p.key);
+    unit.disabled = true;
+
+    renderOptions(
+      unit,
+      UNIT_OPTIONS.map(function(u){
+        return [u,u];
+      })
+    );
+
+    wrap.appendChild(input);
+    wrap.appendChild(unit);
+
+    return wrap;
+  }
+
+  function renderColorControl(key,p){
+    var wrap = document.createElement('div');
+    wrap.className = 'themeField';
+
+    var box = document.createElement('div');
+    box.className = 'themeColorBox';
+
+    var mode = document.createElement('select');
+    mode.id = modeId(key,p.key);
+    mode.disabled = true;
+
+    renderOptions(
+      mode,
+      [
+        ['color','色票'],
+        ['transparent','transparent'],
+        ['currentColor','currentColor'],
+        ['systemPrimary','var(--skh-primary)'],
+        ['custom','custom / rgba / var']
+      ]
+    );
+
+    var color = document.createElement('input');
+    color.id = inputId(key,p.key);
+    color.type = 'color';
+    color.disabled = true;
+
+    var custom = document.createElement('input');
+    custom.id = customId(key,p.key);
+    custom.type = 'text';
+    custom.disabled = true;
+    custom.placeholder = 'rgba(...) 或 var(...)';
+    custom.style.display = 'none';
+
+    box.appendChild(mode);
+    box.appendChild(color);
+    wrap.appendChild(box);
+    wrap.appendChild(custom);
+
+    return wrap;
+  }
+
+  function renderShadowControl(key,p){
+    var wrap = document.createElement('div');
+    wrap.className = 'themeField';
+
+    var shadow = document.createElement('select');
+    shadow.id = modeId(key,p.key);
+    shadow.disabled = true;
+
+    renderOptions(
+      shadow,
+      [
+        ['none','none 無陰影'],
+        ['sm','sm 小陰影'],
+        ['md','md 中陰影'],
+        ['lg','lg 大陰影'],
+        ['xl','xl 超大陰影'],
+        ['custom','custom 自訂']
+      ]
+    );
+
+    var customBox = document.createElement('div');
+    customBox.id = auxId(key,p.key,'box');
+    customBox.className = 'themeShadowBox';
+    customBox.style.display = 'none';
+
+    var grid = document.createElement('div');
+    grid.className = 'themeShadowGrid';
+
+    [['x','X'],['y','Y'],['blur','Blur']].forEach(function(item){
+      var pair = document.createElement('div');
+      pair.className = 'themeSplit2';
+
+      var number = document.createElement('input');
+      number.id = auxId(key,p.key,item[0]);
+      number.type = 'number';
+      number.step = '1';
+      number.disabled = true;
+
+      var unit = document.createElement('select');
+      unit.id = auxId(key,p.key,item[0] + 'Unit');
+      unit.disabled = true;
+
+      renderOptions(
+        unit,
+        UNIT_OPTIONS.map(function(u){
+          return [u,u];
+        })
+      );
+
+      pair.appendChild(number);
+      pair.appendChild(unit);
+      grid.appendChild(pair);
+    });
+
+    var colorBox = document.createElement('div');
+    colorBox.className = 'themeField';
+
+    var modeRow = document.createElement('div');
+    modeRow.className = 'themeColorBox';
+
+    var colorMode = document.createElement('select');
+    colorMode.id = auxId(key,p.key,'colorMode');
+    colorMode.disabled = true;
+
+    renderOptions(
+      colorMode,
+      [
+        ['color','色票'],
+        ['transparent','transparent'],
+        ['currentColor','currentColor'],
+        ['systemPrimary','var(--skh-primary)'],
+        ['custom','custom / rgba / var']
+      ]
+    );
+
+    var color = document.createElement('input');
+    color.id = auxId(key,p.key,'color');
+    color.type = 'color';
+    color.disabled = true;
+
+    var customColor = document.createElement('input');
+    customColor.id = customId(key,p.key);
+    customColor.type = 'text';
+    customColor.disabled = true;
+    customColor.placeholder = 'rgba(...) 或 var(...)';
+    customColor.style.display = 'none';
+
+    modeRow.appendChild(colorMode);
+    modeRow.appendChild(color);
+    colorBox.appendChild(modeRow);
+    colorBox.appendChild(customColor);
+
+    customBox.appendChild(grid);
+    customBox.appendChild(colorBox);
+
+    wrap.appendChild(shadow);
+    wrap.appendChild(customBox);
+
+    return wrap;
+  }
+
+  function renderRadiusControl(key,p){
+    var wrap = document.createElement('div');
+    wrap.className = 'themeField';
+
+    var radiusSelect = document.createElement('select');
+    radiusSelect.id = modeId(key,p.key);
+    radiusSelect.disabled = true;
+
+    renderOptions(
+      radiusSelect,
+      [
+        ['none','0 無圓角'],
+        ['sm','6px 小圓角'],
+        ['md','10px 中圓角'],
+        ['lg','14px 大圓角'],
+        ['xl','18px 超大圓角'],
+        ['pill','999px 膠囊'],
+        ['custom','custom 自訂']
+      ]
+    );
+
+    var customBox = renderUnitControl(key,p);
+    customBox.style.marginTop = '6px';
+
+    wrap.appendChild(radiusSelect);
+    wrap.appendChild(customBox);
+
+    return wrap;
+  }
+
+  function renderControl(key,p){
+    var wrap = document.createElement('div');
+    wrap.className = 'themeField';
+
+    if(p.type === 'unit'){
+      return renderUnitControl(key,p);
+    }
+
+    if(p.type === 'duration'){
+      var durationBox = document.createElement('div');
+      durationBox.className = 'themeSplit2';
+
+      var input = document.createElement('input');
+      input.id = inputId(key,p.key);
+      input.type = 'number';
+      input.step = '0.01';
+      input.disabled = true;
+
+      var unit = document.createElement('select');
+      unit.id = unitId(key,p.key);
+      unit.disabled = true;
+
+      renderOptions(unit,[['s','s'],['ms','ms']]);
+
+      durationBox.appendChild(input);
+      durationBox.appendChild(unit);
+
+      return durationBox;
+    }
+
+    if(p.type === 'number'){
+      var number = document.createElement('input');
+      number.id = inputId(key,p.key);
+      number.type = 'number';
+      number.step = p.step || '1';
+      number.disabled = true;
+      wrap.appendChild(number);
+      return wrap;
+    }
+
+    if(p.type === 'enum'){
+      var select = document.createElement('select');
+      select.id = inputId(key,p.key);
+      select.disabled = true;
+
+      renderOptions(select,p.options || []);
+
+      wrap.appendChild(select);
+      return wrap;
+    }
+
+    if(p.type === 'fontFamily'){
+      var family = document.createElement('select');
+      family.id = inputId(key,p.key);
+      family.disabled = true;
+
+      renderOptions(
+        family,
+        [
+          ['system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif','System UI'],
+          ['"Noto Sans TC",system-ui,sans-serif','Noto Sans TC'],
+          ['"Segoe UI",system-ui,sans-serif','Segoe UI'],
+          ['Arial,sans-serif','Arial'],
+          ['ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace','Monospace']
+        ]
+      );
+
+      wrap.appendChild(family);
+      return wrap;
+    }
+
+    if(p.type === 'fontWeight'){
+      var grid = document.createElement('div');
+      grid.className = 'themeSplit2';
+
+      var weightInput = document.createElement('input');
+      weightInput.id = inputId(key,p.key);
+      weightInput.type = 'number';
+      weightInput.step = '100';
+      weightInput.disabled = true;
+
+      var weightSelect = document.createElement('select');
+      weightSelect.id = modeId(key,p.key);
+      weightSelect.disabled = true;
+
+      renderOptions(
+        weightSelect,
+        [
+          ['400','Regular'],
+          ['500','Medium'],
+          ['600','Semibold'],
+          ['700','Bold'],
+          ['800','ExtraBold']
+        ]
+      );
+
+      grid.appendChild(weightInput);
+      grid.appendChild(weightSelect);
+      wrap.appendChild(grid);
+
+      return wrap;
+    }
+
+    if(p.type === 'shadow'){
+      return renderShadowControl(key,p);
+    }
+
+    if(p.type === 'radius'){
+      return renderRadiusControl(key,p);
+    }
+
+    if(p.type === 'color'){
+      return renderColorControl(key,p);
+    }
+
+    var input = document.createElement('input');
+    input.id = inputId(key,p.key);
+    input.type = 'text';
+    input.disabled = true;
+    wrap.appendChild(input);
+
+    return wrap;
+  }
+
+  function renderPreview(cfg,td){
+    if(cfg.previewSurface){
+      td.innerHTML =
+        '<div class="skh-surface skh-stack" style="padding:16px;">' +
+          '<strong>Surface Card</strong>' +
+          '<span class="skh-muted">卡片、面板、彈窗基礎。</span>' +
+        '</div>';
+      return;
+    }
+
+    if(cfg.previewRadius){
+      td.innerHTML =
+        '<div class="skh-row">' +
+          '<div class="skh-surface" style="padding:12px;border-radius:var(--skh-radius-sm);">sm</div>' +
+          '<div class="skh-surface" style="padding:12px;border-radius:var(--skh-radius);">base</div>' +
+          '<div class="skh-surface" style="padding:12px;border-radius:var(--skh-radius-lg);">lg</div>' +
+          '<div class="skh-surface" style="padding:12px;border-radius:var(--skh-radius-pill);">pill</div>' +
+        '</div>';
+      return;
+    }
+
+    if(cfg.previewSpacing){
+      td.innerHTML =
+        '<div class="skh-stack">' +
+          '<div class="skh-row" style="gap:var(--skh-space-xs);"><span class="skh-code">xs</span><span class="skh-code">gap</span></div>' +
+          '<div class="skh-row" style="gap:var(--skh-space-md);"><span class="skh-code">md</span><span class="skh-code">gap</span></div>' +
+          '<div class="skh-row" style="gap:var(--skh-space-xl);"><span class="skh-code">xl</span><span class="skh-code">gap</span></div>' +
+        '</div>';
+      return;
+    }
+
+    if(cfg.previewFont){
+      td.innerHTML =
+        '<div class="skh-stack">' +
+          '<span style="font-size:var(--skh-font-size-sm);">Small text</span>' +
+          '<span>Base text</span>' +
+          '<strong style="font-size:var(--skh-font-size-lg);">Large bold text</strong>' +
+        '</div>';
+      return;
+    }
+
+    if(cfg.previewMotion){
+      td.innerHTML =
+        '<button class="skh-btn skh-btn-primary">Hover me</button>';
+      return;
+    }
+
+    if(cfg.previewLayout){
+      td.innerHTML =
+        '<div class="skh-surface" style="padding:var(--skh-container-padding);">' +
+          '<strong>Container padding</strong><br>' +
+          '<span class="skh-muted">Section gap / max width</span>' +
+        '</div>';
+      return;
+    }
+
+    var row = document.createElement('div');
+    row.className = 'testRow';
+
+    (cfg.preview || []).forEach(function(item){
+      var span = document.createElement('span');
+      span.className = item[1];
+      span.textContent = item[0];
+      row.appendChild(span);
+    });
+
+    td.appendChild(row);
+  }
+
+  function render(){
+    var root = getEl('baseEditorRoot');
+    if(!root) return;
+
+    root.innerHTML = '';
+
+    var grouped = {};
+
+    CONFIG.forEach(function(cfg){
+      if(!grouped[cfg.section]) grouped[cfg.section] = [];
+      grouped[cfg.section].push(cfg);
+    });
+
+    Object.keys(grouped).forEach(function(sectionName){
+      var h = document.createElement('h3');
+      h.className = 'testSubhead';
+      h.textContent = sectionName;
+      root.appendChild(h);
+
+      var tableWrap = document.createElement('div');
+      tableWrap.className = 'testTableScroll';
+
+      var table = document.createElement('table');
+      table.className = 'testTable';
+      table.innerHTML =
+        '<thead>' +
+          '<tr>' +
+            '<th class="colUsage">用途 / CSS</th>' +
+            '<th class="colDemo">演示</th>' +
+            '<th class="colControl">控制</th>' +
+            '<th class="colCss">目前 CSS</th>' +
+          '</tr>' +
+        '</thead>';
+
+      var tbody = document.createElement('tbody');
+
+      grouped[sectionName].forEach(function(cfg){
+        var tr = document.createElement('tr');
+
+        var usage = document.createElement('td');
+        usage.innerHTML =
+          '<strong>' + cfg.label + '</strong><br>' +
+          cfg.desc +
+          '<div style="margin-top:12px;">' +
+            '<code>' + cfg.selector + '</code>' +
+          '</div>';
+
+        var preview = document.createElement('td');
+        renderPreview(cfg,preview);
+
+        var control = document.createElement('td');
+        var grid = document.createElement('div');
+        grid.className = 'themeControlGrid';
+
+        cfg.props.forEach(function(p){
+          var row = document.createElement('div');
+          row.className = 'themeControlRow';
+
+          var label = document.createElement('label');
+          label.setAttribute('for',inputId(cfg.key,p.key));
+          label.textContent = p.label;
+
+          row.appendChild(label);
+          row.appendChild(renderControl(cfg.key,p));
+
+          if(p.help){
+            var help = document.createElement('div');
+            help.className = 'themeTokenHelp';
+            help.textContent = p.help;
+            row.appendChild(help);
+          }
+
+          grid.appendChild(row);
+        });
+
+        var actions = document.createElement('div');
+        actions.className = 'testRow';
+        actions.style.marginTop = '6px';
+
+        [
+          ['editButton','skh-btn skh-btn-secondary skh-btn-sm','編輯'],
+          ['undoButton','skh-btn skh-btn-secondary skh-btn-sm','復原上一動'],
+          ['restoreSystemButton','skh-btn skh-btn-ghost skh-btn-sm','恢復系統目前設定'],
+          ['restoreDefaultButton','skh-btn skh-btn-danger skh-btn-sm','恢復 default'],
+          ['setDefaultButton','skh-btn skh-btn-secondary skh-btn-sm','設為新 default'],
+          ['saveButton','skh-btn skh-btn-primary skh-btn-sm','儲存']
+        ].forEach(function(item){
+          var b = document.createElement('button');
+          b.id = cfg.key + '_' + item[0];
+          b.className = item[1];
+          b.textContent = item[2];
+          if(item[0] !== 'editButton') b.style.display = 'none';
+          b.setAttribute('data-key',cfg.key);
+          b.setAttribute('data-action',item[0]);
+          actions.appendChild(b);
+        });
+
+        grid.appendChild(actions);
+        control.appendChild(grid);
+
+        var css = document.createElement('td');
+        css.innerHTML =
+          '<textarea id="' + cssId(cfg.key) + '" class="themeCssPreview" readonly disabled></textarea>' +
+          '<div class="testRow" style="margin-top:10px;">' +
+            '<button id="' + cfg.key + '_cssEditButton" data-key="' + cfg.key + '" data-action="cssEditButton" class="skh-btn skh-btn-secondary skh-btn-sm">編輯 CSS</button>' +
+            '<button id="' + cfg.key + '_cssApplyButton" data-key="' + cfg.key + '" data-action="cssApplyButton" class="skh-btn skh-btn-primary skh-btn-sm" style="display:none;">套用 CSS</button>' +
+            '<button id="' + cfg.key + '_cssSaveButton" data-key="' + cfg.key + '" data-action="cssSaveButton" class="skh-btn skh-btn-primary skh-btn-sm" style="display:none;">儲存 CSS</button>' +
+          '</div>';
+
+        tr.appendChild(usage);
+        tr.appendChild(preview);
+        tr.appendChild(control);
+        tr.appendChild(css);
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      tableWrap.appendChild(table);
+      root.appendChild(tableWrap);
+    });
+  }
+
+  function init(){
+    CONFIG.forEach(function(cfg){
+      state[cfg.key] = {
+        defaultValue:clone(cfg.fallback),
+        original:clone(cfg.fallback),
+        current:clone(cfg.fallback),
+        history:[],
+        undoStack:[],
+        isEditing:false,
+        themeEditSnapshot:null,
+        colorDragSnapshot:null,
+        cssEditSnapshot:null,
+        cssDirty:false
+      };
+    });
+  }
+
+  function bind(){
+    CONFIG.forEach(function(cfg){
+      var key = cfg.key;
+
+      cfg.props.forEach(function(p){
+        var ids = [
+          inputId(key,p.key),
+          unitId(key,p.key),
+          modeId(key,p.key),
+          customId(key,p.key),
+          auxId(key,p.key,'x'),
+          auxId(key,p.key,'xUnit'),
+          auxId(key,p.key,'y'),
+          auxId(key,p.key,'yUnit'),
+          auxId(key,p.key,'blur'),
+          auxId(key,p.key,'blurUnit'),
+          auxId(key,p.key,'colorMode'),
+          auxId(key,p.key,'color')
+        ];
+
+        ids.forEach(function(id){
+          var el = getEl(id);
+
+          if(!el) return;
+
+          el.addEventListener('focus',function(){
+            if(isControlEventSuppressed(key)) return;
+            if(isBusy || !state[key].isEditing) return;
+
+            if(!state[key].colorDragSnapshot){
+              state[key].colorDragSnapshot =
+                clone(state[key].current);
+            }
+          });
+
+          el.addEventListener('change',function(){
+            if(isControlEventSuppressed(key)){
+              captureSuppressedControlEvent(key);
+              return;
+            }
+            if(isBusy || !state[key].isEditing) return;
+
+            if(p.type === 'fontWeight' && id === modeId(key,p.key)){
+              var weightInput = getEl(inputId(key,p.key));
+              if(weightInput) weightInput.value = el.value;
+            }
+          });
+
+          el.addEventListener('input',function(){
+            if(isControlEventSuppressed(key)){
+              captureSuppressedControlEvent(key);
+              return;
+            }
+            if(isBusy || !state[key].isEditing) return;
+
+            apply(
+              key,
+              readInputs(key),
+              {
+                recordHistory:false,
+                lockCss:false
+              }
+            );
+
+            updateControlVisibility(key);
+          });
+
+          el.addEventListener('change',function(){
+            if(isControlEventSuppressed(key)){
+              captureSuppressedControlEvent(key);
+              return;
+            }
+            if(isBusy || !state[key].isEditing) return;
+
+            apply(
+              key,
+              readInputs(key),
+              {
+                recordHistory:false,
+                lockCss:false
+              }
+            );
+
+            updateControlVisibility(key);
+
+            if(
+              state[key].colorDragSnapshot &&
+              !same(
+                state[key].colorDragSnapshot,
+                state[key].current,
+                key
+              )
+            ){
+              pushUndoSnapshot(
+                key,
+                state[key].colorDragSnapshot
+              );
+            }
+
+            commitHistoryState(key,state[key].current);
+
+            state[key].colorDragSnapshot = null;
+            refresh(key);
+          });
+
+          el.addEventListener('blur',function(){
+            if(isControlEventSuppressed(key)){
+              captureSuppressedControlEvent(key);
+              return;
+            }
+
+            if(
+              isBusy ||
+              !state[key] ||
+              !state[key].isEditing
+            ){
+              if(state[key]){
+                state[key].colorDragSnapshot = null;
+              }
+              return;
+            }
+
+            var latest = readInputs(key);
+
+            if(!same(latest,state[key].current,key)){
+              apply(
+                key,
+                latest,
+                {
+                  recordHistory:false,
+                  lockCss:false
+                }
+              );
+            }
+
+            if(
+              state[key].colorDragSnapshot &&
+              !same(
+                state[key].colorDragSnapshot,
+                state[key].current,
+                key
+              )
+            ){
+              pushUndoSnapshot(
+                key,
+                state[key].colorDragSnapshot
+              );
+            }
+
+            commitHistoryState(key,state[key].current);
+            state[key].colorDragSnapshot = null;
+            refresh(key);
+          });
+        });
+      });
+
+      var preview = getEl(cssId(key));
+
+      if(preview){
+        preview.addEventListener('input',function(){
+          if(preview.readOnly || isBusy) return;
+
+          state[key].cssDirty =
+            preview.value !== state[key].cssEditSnapshot;
+
+          setStatus('','');
+          refresh(key);
+        });
+      }
+    });
+
+    document.addEventListener('pointerdown',function(e){
+      var btn = e.target.closest('[data-action][data-key]');
+      var active = document.activeElement;
+
+      if(
+        !btn ||
+        !isNativeColorInput(active)
+      ){
+        return;
+      }
+
+      pendingNativeColorInput = active;
+
+      if(typeof active.blur === 'function'){
+        active.blur();
+      }
+    },true);
+
+    document.addEventListener('click',function(e){
+      var btn = e.target.closest('[data-action][data-key]');
+      if(!btn) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if(btn.getAttribute('data-action-pending') === '1'){
+        return;
+      }
+
+      var key = btn.getAttribute('data-key');
+      var action = btn.getAttribute('data-action');
+
+      if(action === 'editButton'){
+        resetWriteSerial++;
+        toggleEdit(key);
+        return;
+      }
+
+      runActionAfterNativePickerSettles(
+        key,
+        action,
+        btn
+      );
+    });
+
+    document.querySelectorAll('[data-base-free-group]').forEach(function(group){
+      group.addEventListener('click',function(e){
+        var btn = e.target.closest('[data-base-free-value]');
+        if(!btn) return;
+
+        group.querySelectorAll('[data-base-free-value]').forEach(function(item){
+          item.classList.remove('skh-btn-selected');
+          item.classList.add('skh-btn-secondary');
+        });
+
+        btn.classList.add('skh-btn-selected');
+        btn.classList.remove('skh-btn-secondary');
+
+        updateBasePlayground();
+      });
+    });
+  }
+
+  /*
+    將後端回傳資料套入整個編輯器。
+
+    currentData 來源：
+    - 後端 getBaseCssSettings()
+    - Sheet：00_基礎
+    - 代表目前系統正在使用的 token。
+
+    defaultData 來源：
+    - 後端 getBaseDefaultCssSettings()
+    - Sheet：00_基礎
+    - 代表 default token。
+
+    本函式會同步更新：
+    - state[key].current / original / defaultValue
+    - :root CSS variables
+    - color input / number input / select
+    - CSS preview textarea
+  */
+  function applyLoaded(currentData,defaultData,opt){
+    opt = opt || {};
+
+    CONFIG.forEach(function(cfg){
+      var key = cfg.key;
+
+      state[key].defaultValue =
+        readFromData(
+          defaultData,
+          key,
+          cfg.fallback
+        );
+
+      state[key].original =
+        readFromData(
+          currentData,
+          key,
+          state[key].defaultValue
+        );
+
+      state[key].current =
+        clone(state[key].original);
+
+      state[key].history = [];
+      state[key].undoStack = [];
+      state[key].isEditing = false;
+      state[key].themeEditSnapshot = null;
+      state[key].colorDragSnapshot = null;
+      state[key].cssEditSnapshot = null;
+      state[key].cssDirty = false;
+
+      setVars(key,state[key].current);
+      writeInputs(key,state[key].current);
+      writeCss(key,state[key].current);
+      setInputsEnabled(key,false);
+      setCssLocked(key,true);
+      resetHistory(key,state[key].current);
+      resetUndoStack(key);
+      refresh(key);
+    });
+
+    if(!opt.keepLoading){
+      setStatus('','');
+      hideThemeLoading();
+    }
+
+    updateBasePlayground();
+  }
+
+
+  function hasGoogleFunction(fnName){
+    return (
+      typeof google !== 'undefined' &&
+      google.script &&
+      google.script.run &&
+      typeof google.script.run[fnName] === 'function'
+    );
+  }
+
+  function localThemeData(){
+    var data = {};
+
+    CONFIG.forEach(function(cfg){
+      data[cfg.className] = clone(cfg.fallback);
+    });
+
+    return data;
+  }
+
+  /*
+    Theme 初始化入口。
+
+    呼叫來源：
+    - bootBaseEditor()：本頁初次載入時自動呼叫。
+    - 外部工具也可手動呼叫 window.loadBaseTheme(done)。
+
+    後端依賴：
+    1. getBaseCssSettings()
+       讀取目前 Sheet 設定。
+    2. getBaseDefaultCssSettings()
+       讀取 default Sheet 設定。
+
+    成功後：
+    - applyLoaded(currentData, defaultData)
+    - setBusy(false)
+    - 執行 done callback
+
+    失敗時：
+    - 套用 localThemeData() fallback，避免畫面停在 #000000 或空白。
+  */
+  window.loadBaseTheme = function(done){
+
+    function finish(){
+      if(typeof done === 'function'){
+        done();
+      }
+    }
+
+    if(isBusy){
+      finish();
+      return;
+    }
+
+    setBusy(true,'讀取中...');
+
+    if(!hasGoogleFunction('getBaseCssSettings')){
+      applyLoaded(localThemeData(),localThemeData());
+      setBusy(false);
+      setStatus('使用本頁預設值：尚未偵測到 getBaseCssSettings()','');
+      finish();
+      return;
+    }
+
+    var hasDefaultReader =
+      hasGoogleFunction('getBaseDefaultCssSettings');
+    var currentDone = false;
+    var defaultDone = !hasDefaultReader;
+    var currentDataResult = null;
+    var defaultDataResult = localThemeData();
+    var loadError = null;
+
+    function errorText(err){
+      return err && err.message
+        ? err.message
+        : err;
+    }
+
+    function completeWhenReady(){
+      if(!currentDone || !defaultDone){
+        return;
+      }
+
+      applyLoaded(
+        currentDataResult || localThemeData(),
+        defaultDataResult || localThemeData()
+      );
+
+      setBusy(false);
+
+      if(!hasDefaultReader){
+        setStatus('使用本頁 default：尚未偵測到 getBaseDefaultCssSettings()','');
+      }
+      else if(loadError){
+        setStatus(loadError,'error');
+      }
+
+      finish();
+    }
+
+    google.script.run
+      .withSuccessHandler(function(currentData){
+        currentDataResult = currentData;
+        currentDone = true;
+        completeWhenReady();
+      })
+      .withFailureHandler(function(err){
+        currentDataResult = localThemeData();
+        currentDone = true;
+        loadError =
+          '讀取目前設定失敗，已先使用本頁預設值：' +
+          errorText(err);
+        completeWhenReady();
+      })
+      .getBaseCssSettings();
+
+    if(hasDefaultReader){
+      google.script.run
+        .withSuccessHandler(function(defaultData){
+          defaultDataResult = defaultData;
+          defaultDone = true;
+          completeWhenReady();
+        })
+        .withFailureHandler(function(err){
+          defaultDataResult = localThemeData();
+          defaultDone = true;
+          loadError =
+            '讀取 default 失敗，已先使用本頁 default：' +
+            errorText(err);
+          completeWhenReady();
+        })
+        .getBaseDefaultCssSettings();
+    }
+
+  };
+
+  window.applyBaseTheme = function(data){
+    applyLoaded(data,{});
+  };
+
+
+  window.loadUiStyleTheme =
+    window.loadBaseTheme;
+
+  window.applyUiStyleTheme =
+    window.applyBaseTheme;
+
+  function toggleEdit(key){
+    var s = state[key];
+
+    if(isBusy || !s) return;
+
+    if(!s.isEditing){
+      s.isEditing = true;
+      s.themeEditSnapshot = clone(s.current);
+      resetHistory(key,s.current);
+      resetUndoStack(key);
+      setInputsEnabled(key,true);
+      refresh(key);
+      return;
+    }
+
+    s.isEditing = false;
+    setInputsEnabled(key,false);
+
+    if(isDirty(key)){
+      apply(
+        key,
+        s.themeEditSnapshot || s.original,
+        {
+          recordHistory:false
+        }
+      );
+    }
+
+    s.themeEditSnapshot = null;
+    clearUndo(key);
+    refresh(key);
+  }
+
+  function undoChange(key){
+    var s = state[key];
+
+    if(
+      isBusy ||
+      !s ||
+      !s.isEditing
+    ){
+      return;
+    }
+
+    if(
+      s.undoStack.length === 0 ||
+      same(
+        s.current,
+        s.undoStack[s.undoStack.length - 1],
+        key
+      )
+    ){
+      return;
+    }
+
+    var target = s.undoStack.pop();
+
+    apply(
+      key,
+      target,
+      {
+        recordHistory:false,
+        lockCss:false
+      }
+    );
+
+    refresh(key);
+  }
+
+  function restoreSystem(key){
+    if(
+      isBusy ||
+      !state[key] ||
+      !state[key].isEditing ||
+      !isDirty(key)
+    ){
+      return;
+    }
+
+    pushUndoSnapshot(
+      key,
+      state[key].current
+    );
+
+    apply(
+      key,
+      state[key].original,
+      {
+        recordHistory:false,
+        lockCss:false
+      }
+    );
+
+    commitHistoryState(key,state[key].current);
+    refresh(key);
+  }
+
+  function restoreDefault(key,opt){
+    opt = opt || {};
+
+    if(
+      isBusy ||
+      !state[key] ||
+      !state[key].isEditing ||
+      (
+        !opt.force &&
+        isDefault(key)
+      )
+    ){
+      return;
+    }
+
+    if(
+      !opt.silentHistory &&
+      !same(state[key].current,state[key].defaultValue,key)
+    ){
+      pushUndoSnapshot(
+        key,
+        state[key].current
+      );
+    }
+
+    apply(
+      key,
+      state[key].defaultValue,
+      {
+        recordHistory:false,
+        lockCss:false
+      }
+    );
+
+    commitHistoryState(key,state[key].current);
+    setStatus('已恢復 default','success');
+    refresh(key);
+  }
+
+  function toggleCssEdit(key){
+    var s = state[key];
+    var preview = getEl(cssId(key));
+
+    if(isBusy || !s || !preview) return;
+
+    if(preview.readOnly){
+      s.cssEditSnapshot = preview.value;
+      s.cssDirty = false;
+      setCssLocked(key,false);
+      refresh(key);
+      return;
+    }
+
+    if(s.cssDirty){
+      preview.value =
+        s.cssEditSnapshot ||
+        cssText(key,s.current);
+
+      s.cssDirty = false;
+    }
+
+    setCssLocked(key,true);
+    refresh(key);
+  }
+
+  function applyFromCss(key){
+    var s = state[key];
+
+    if(isBusy || !s || !s.cssDirty) return;
+
+    s.isEditing = true;
+    setInputsEnabled(key,true);
+
+    apply(
+      key,
+      parseCss(key),
+      {
+        recordHistory:true,
+        lockCss:false
+      }
+    );
+
+    s.cssDirty = false;
+    setCssLocked(key,true);
+    refresh(key);
+  }
+
+  function saveTheme(key,btn){
+    var s = state[key];
+
+    if(isBusy || !s) return;
+
+    beginActionLoading(
+      btn || getEl(key + '_saveButton'),
+      btn && btn.getAttribute('data-action') === 'cssSaveButton'
+        ? '儲存 CSS 中'
+        : '儲存中'
+    );
+
+    var vals = clone(s.current);
+
+    if(
+      !s.cssDirty &&
+      same(vals,s.original,key)
+    ){
+      endActionLoading(btn);
+      refresh(key);
+      return;
+    }
+
+    apply(
+      key,
+      vals,
+      {
+        recordHistory:false
+      }
+    );
+
+    function afterSave(message,tone){
+      s.original = clone(vals);
+      s.history = [];
+      s.undoStack = [];
+      s.themeEditSnapshot = null;
+      s.isEditing = false;
+      s.cssEditSnapshot = null;
+      s.cssDirty = false;
+
+      setInputsEnabled(key,false);
+      setCssLocked(key,true);
+      setBusy(false);
+      setStatus(message,tone || 'success');
+      endActionLoading(btn);
+      refresh(key);
+    }
+
+    setBusy(true,'儲存中...');
+
+    if(!hasGoogleFunction('saveBaseCssSetting')){
+      afterSave('已套用在本頁：尚未偵測到 saveBaseCssSetting()','');
+      return;
+    }
+
+    saveJobs(
+      jobs(key,vals),
+      0,
+      'saveBaseCssSetting',
+      function(){
+        afterSave('已儲存','success');
+      }
+    );
+  }
+
+  function saveAsDefault(key,btn){
+    var s = state[key];
+
+    if(isBusy || !s || isDefault(key)) return;
+
+    var vals = clone(s.current);
+
+    if(
+      !confirm('確定要把目前「' + CONFIG_BY_KEY[key].label + '」設為新的 default 嗎？')
+    ){
+      return;
+    }
+
+    beginActionLoading(
+      btn || getEl(key + '_setDefaultButton'),
+      '設定 default 中'
+    );
+
+    setBusy(true,'設定 default 中...');
+
+    if(!hasGoogleFunction('saveBaseDefaultCssSetting')){
+      s.defaultValue = clone(vals);
+      setBusy(false);
+      setStatus('已設為本頁 default：尚未偵測到 saveBaseDefaultCssSetting()','');
+      endActionLoading(btn);
+      refresh(key);
+      return;
+    }
+
+    saveJobs(
+      jobs(key,vals),
+      0,
+      'saveBaseDefaultCssSetting',
+      function(){
+        s.defaultValue = clone(vals);
+        setBusy(false);
+        setStatus('已設為新 default','success');
+        endActionLoading(btn);
+        refresh(key);
+      }
+    );
+  }
+
+  function selectedBase(groupName){
+    var el =
+      document.querySelector(
+        '[data-base-free-group="' + groupName + '"] .skh-btn-selected'
+      );
+
+    return el
+      ? el.getAttribute('data-base-free-value')
+      : '';
+  }
+
+  function updateBasePlayground(){
+    var card = getEl('basePlaygroundPreview');
+    var output = getEl('basePlaygroundHtml');
+
+    if(!card || !output) return;
+
+    var surface = selectedBase('surface');
+    var layout = selectedBase('layout');
+    var tone = selectedBase('tone');
+
+    var classes = [];
+
+    if(surface) classes.push(surface);
+    if(layout) classes.push(layout);
+    if(tone) classes.push(tone);
+
+    card.className = classes.join(' ');
+    card.style.padding = '16px';
+
+    output.value =
+      '<div class="' +
+      classes.join(' ') +
+      '">' +
+      '\\n  <strong>Playground Card</strong>' +
+      '\\n  <span class="skh-muted">這是基礎樣式組合。</span>' +
+      '\\n</div>';
+  }
+
+  var CONFIG_BY_KEY = {};
+
+  CONFIG.forEach(function(cfg){
+    CONFIG_BY_KEY[cfg.key] = cfg;
+  });
+
+  function dispatchUiStyleReady(detail){
+    try{
+      window.dispatchEvent(
+        new CustomEvent(
+          'skh-ui-style-ready',
+          {
+            detail:detail || {}
+          }
+        )
+      );
+
+      window.dispatchEvent(
+        new CustomEvent(
+          'skh-ui-test-ready',
+          {
+            detail:detail || {}
+          }
+        )
+      );
+    }
+    catch(err){}
+  }
+
+  function bootBaseEditor(){
+    /*
+      2026-06-01 關鍵修正：
+
+      原本 UiStyleTest 只定義 window.loadBaseTheme / window.loadUiStyleTheme，
+      但本頁自己沒有在 render 後主動呼叫，所以 input[type=color] 會維持
+      瀏覽器預設 #000000，直到按「編輯」後才被其他流程寫入。
+
+      正確流程：
+      1. render()：先建立全部 DOM。
+      2. init()：建立 state。
+      3. bind()：綁定事件。
+      4. applyLoaded(localThemeData(), localThemeData())：立即套 fallback。
+      5. loadBaseTheme()：非同步向後端 getBaseCssSettings() / getBaseDefaultCssSettings() 讀 Sheet。
+      6. applyLoaded(currentData, defaultData)：Sheet 回來後覆蓋 fallback。
+
+      若未來再次出現黑色色票，先檢查這段是否仍有執行。
+    */
+
+    render();
+    init();
+    bind();
+
+    showThemeLoading('讀取 Sheet 設定中');
+
+    applyLoaded(
+      localThemeData(),
+      localThemeData(),
+      {
+        keepLoading:true
+      }
+    );
+
+    showThemeLoading('讀取 Sheet 設定中');
+
+    setStatus(
+      '讀取 Sheet 設定中...',
+      'loading'
+    );
+
+    window.__SKH_UISTYLE_AUTOLOAD__ = {
+      startedAt:new Date().toISOString(),
+      source:'UiStyleTest bootBaseEditor'
+    };
+
+    window.loadBaseTheme(function(){
+      window.__SKH_UISTYLE_AUTOLOAD__.finishedAt =
+        new Date().toISOString();
+
+      dispatchUiStyleReady({
+        source:'loadBaseTheme',
+        page:'UiStyleTest',
+        readyForReveal:true,
+        finishedAt:window.__SKH_UISTYLE_AUTOLOAD__.finishedAt
+      });
+    });
+
+    updateBasePlayground();
+  }
+
+  bootBaseEditor();
+
+})();
+</script>
+
+
+<script>
+(function(){
+  if(window.__SKH_UI_SETTING_BASE_READY_BRIDGE__){
+    return;
+  }
+
+  window.__SKH_UI_SETTING_BASE_READY_BRIDGE__ = true;
+
+  function dispatchSettingReady(source){
+    try{
+      window.dispatchEvent(
+        new CustomEvent("skh-ui-setting-ready", {
+          detail:{
+            page:"base",
+            source:source || "assets/ui-settings/base.html"
+          }
+        })
+      );
+    }
+    catch(err){}
+  }
+
+  window.addEventListener("skh-ui-style-ready", function(){
+    dispatchSettingReady("skh-ui-style-ready");
+  });
+
+  window.addEventListener("skh-ui-test-ready", function(){
+    dispatchSettingReady("skh-ui-test-ready");
+  });
+
   window.setTimeout(function(){
+    dispatchSettingReady("fallback-timeout");
+  }, 1800);
+})();
+</script>
+
+
+
+
+<!-- SKHPSV2_BASE_TABLE_DEMO_BINDING_START -->
+<script>
+(function(){
+  if(window.__SKHPSV2_BASE_TABLE_DEMO_BINDING__){
+    return;
+  }
+
+  window.__SKHPSV2_BASE_TABLE_DEMO_BINDING__ = true;
+
+  /*
+    用途：
+    讓下方表格的「演示」欄真的吃目前控制欄 input。
+    不新增上方 Live Demo，只把 Theme Editor input 同步寫入 :root CSS variables。
+
+    相容兩套變數：
+    舊 UiStyleTest：--skh-primary / --skh-page-bg / --skh-surface-bg
+    skhpsv2：--skh-color-primary / --skh-color-bg / --skh-color-surface
+  */
+
+  var map = [
+    ['brand_primary_input', '--skh-primary', '--skh-color-primary'],
+    ['brand_primarySoft_input', '--skh-primary-soft', '--skh-color-primary-soft'],
+    ['brand_danger_input', '--skh-danger', '--skh-color-danger'],
+    ['brand_success_input', '--skh-success', '--skh-color-success'],
+    ['brand_warning_input', '--skh-warning', '--skh-color-warning'],
+
+    ['page_bg_input', '--skh-page-bg', '--skh-color-bg'],
+    ['page_text_input', '--skh-page-text', '--skh-color-text'],
+    ['page_muted_input', '--skh-page-muted', '--skh-color-muted'],
+
+    ['surface_bg_input', '--skh-surface-bg', '--skh-color-surface'],
+    ['surface_border_input', '--skh-surface-border', '--skh-border-color'],
+    ['surface_shadow_input', '--skh-surface-shadow', '--skh-shadow-card'],
+
+    ['radius_base_input', '--skh-radius', '--skh-radius-md'],
+    ['radius_sm_input', '--skh-radius-sm', '--skh-radius-sm'],
+    ['radius_lg_input', '--skh-radius-lg', '--skh-radius-lg'],
+    ['radius_pill_input', '--skh-radius-pill', '--skh-radius-pill'],
+
+    ['space_xs_input', '--skh-space-xs', '--skh-space-xs'],
+    ['space_sm_input', '--skh-space-sm', '--skh-space-sm'],
+    ['space_md_input', '--skh-space-md', '--skh-space-md'],
+    ['space_lg_input', '--skh-space-lg', '--skh-space-lg'],
+    ['space_xl_input', '--skh-space-xl', '--skh-space-xl'],
+
+    ['font_family_input', '--skh-font-family', '--skh-font-family'],
+    ['font_size_input', '--skh-font-size', '--skh-font-size'],
+    ['font_sizeSm_input', '--skh-font-size-sm', '--skh-font-size-sm'],
+    ['font_sizeLg_input', '--skh-font-size-lg', '--skh-font-size-lg'],
+    ['font_weight_input', '--skh-font-weight', '--skh-font-weight'],
+    ['font_weightBold_input', '--skh-font-weight-bold', '--skh-font-weight-bold'],
+    ['font_lineHeight_input', '--skh-line-height', '--skh-line-height'],
+
+    ['motion_duration_input', '--skh-transition-duration', '--skh-transition-duration'],
+    ['motion_easing_input', '--skh-transition-easing', '--skh-transition-easing'],
+
+    ['layout_containerMaxWidth_input', '--skh-container-max-width', '--skh-container-max-width'],
+    ['layout_containerPadding_input', '--skh-container-padding', '--skh-container-padding'],
+    ['layout_sectionGap_input', '--skh-section-gap', '--skh-section-gap']
+  ];
+
+  function getValue(id){
+    var el = document.getElementById(id);
+    if(!el) return '';
+
+    var value = String(el.value || '').trim();
+
+    var unitEl = document.getElementById(id.replace(/_input$/, '_unit'));
+    if(unitEl && value && !/[a-z%]+$/i.test(value)){
+      value = value + unitEl.value;
+    }
+
+    return value;
+  }
+
+  function setVar(name,value){
+    if(!name || !value) return;
+    document.documentElement.style.setProperty(name,value);
+  }
+
+  function syncTableDemo(){
+    map.forEach(function(item){
+      var id = item[0];
+      var oldVar = item[1];
+      var newVar = item[2];
+      var value = getValue(id);
+
+      if(!value) return;
+
+      setVar(oldVar,value);
+      setVar(newVar,value);
+    });
+
+    var duration = getValue('motion_duration_input') || '.18s';
+    var easing = getValue('motion_easing_input') || 'ease';
+
+    setVar('--skh-transition-duration',duration);
+    setVar('--skh-transition-easing',easing);
+    setVar('--skh-transition',duration + ' ' + easing);
+
+    /*
+      讓某些舊 preview 沒有 class 樣式時也能看出差異。
+      這裡只補演示區常見 class，不改控制邏輯。
+    */
+    document.querySelectorAll('.skh-text-primary').forEach(function(el){
+      el.style.color = 'var(--skh-primary)';
+    });
+
+    document.querySelectorAll('.skh-text-success').forEach(function(el){
+      el.style.color = 'var(--skh-success)';
+    });
+
+    document.querySelectorAll('.skh-text-warning').forEach(function(el){
+      el.style.color = 'var(--skh-warning)';
+    });
+
+    document.querySelectorAll('.skh-text-danger').forEach(function(el){
+      el.style.color = 'var(--skh-danger)';
+    });
+
+    document.querySelectorAll('.skh-surface').forEach(function(el){
+      el.style.background = 'var(--skh-surface-bg)';
+      el.style.borderColor = 'var(--skh-surface-border)';
+      el.style.boxShadow = 'var(--skh-surface-shadow)';
+      el.style.borderRadius = 'var(--skh-radius)';
+    });
+  }
+
+  function bind(){
+    document.addEventListener('input', function(event){
+      if(event.target && event.target.matches('input, select, textarea')){
+        syncTableDemo();
+      }
+    });
+
+    document.addEventListener('change', function(event){
+      if(event.target && event.target.matches('input, select, textarea')){
+        syncTableDemo();
+      }
+    });
+
+    /*
+      舊 UiStyleTest 會 render 後再寫 input，所以多跑幾次。
+    */
+    window.setTimeout(syncTableDemo, 120);
+    window.setTimeout(syncTableDemo, 500);
+    window.setTimeout(syncTableDemo, 1200);
+    window.setTimeout(syncTableDemo, 2200);
+
+    window.addEventListener('skh-ui-style-ready', syncTableDemo);
+    window.addEventListener('skh-ui-test-ready', syncTableDemo);
+    window.addEventListener('skh-ui-setting-ready', syncTableDemo);
+  }
+
+  bind();
+})();
+</script>
+<!-- SKHPSV2_BASE_TABLE_DEMO_BINDING_END -->
+
+
+<!-- SKHPSV2_BASE_SHEET_API_START -->
+<script>
+(function(){
+  if(window.__SKHPSV2_BASE_SHEET_API_BOUND__){
+    return;
+  }
+
+  window.__SKHPSV2_BASE_SHEET_API_BOUND__ = true;
+
+  function status(message,tone){
+    var el = document.getElementById('baseThemeStatus');
+
+    if(!el){
+      return;
+    }
+
+    el.textContent = message || '';
+    el.style.color =
+      tone === 'error'
+        ? '#b42318'
+        : (
+          tone === 'success'
+            ? '#15803d'
+            : '#64748b'
+        );
+  }
+
+  function resolveApiBaseUrl(){
+    var candidates = [];
+
+    function push(value){
+      if(value && typeof value === 'string'){
+        candidates.push(value);
+      }
+    }
+
+    function readPath(obj,path){
+      if(!obj || !path){
+        return;
+      }
+
+      var parts = path.split('.');
+      var current = obj;
+
+      for(var i = 0; i < parts.length; i++){
+        if(!current || typeof current !== 'object'){
+          return;
+        }
+
+        current = current[parts[i]];
+      }
+
+      push(current);
+    }
+
+    function scanConfigObject(obj){
+      if(!obj || typeof obj !== 'object'){
+        return;
+      }
+
+      var envList = [
+        'prod',
+        'production',
+        'dev',
+        'test',
+        'staging',
+        'github',
+        'gas'
+      ];
+
+      [
+        'apiBaseUrl',
+        'webAppUrl',
+        'appsScriptUrl',
+        'execUrl'
+      ].forEach(function(key){
+        push(obj[key]);
+      });
+
+      envList.forEach(function(env){
+        [
+          'endpoints.' + env + '.apiBaseUrl',
+          'endpoints.' + env + '.webAppUrl',
+          'endpoints.' + env + '.appsScriptUrl',
+          'endpoints.' + env + '.execUrl',
+          'appsScript.' + env + '.apiBaseUrl',
+          'appsScript.' + env + '.webAppUrl',
+          'appsScript.' + env + '.appsScriptUrl',
+          'appsScript.' + env + '.execUrl',
+          env + '.apiBaseUrl',
+          env + '.webAppUrl',
+          env + '.appsScriptUrl',
+          env + '.execUrl'
+        ].forEach(function(path){
+          readPath(obj,path);
+        });
+      });
+    }
+
+    /*
+      先吃明確全域設定。
+    */
+    push(window.SKHPS_API_BASE_URL);
+
+    scanConfigObject(window.SKHPS_RUNTIME);
+    scanConfigObject(window.SKHPS_CONFIG);
+    scanConfigObject(window.SKHPS_PORTAL_CONFIG);
+    scanConfigObject(window.SKHPS_PORTAL);
+    scanConfigObject(window.SKHPS_APP_CONFIG);
+    scanConfigObject(window.SKHPS);
+
+    /*
+      再掃 window 裡名字含 SKHPS / PORTAL / CONFIG 的物件。
+      這是為了相容 portal-config.js 實際命名跟 base.html 預期不同的情況。
+    */
+    Object.keys(window).forEach(function(key){
+      if(!/(SKHPS|PORTAL|CONFIG|RUNTIME)/i.test(key)){
+        return;
+      }
+
+      try{
+        scanConfigObject(window[key]);
+      }
+      catch(err){}
+    });
+
+    /*
+      最後從目前頁面已載入的 script src 中找。
+      若未來直接把 exec URL 放 script query 也吃得到。
+    */
+    Array.prototype.slice.call(document.scripts || []).forEach(function(script){
+      push(script && script.src);
+    });
+
+    for(var i = 0; i < candidates.length; i++){
+      var value = String(candidates[i] || '').trim();
+
+      if(/https:\/\/script\.google\.com\/macros\/s\/[^"'<>\\s]+\/exec/.test(value)){
+        return value.match(/https:\/\/script\.google\.com\/macros\/s\/[^"'<>\\s]+\/exec/)[0];
+      }
+    }
+
+    return '';
+  }
+
+  function jsonp(action,params){
+    params = params || {};
+
+    return new Promise(function(resolve,reject){
+      var baseUrl = resolveApiBaseUrl();
+
+      if(!baseUrl){
+        reject(new Error('找不到 Apps Script API endpoint；請確認 portal-config.js / skhps-runtime.js 是否有 exec URL'));
+        return;
+      }
+
+      var callbackName =
+        'skhpsUiSetBase_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+
+      var url =
+        baseUrl +
+        (baseUrl.indexOf('?') >= 0 ? '&' : '?') +
+        'action=' + encodeURIComponent(action) +
+        '&ts=' + encodeURIComponent(Date.now()) +
+        '&callback=' + encodeURIComponent(callbackName);
+
+      Object.keys(params).forEach(function(key){
+        url +=
+          '&' +
+          encodeURIComponent(key) +
+          '=' +
+          encodeURIComponent(params[key]);
+      });
+
+      var script =
+        document.createElement('script');
+
+      var timeoutId =
+        window.setTimeout(function(){
+          cleanup();
+          reject(new Error('JSONP timeout: ' + action));
+        }, 12000);
+
+      function cleanup(){
+        if(timeoutId){
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+
+        try{
+          delete window[callbackName];
+        }
+        catch(err){
+          window[callbackName] = undefined;
+        }
+
+        if(script && script.parentNode){
+          script.parentNode.removeChild(script);
+        }
+      }
+
+      window[callbackName] = function(payload){
+        cleanup();
+
+        if(!payload || payload.ok === false){
+          reject(new Error(payload && payload.error ? payload.error : 'API failed: ' + action));
+          return;
+        }
+
+        resolve(payload);
+      };
+
+      script.onerror = function(){
+        cleanup();
+        reject(new Error('JSONP failed: ' + action));
+      };
+
+      script.src = url;
+      document.head.appendChild(script);
+    });
+  }
+
+  function applySheetData(payload){
+    var data =
+      payload && payload.data
+        ? payload.data
+        : payload;
+
+    if(!data){
+      throw new Error('Sheet API 沒有回傳 data');
+    }
+
+    if(typeof window.applyBaseTheme === 'function'){
+      window.applyBaseTheme(data);
+    }
+    else if(typeof window.applyUiStyleTheme === 'function'){
+      window.applyUiStyleTheme(data);
+    }
+    else{
+      throw new Error('找不到 applyBaseTheme / applyUiStyleTheme');
+    }
+
     window.dispatchEvent(
-      new CustomEvent("skh-ui-setting-ready", {
+      new CustomEvent('skh-ui-setting-ready', {
         detail:{
-          page:"base",
-          source:"assets/ui-settings/base.html"
+          page:'base',
+          source:'sheet-api'
         }
       })
     );
-  }, 120);
+  }
+
+  function loadFromSheet(){
+    status('正在從 Sheet 讀取基礎模式設定...', 'loading');
+
+    jsonp('getBaseCssSettings')
+      .then(function(payload){
+        applySheetData(payload);
+        status('已套用 Sheet「基礎模式」設定。', 'success');
+      })
+      .catch(function(error){
+        console.error('[skhpsv2] base sheet load failed:', error);
+        status('Sheet 讀取失敗，暫用前端 fallback：' + error.message, 'error');
+      });
+  }
+
+  /*
+    舊 UiStyleTest 會先自己 fallback。
+    這裡稍後再覆蓋成 Sheet 值。
+  */
+  window.setTimeout(loadFromSheet, 500);
+  window.addEventListener('skh-ui-setting-ready', function(event){
+    if(event && event.detail && event.detail.source === 'sheet-api'){
+      return;
+    }
+  });
 })();
 </script>
+<!-- SKHPSV2_BASE_SHEET_API_END -->
+

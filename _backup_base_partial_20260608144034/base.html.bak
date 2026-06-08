@@ -1,0 +1,169 @@
+<!--
+檔案位置：skhpsv2/assets/ui-settings/base.html
+時間戳記：2026-06-08 14:36 UTC+8
+用途：skhpsv2 UI 設定中心「基礎模式」前端 partial；由 GitHub 前端 loader 非同步載入，不再依賴 apps-script/UiSettingBase.html。
+-->
+
+<section class="testSection">
+  <h2></h2>
+
+  <p class="testNote">
+    基礎模式 Theme Editor：用來管理全站 Brand / Page / Surface / Radius / Spacing / Font / Motion / Layout tokens。
+    這一版先建立 GitHub 前端 partial 呈現方式，後續再接 Apps Script API 與 Sheet 設定。
+  </p>
+
+  <div class="skh-alert skh-alert--info">
+    <strong>目前階段：</strong>
+    前端 partial 已從 <code>assets/ui-settings/base.html</code> 載入。
+    先確認 AJAX-like loader、標題覆蓋、版面呈現與 ready event；後續再接 Sheet 讀寫。
+  </div>
+
+  <div class="testTableScroll">
+    <table class="testTable">
+      <thead>
+        <tr>
+          <th class="colUsage">用途 / Token</th>
+          <th class="colDemo">演示</th>
+          <th class="colControl">控制</th>
+          <th class="colCss">目前 CSS / HTML</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>A. Brand / 品牌色</strong><br>
+            <span class="skh-muted">主要色、成功、警告、危險色。</span>
+          </td>
+          <td>
+            <div class="skh-row">
+              <span class="skh-badge skh-badge--info">Primary</span>
+              <span class="skh-text-success">Success</span>
+              <span class="skh-text-warning">Warning</span>
+              <span class="skh-text-danger">Danger</span>
+            </div>
+          </td>
+          <td>
+            <div class="themeControlGrid">
+              <div class="themeControlRow">
+                <label>Primary</label>
+                <div class="themeField themeColorBox">
+                  <input type="text" value="#344f9f" />
+                  <input type="color" value="#344f9f" />
+                </div>
+              </div>
+              <div class="themeControlRow">
+                <label>Success</label>
+                <div class="themeField themeColorBox">
+                  <input type="text" value="#15803d" />
+                  <input type="color" value="#15803d" />
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <textarea class="themeCssPreview" readonly disabled>:root{
+  --skh-color-primary:#344f9f;
+  --skh-color-success:#15803d;
+}</textarea>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <strong>B. Surface / 卡片表面</strong><br>
+            <span class="skh-muted">背景、邊框、陰影與圓角。</span>
+          </td>
+          <td>
+            <div class="skh-card" style="padding:16px;">
+              <strong>Preview Card</strong><br>
+              <span class="skh-muted">這是卡片表面預覽。</span>
+            </div>
+          </td>
+          <td>
+            <div class="themeControlGrid">
+              <div class="themeControlRow">
+                <label>Radius</label>
+                <div class="themeField">
+                  <input type="text" value="10px" />
+                </div>
+              </div>
+              <div class="themeControlRow">
+                <label>Shadow</label>
+                <div class="themeField">
+                  <select>
+                    <option>md</option>
+                    <option>sm</option>
+                    <option>lg</option>
+                    <option>none</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <textarea class="themeCssPreview" readonly disabled>.skh-card{
+  border-radius:10px;
+  box-shadow:var(--skh-shadow-md);
+}</textarea>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <strong>C. Playground</strong><br>
+            <span class="skh-muted">測試 surface、文字、spacing、row / stack 的組合。</span>
+          </td>
+          <td>
+            <div id="basePlaygroundPreview" class="skh-card skh-stack" style="padding:16px;">
+              <strong>Playground Card</strong>
+              <span class="skh-muted">這是基礎樣式組合。</span>
+              <div class="skh-row">
+                <span class="skh-code">.skh-card</span>
+                <span class="skh-code">.skh-stack</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="playgroundPanel">
+              <div class="playgroundGroup">
+                <div class="playgroundLabel">Surface</div>
+                <button class="skh-btn skh-btn--primary skh-btn--sm">Surface</button>
+                <button class="skh-btn skh-btn--secondary skh-btn--sm">None</button>
+              </div>
+
+              <div class="playgroundGroup">
+                <div class="playgroundLabel">Layout</div>
+                <button class="skh-btn skh-btn--primary skh-btn--sm">Stack</button>
+                <button class="skh-btn skh-btn--secondary skh-btn--sm">Row</button>
+              </div>
+            </div>
+          </td>
+          <td>
+            <textarea class="themeCssPreview" readonly disabled><div class="skh-card skh-stack">
+  Playground Card
+</div></textarea>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="baseThemeStatus" style="margin-top:16px;color:#64748b;font-weight:600;">
+    前端 partial 已載入。下一步再接 Sheet 設定。
+  </div>
+</section>
+
+<script>
+(function(){
+  window.setTimeout(function(){
+    window.dispatchEvent(
+      new CustomEvent("skh-ui-setting-ready", {
+        detail:{
+          page:"base",
+          source:"assets/ui-settings/base.html"
+        }
+      })
+    );
+  }, 120);
+})();
+</script>
