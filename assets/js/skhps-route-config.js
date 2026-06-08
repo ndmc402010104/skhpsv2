@@ -17,7 +17,6 @@
       description: 'skhpsv2 後台入口'
     },
 
-    'portal.uiSetting':,
 
     'qr.signIn': {
       label: '晨會 QR 簽到',
@@ -50,7 +49,5 @@
 };
 
 /*
-  skhpsv2 UI 設定頁入口。
-  這段保留為前端路由資料；若 portal 首頁尚未讀取此陣列，仍可直接開啟 /uiset.html。
 */
 window.SKHPS_UI_SET_ROUTE =;

@@ -1,7 +1,7 @@
 ﻿/*
 檔案位置：skhpsv2/apps-script/Code.gs
 時間戳記：2026-06-08 20:15 UTC+8
-用途：skhpsv2 Apps Script Web App API 單一入口；skhpsv2 Apps Script Web App API 單一入口。
+用途：skhpsv2 Apps Script Web App API 單一入口。skhpsv2 Apps Script Web App API 單一入口。
 */
 
 function doGet(e) {
