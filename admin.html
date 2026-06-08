@@ -1,78 +1,45 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!--
 檔案位置：skhpsv2/admin.html
-時間戳記：2026-06-08 00:00 UTC+8
-用途：skhpsv2 第一階段後台入口外觀測試；所有入口透過統一 route config 管理。
 -->
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>skhpsv2 後台</title>
-  <link rel="stylesheet" href="assets/css/00-skhps-tokens.css" />
-  <link rel="stylesheet" href="assets/css/01-skhps-reset.css" />
-  <link rel="stylesheet" href="assets/css/02-skhps-base.css" />
-  <link rel="stylesheet" href="assets/css/03-skhps-layout.css" />
-  <link rel="stylesheet" href="assets/css/04-skhps-components.css" />
-  <link rel="stylesheet" href="assets/css/05-skhps-forms.css" />
-  <link rel="stylesheet" href="assets/css/06-skhps-tables.css" />
-  <link rel="stylesheet" href="assets/css/07-skhps-feedback.css" />
-  <link rel="stylesheet" href="assets/css/08-skhps-utilities.css" />
-  <link rel="stylesheet" href="assets/css/21-admin.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>系統後台</title>
 </head>
-<body class="admin-body">
-  <div class="skh-app-shell">
-    <header class="skh-header">
-      <div>
-        <div class="skh-eyebrow">Admin</div>
-        <h1 class="skh-page-title">skhpsv2 後台入口</h1>
-        <p class="skh-page-subtitle">本頁目前只測試後台版型與卡片樣式。</p>
-      </div>
-      <a class="skh-btn skh-btn--ghost" href="#" data-route="portal.home">回前台</a>
-    </header>
+<body>
+  <main>
+    <h1>系統後台</h1>
 
-    <main class="skh-main">
-      <section class="admin-grid">
-        <a class="admin-tool-card skh-card" href="#" data-route="portal.uiSetting">
-          <span class="skh-badge skh-badge--success">UI</span>
-          <h2>UI 設定</h2>
-          <p>設定與檢查 tokens、button、card、form、table、footer、mobile RWD。</p>
-        </a>
+    <nav>
+      <ul>
+        <li><a href="index.html">整外資訊系統首頁</a></li>
+      </ul>
+    </nav>
 
-        <a class="admin-tool-card skh-card" href="#" data-route="qr.generator">
-          <span class="skh-badge skh-badge--info">QR</span>
-          <h2>晨會 QR 產生</h2>
-          <p>placeholder，之後再連接 legacy 或 skhps-qr。</p>
-        </a>
+    <section>
+      <h2>後台連線測試</h2>
+      <button type="button" id="testBackendBtn">測試後台 health</button>
+      <pre id="backendResult">尚未測試。</pre>
+    </section>
+  </main>
 
-        <a class="admin-tool-card skh-card" href="#" data-route="qr.admin">
-          <span class="skh-badge skh-badge--warning">QR Admin</span>
-          <h2>晨會簽到後台</h2>
-          <p>placeholder，之後再處理簽到後台與 recordCode overlay。</p>
-        </a>
+  <footer data-skhps-footer>
+    Footer 載入中...
+  </footer>
 
-        <a class="admin-tool-card skh-card" href="#" data-route="api.health">
-          <span class="skh-badge skh-badge--muted">API</span>
-          <h2>API Health Check</h2>
-          <p>placeholder，尚未連接 Apps Script API。</p>
-        </a>
-      </section>
-    </main>
-
-    <footer class="skh-footer" data-skhps-footer data-footer-status="version,api"></footer>
-  </div>
-
-  <script src="assets/js/skhps-runtime.js"></script>
-  <script src="assets/js/portal-config.js?v=v0.1.2-prod-202606081350"></script>
-  <script src="assets/js/skhps-route-config.js"></script>
-  <script src="assets/js/skhps-router.js"></script>
-  <script src="assets/js/portal-admin.js"></script>
-  <script src="assets/js/footer.js?v=v0.1.2-prod-202606081350"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/backend-client.js"></script>
+  <script src="assets/js/footer.js"></script>
+  <script>
+    if(window.SKHPSConfig){
+      window.SKHPSConfig.loadConfig().then(function(){
+        if(window.SKHPSBackend){
+          window.SKHPSBackend.bindHealthButton("testBackendBtn", "backendResult");
+        }
+      });
+    }
+  </script>
 </body>
 </html>
-
-
-
-
-
-

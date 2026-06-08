@@ -1,61 +1,45 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!--
 檔案位置：skhpsv2/index.html
-時間戳記：2026-06-08 00:00 UTC+8
-用途：skhpsv2 第一階段 Portal 前台外觀測試；只展示晨會 QR 簽到入口，不連接後端。
 -->
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>新光整形外科室系統 v2</title>
-  <link rel="stylesheet" href="assets/css/00-skhps-tokens.css" />
-  <link rel="stylesheet" href="assets/css/01-skhps-reset.css" />
-  <link rel="stylesheet" href="assets/css/02-skhps-base.css" />
-  <link rel="stylesheet" href="assets/css/03-skhps-layout.css" />
-  <link rel="stylesheet" href="assets/css/04-skhps-components.css" />
-  <link rel="stylesheet" href="assets/css/05-skhps-forms.css" />
-  <link rel="stylesheet" href="assets/css/06-skhps-tables.css" />
-  <link rel="stylesheet" href="assets/css/07-skhps-feedback.css" />
-  <link rel="stylesheet" href="assets/css/08-skhps-utilities.css" />
-  <link rel="stylesheet" href="assets/css/20-portal.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>整外資訊系統首頁</title>
 </head>
-<body class="portal-body">
-  <div class="skh-app-shell">
-    <header class="skh-header">
-      <div>
-        <div class="skh-eyebrow">SKHPS v2</div>
-        <h1 class="skh-page-title">新光整形外科室系統</h1>
-        <p class="skh-page-subtitle">Portal shell / CSS foundation preview</p>
-      </div>
-      <a class="skh-btn skh-btn--ghost" href="#" data-route="portal.admin">後台</a>
-    </header>
+<body>
+  <main>
+    <h1>整外資訊系統首頁</h1>
 
-    <main class="skh-main">
-      <section class="portal-hero skh-card">
-        <div class="portal-hero__content">
-          <span class="skh-badge skh-badge--info">第一階段</span>
-          <h2>晨會 QR 簽到</h2>
-          <p>此按鈕目前只作為 UI placeholder，暫不連接舊系統或後端 API。</p>
-          <a class="skh-btn skh-btn--primary skh-btn--lg" href="#" data-route="qr.signIn">晨會 QR 簽到</a>
-        </div>
-      </section>
-    </main>
+    <nav>
+      <ul>
+        <li><a href="admin.html">系統後台</a></li>
+      </ul>
+    </nav>
 
-    <footer class="skh-footer" data-skhps-footer data-footer-status="version,api"></footer>
-  </div>
+    <section>
+      <h2>後台連線測試</h2>
+      <button type="button" id="testBackendBtn">測試後台 health</button>
+      <pre id="backendResult">尚未測試。</pre>
+    </section>
+  </main>
 
-  <script src="assets/js/skhps-runtime.js"></script>
-  <script src="assets/js/portal-config.js?v=v0.1.2-prod-202606081350"></script>
-  <script src="assets/js/skhps-route-config.js"></script>
-  <script src="assets/js/skhps-router.js"></script>
-  <script src="assets/js/version.js"></script>
-  <script src="assets/js/portal-main.js"></script>
-  <script src="assets/js/footer.js?v=v0.1.2-prod-202606081350"></script>
+  <footer data-skhps-footer>
+    Footer 載入中...
+  </footer>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/backend-client.js"></script>
+  <script src="assets/js/footer.js"></script>
+  <script>
+    if(window.SKHPSConfig){
+      window.SKHPSConfig.loadConfig().then(function(){
+        if(window.SKHPSBackend){
+          window.SKHPSBackend.bindHealthButton("testBackendBtn", "backendResult");
+        }
+      });
+    }
+  </script>
 </body>
 </html>
-
-
-
-
-

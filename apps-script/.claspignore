@@ -1,9 +1,0 @@
-.git/**
-.vscode/**
-docs/**
-scripts/**
-README.md
-version.json
-
-assets/css/**
-assets/js/**

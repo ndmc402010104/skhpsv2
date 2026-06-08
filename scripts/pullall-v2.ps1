@@ -1,10 +1,6 @@
-﻿# 檔案位置：skhpsv2/scripts/pullall-v2.ps1
-# 時間戳記：2026-06-08 00:00 UTC+8
-# 用途：skhpsv2 前端專案專用 pull；只拉 GitHub origin/main，不執行 clasp，不連 Apps Script。
-
-param(
-  [ValidateSet('safe','force')]
-  [string]$Mode = 'safe',
+﻿param(
+  [ValidateSet("safe","force")]
+  [string]$Mode = "safe",
 
   [switch]$NoOpenCode
 )
@@ -16,110 +12,74 @@ try {
   [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
   [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
   $OutputEncoding = [System.Text.UTF8Encoding]::new()
-} catch {
-  # 忽略編碼設定錯誤
-}
+} catch {}
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Push-Location $repoRoot
 
-function Invoke-Git {
-  param(
-    [Parameter(Mandatory = $true)]
-    [string[]]$Arguments
-  )
-
-  & git @Arguments
-
-  if ($LASTEXITCODE -ne 0) {
-    throw "git $($Arguments -join ' ') 失敗"
-  }
-}
-
-function Get-CurrentBranchName {
-  $branch = (git branch --show-current 2>$null).Trim()
-
-  if ([string]::IsNullOrWhiteSpace($branch)) {
-    return ""
-  }
-
-  return $branch
-}
-
-function Test-RemoteRefExists {
-  param(
-    [Parameter(Mandatory = $true)]
-    [string]$RefName
-  )
-
-  git rev-parse --verify $RefName 2>$null | Out-Null
-  return $LASTEXITCODE -eq 0
-}
-
 try {
-  Write-Host ""
-  Write-Host "skhpsv2 GitHub frontend pull" -ForegroundColor Cyan
-  Write-Host "Repo root: $repoRoot" -ForegroundColor DarkGray
-  Write-Host "Mode: $Mode" -ForegroundColor DarkGray
-  Write-Host ""
+  Write-Host "==== skhpsv2 pullall-v2 ====" -ForegroundColor Cyan
+  Write-Host "Repo: $repoRoot"
+  Write-Host "Mode: $Mode"
 
-  if (Test-Path ".clasp.json") {
-    throw "偵測到 .clasp.json。skhpsv2 目前是純前端 repo，不應綁定 Apps Script。請先移除 .clasp.json。"
+  if (-not (Test-Path ".\.git")) {
+    throw "錯誤：目前不是 Git repo 根目錄。"
   }
 
-  git status
+  if (Test-Path ".\.clasp.json") {
+    throw "錯誤：skhpsv2 根目錄不應該有 .clasp.json。Apps Script 後端應在 apps-script 子資料夾。"
+  }
 
-  $changes = git status --porcelain
-  if (-not [string]::IsNullOrWhiteSpace($changes)) {
-    if ($Mode -eq "safe") {
+  $branch = (git branch --show-current).Trim()
+
+  if (-not $branch) {
+    throw "錯誤：無法取得目前 Git branch。"
+  }
+
+  Write-Host "Branch: $branch"
+
+  if ($Mode -eq "safe") {
+    $status = git status --short
+
+    if ($status) {
       Write-Host ""
-      Write-Host "偵測到本機有未提交變更，safe 模式停止 pull，避免覆蓋。" -ForegroundColor Yellow
-      Write-Host "請先 commit / stash，或明確使用：" -ForegroundColor Yellow
-      Write-Host ".\scripts\pullall-v2.ps1 -Mode force" -ForegroundColor Cyan
+      Write-Host "safe 模式停止：目前有未提交變更。" -ForegroundColor Yellow
+      Write-Host "請先 commit / stash，或改用：.\scripts\pullall-v2.ps1 -Mode force"
+      Write-Host ""
+      git status --short
       exit 1
     }
 
     Write-Host ""
-    Write-Host "force 模式：本機未提交變更將被覆蓋。" -ForegroundColor Yellow
-  }
-
-  Write-Host ""
-  Write-Host "抓取 origin 最新版本..." -ForegroundColor Cyan
-  Invoke-Git -Arguments @("fetch", "origin", "--prune")
-
-  if (-not (Test-RemoteRefExists -RefName "origin/main")) {
-    throw "找不到 origin/main。請確認 GitHub repo 預設分支是否為 main。"
-  }
-
-  $currentBranch = Get-CurrentBranchName
-
-  if ([string]::IsNullOrWhiteSpace($currentBranch)) {
-    Write-Host "目前不是正常 branch，改 checkout main。" -ForegroundColor Yellow
-    Invoke-Git -Arguments @("checkout", "-B", "main", "origin/main")
-  }
-  elseif ($currentBranch -ne "main") {
-    Write-Host "目前 branch 是 $currentBranch，切回 main。" -ForegroundColor Yellow
-    Invoke-Git -Arguments @("checkout", "main")
-  }
-
-  if ($Mode -eq "force") {
-    Write-Host ""
-    Write-Host "force reset 到 origin/main..." -ForegroundColor Yellow
-    Invoke-Git -Arguments @("reset", "--hard", "origin/main")
-    Invoke-Git -Arguments @("clean", "-fd")
+    Write-Host "==== git fetch / pull --ff-only ====" -ForegroundColor Cyan
+    git fetch origin --prune
+    git checkout main
+    git pull --ff-only origin main
   }
   else {
     Write-Host ""
-    Write-Host "safe pull：只允許 fast-forward。" -ForegroundColor Cyan
-    Invoke-Git -Arguments @("pull", "--ff-only", "origin", "main")
+    Write-Host "force 模式：會丟掉本機未提交變更並重設到 origin/main。" -ForegroundColor Red
+    $confirm = Read-Host "輸入 FORCE 才繼續"
+
+    if ($confirm -ne "FORCE") {
+      Write-Host "已取消。" -ForegroundColor Yellow
+      exit 0
+    }
+
+    git fetch origin --prune
+    git checkout main
+    git reset --hard origin/main
+    git clean -fd
   }
 
   Write-Host ""
-  Write-Host "Pull 完成。" -ForegroundColor Green
-  Write-Host "目前 branch：$(Get-CurrentBranchName)" -ForegroundColor Cyan
+  Write-Host "==== 完成 ====" -ForegroundColor Green
+  git status --short
 
   if (-not $NoOpenCode) {
-    code .
+    if (Get-Command code -ErrorAction SilentlyContinue) {
+      code .
+    }
   }
 }
 finally {

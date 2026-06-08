@@ -1,8 +1,8 @@
-{
+﻿{
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "skhpsv2: push",
+      "label": "skhpsv2: push GitHub + clasp deploy",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -10,7 +10,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        "${workspaceFolder}\\scripts\\push-v2.ps1"
+        "${workspaceFolder}/scripts/push.ps1"
       ],
       "group": {
         "kind": "build",
@@ -20,8 +20,51 @@
         "echo": true,
         "reveal": "always",
         "focus": true,
-        "panel": "shared",
-        "showReuseMessage": true,
+        "panel": "dedicated",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "skhpsv2: pull safe",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/pullall-v2.ps1",
+        "-Mode",
+        "safe"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "skhpsv2: pull force",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/pullall-v2.ps1",
+        "-Mode",
+        "force"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
         "clear": false
       },
       "problemMatcher": []

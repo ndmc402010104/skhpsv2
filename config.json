@@ -1,0 +1,21 @@
+﻿{
+  "app": "skhpsv2",
+  "env": "prod",
+  "title": "整外資訊系統首頁",
+  "versionUrl": "version.json",
+  "api": {
+    "webAppUrl": "https://script.google.com/macros/s/AKfycbxTmZaFGiV53YO1diNv4EldXBgx-47Huxbrt2dyah3AqyneBuasHFOKuBFCVPbF_sOJ8w/exec"
+  },
+  "pages": [
+    {
+      "id": "index",
+      "title": "整外資訊系統首頁",
+      "href": "index.html"
+    },
+    {
+      "id": "admin",
+      "title": "系統後台",
+      "href": "admin.html"
+    }
+  ]
+}

@@ -92,7 +92,6 @@ function apiRoot_() {
     service: 'Apps Script Web App API',
     message: 'skhpsv2 API is running. Use ?action=health.',
     mode: 'api-only',
-    legacyHtmlRouteEnabled: false,
     serverTime: formatTaipeiDateTimeForApi_(new Date())
   };
 }
@@ -104,7 +103,6 @@ function apiHealth_() {
     env: 'prod',
     service: 'Apps Script Web App API',
     mode: 'api-only',
-    legacyHtmlRouteEnabled: false,
     serverTime: formatTaipeiDateTimeForApi_(new Date())
   };
 }
