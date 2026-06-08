@@ -1,117 +1,106 @@
-﻿/*
-檔案位置：skhpsv2/apps-script/Code.gs
-時間戳記：2026-06-08 20:15 UTC+8
-用途：skhpsv2 Apps Script Web App API 單一入口。skhpsv2 Apps Script Web App API 單一入口。
-*/
-
-function doGet(e) {
-  return handleApiRequest_(e, 'GET');
+﻿function doGet(e) {
+  return handleApiRequest_(e);
 }
 
 function doPost(e) {
-  return handleApiRequest_(e, 'POST');
+  return handleApiRequest_(e);
 }
 
-function handleApiRequest_(e, method) {
+function handleApiRequest_(e) {
   var params = e && e.parameter ? e.parameter : {};
   var action = params.action || '';
   var callback = params.callback || '';
 
-  try {
-    var payload = parseApiPayload_(e, params);
-    var result = dispatchApiAction_(action, payload, {
-      method: method,
-      params: params
-    });
+  var result = routeAction_(action, params);
 
-    return outputJsonOrJsonp_(result, callback);
-  } catch (err) {
-    var normalized = normalizeApiError_(err);
+  if (callback) {
+    return ContentService
+      .createTextOutput(callback + '(' + JSON.stringify(result) + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
 
-    return outputJsonOrJsonp_(
-      {
-        ok: false,
-        action: action,
-        error: normalized.message,
-        stack: normalized.stack,
-        serverTime: formatTaipeiDateTimeForApi_(new Date())
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function routeAction_(action, params) {
+  var allowedActions = [
+    'health',
+    'checkRequiredServices',
+    'sheetStatus'
+  ];
+
+  if (allowedActions.indexOf(action) === -1) {
+    return {
+      ok: false,
+      action: action,
+      error: 'UNKNOWN_ACTION',
+      message: 'Unknown action: ' + action,
+      allowedActions: allowedActions,
+      serverTime: getServerTime_()
+    };
+  }
+
+  if (action === 'health') {
+    return {
+      ok: true,
+      action: action,
+      app: 'skhpsv2',
+      env: getServerEnv_(),
+      serverTime: getServerTime_()
+    };
+  }
+
+  if (action === 'checkRequiredServices') {
+    return {
+      ok: true,
+      action: action,
+      app: 'skhpsv2',
+      env: getServerEnv_(),
+      services: {
+        spreadsheet: typeof SpreadsheetApp !== 'undefined',
+        properties: typeof PropertiesService !== 'undefined'
       },
-      callback
-    );
+      serverTime: getServerTime_()
+    };
   }
+
+  if (action === 'sheetStatus') {
+    return {
+      ok: true,
+      action: action,
+      app: 'skhpsv2',
+      env: getServerEnv_(),
+      data: getSheetStatus_(),
+      serverTime: getServerTime_()
+    };
+  }
+
+  return {
+    ok: false,
+    action: action,
+    error: 'UNHANDLED_ACTION',
+    serverTime: getServerTime_()
+  };
 }
 
-function parseApiPayload_(e, params) {
-  if (params && params.payload) {
-    return JSON.parse(params.payload);
-  }
-
+function getServerEnv_() {
   if (
-    e &&
-    e.postData &&
-    e.postData.contents &&
-    String(e.postData.contents).trim()
+    typeof getServerConfig_ === 'function' &&
+    getServerConfig_() &&
+    getServerConfig_().env
   ) {
-    return JSON.parse(e.postData.contents);
+    return getServerConfig_().env;
   }
 
-  return {};
+  return 'prod';
 }
 
-function dispatchApiAction_(action, payload, context) {
-  if (!action) {
-    return apiRoot_();
-  }
-
-  switch (action) {
-
-    case 'sheetStatus':
-      return {
-        ok: true,
-        app: 'skhpsv2',
-        env: getServerConfig_ && getServerConfig_().env ? getServerConfig_().env : 'prod',
-        data: getSheetStatus_(),
-        serverTime: new Date().toISOString()
-      };
-    case 'health':
-      return apiHealth_();
-
-    case 'checkRequiredServices':
-      return apiCheckRequiredServices();
-
-    default:
-      return {
-        ok: false,
-        action: action,
-        error: 'UNKNOWN_ACTION',
-        message: 'Unknown action: ' + action,
-        allowedActions: [
-          'health',
-          'checkRequiredServices'],
-        serverTime: formatTaipeiDateTimeForApi_(new Date())
-      };
-  }
-}
-
-function apiRoot_() {
-  return {
-    ok: true,
-    app: 'skhpsv2',
-    env: 'prod',
-    service: 'Apps Script Web App API',
-    message: 'skhpsv2 API is running. Use ?action=health.',
-    mode: 'api-only',
-    serverTime: formatTaipeiDateTimeForApi_(new Date())
-  };
-}
-
-function apiHealth_() {
-  return {
-    ok: true,
-    app: 'skhpsv2',
-    env: 'prod',
-    service: 'Apps Script Web App API',
-    mode: 'api-only',
-    serverTime: formatTaipeiDateTimeForApi_(new Date())
-  };
+function getServerTime_() {
+  return Utilities.formatDate(
+    new Date(),
+    'Asia/Taipei',
+    'yyyy-MM-dd HH:mm:ss'
+  );
 }
