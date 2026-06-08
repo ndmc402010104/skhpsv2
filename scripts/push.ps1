@@ -437,15 +437,11 @@ Push-Location $appsScriptDir
   Write-Host ""
   Write-Host "==== Done ====" -ForegroundColor Green
   git status --short
-
-  if (-not $NoOpenCode) {
-    if (Get-Command code -ErrorAction SilentlyContinue) {
-      code .
-    }
-  }
+  # Do not auto-open VS Code after push.
 }
 finally {
   Pop-Location
 }
+
 
 
