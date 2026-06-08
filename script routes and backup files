@@ -1,0 +1,13 @@
+ _backup_base_partial_20260608144034/base.html.bak  |  169 [31m-[m
+ .../apps-script__UiSettingBase.html                | 3639 [31m--------------------[m
+ .../apps-script__UiSettingJsBundle.html            |  527 [31m---[m
+ .../assets__js__ui-setting-loader.js               |  360 [31m--[m
+ .../assets__js__ui-setting-route-config.js         |   71 [31m-[m
+ _backup_uiset_cleanup_20260608143642/uiset.html    |   80 [31m-[m
+ apps-script/AuthDiagnostics.gs                     |  232 [32m++[m
+ apps-script/Code.gs                                |  191 [32m+[m[31m-[m
+ apps-script/Route.gs                               |   13 [31m-[m
+ apps-script/Status.gs                              |   39 [32m+[m[31m-[m
+ apps-script/UiSettingRoute.gs                      |   28 [31m-[m
+ apps-script/UiStyleCssSetting.gs                   |  584 [31m----[m
+ 12 files changed, 374 insertions(+), 5559 deletions(-)
