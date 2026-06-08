@@ -1,7 +1,7 @@
 /*
 檔案位置：assets/js/footer.js
-時間戳記：2026-06-08 12:00 UTC+8
-用途：skhpsv2 共用 footer 狀態列；顯示 version、Apps Script 連線狀態，並依頁面宣告選擇性顯示 Calendar 狀態。
+時間戳記：2026-06-08 12:45 UTC+8
+用途：skhpsv2 共用 footer 狀態列；顯示 version、Apps Script 連線狀態，並依頁面宣告選擇性顯示 Calendar 狀態。不得寫死部署網址。
 */
 (function () {
   const FOOTER_SELECTOR = '[data-skhps-footer]';
@@ -16,38 +16,14 @@
     const raw = footer.getAttribute('data-footer-status') || DEFAULT_STATUS;
     return raw
       .split(',')
-      .map(function (item) { return item.trim().toLowerCase(); })
+      .map(function (item) {
+        return item.trim().toLowerCase();
+      })
       .filter(Boolean);
   }
 
   function hasStatus(statusList, name) {
     return statusList.indexOf(name) !== -1;
-  }
-
-  function createItem(id, label, value, state) {
-    const item = document.createElement('span');
-    item.className = 'skh-footer-status-item';
-    item.setAttribute('data-footer-item', id);
-    item.setAttribute('data-state', state || 'neutral');
-    item.innerHTML =
-      '<strong>' + escapeHtml(label) + '：</strong>' +
-      '<span>' + escapeHtml(value || 'checking') + '</span>';
-    return item;
-  }
-
-  function setItem(footer, id, label, value, state) {
-    let item = footer.querySelector('[data-footer-item="' + id + '"]');
-
-    if (!item) {
-      item = createItem(id, label, value, state);
-      footer.appendChild(item);
-      return;
-    }
-
-    item.setAttribute('data-state', state || 'neutral');
-    item.innerHTML =
-      '<strong>' + escapeHtml(label) + '：</strong>' +
-      '<span>' + escapeHtml(value || '') + '</span>';
   }
 
   function escapeHtml(value) {
@@ -59,26 +35,119 @@
       .replace(/'/g, '&#039;');
   }
 
-  function getRuntimeApiUrl() {
-    const candidates = [
-      window.SKH_RUNTIME && window.SKH_RUNTIME.apiBaseUrl,
-      window.SKH_RUNTIME && window.SKH_RUNTIME.webAppUrl,
-      window.SKH_RUNTIME && window.SKH_RUNTIME.appsScriptUrl,
-      window.SKHPS_RUNTIME && window.SKHPS_RUNTIME.apiBaseUrl,
-      window.SKHPS_RUNTIME && window.SKHPS_RUNTIME.webAppUrl,
-      window.SKHPS_RUNTIME && window.SKHPS_RUNTIME.appsScriptUrl,
-      window.SKHPS_CONFIG && window.SKHPS_CONFIG.apiBaseUrl,
-      window.SKHPS_CONFIG && window.SKHPS_CONFIG.webAppUrl,
-      window.SKHPS_CONFIG && window.SKHPS_CONFIG.appsScriptUrl
-    ];
+  function setItem(footer, id, label, value, state) {
+    let item = footer.querySelector('[data-footer-item="' + id + '"]');
 
-    for (let i = 0; i < candidates.length; i += 1) {
-      if (typeof candidates[i] === 'string' && candidates[i].trim()) {
-        return candidates[i].trim();
+    if (!item) {
+      item = document.createElement('span');
+      item.className = 'skh-footer-status-item';
+      item.setAttribute('data-footer-item', id);
+      footer.appendChild(item);
+    }
+
+    item.setAttribute('data-state', state || 'neutral');
+    item.innerHTML =
+      '<strong>' + escapeHtml(label) + '：</strong>' +
+      '<span>' + escapeHtml(value || '') + '</span>';
+  }
+
+  function getNestedValue(source, paths) {
+    if (!source) return '';
+
+    for (let i = 0; i < paths.length; i += 1) {
+      const path = paths[i].split('.');
+      let current = source;
+
+      for (let j = 0; j < path.length; j += 1) {
+        if (!current || typeof current !== 'object') {
+          current = null;
+          break;
+        }
+        current = current[path[j]];
+      }
+
+      if (typeof current === 'string' && current.trim()) {
+        return current.trim();
       }
     }
 
     return '';
+  }
+
+  function inferEnvFromLocation() {
+    const host = window.location && window.location.hostname
+      ? window.location.hostname.toLowerCase()
+      : '';
+
+    if (!host || host === 'localhost' || host === '127.0.0.1') {
+      return 'local';
+    }
+
+    if (host.indexOf('dev') !== -1 || host.indexOf('test') !== -1) {
+      return 'dev';
+    }
+
+    return 'prod';
+  }
+
+  function getRuntimeEnv() {
+    return (
+      getNestedValue(window.SKH_RUNTIME, ['env', 'mode', 'environment']) ||
+      getNestedValue(window.SKHPS_RUNTIME, ['env', 'mode', 'environment']) ||
+      getNestedValue(window.SKHPS_CONFIG, ['env', 'mode', 'environment']) ||
+      inferEnvFromLocation()
+    );
+  }
+
+  function getRuntimeApiUrl() {
+    const env = getRuntimeEnv();
+
+    const directUrl =
+      getNestedValue(window.SKH_RUNTIME, [
+        'apiBaseUrl',
+        'webAppUrl',
+        'appsScriptUrl',
+        'api.url',
+        'appsScript.url'
+      ]) ||
+      getNestedValue(window.SKHPS_RUNTIME, [
+        'apiBaseUrl',
+        'webAppUrl',
+        'appsScriptUrl',
+        'api.url',
+        'appsScript.url'
+      ]) ||
+      getNestedValue(window.SKHPS_CONFIG, [
+        'apiBaseUrl',
+        'webAppUrl',
+        'appsScriptUrl',
+        'api.url',
+        'appsScript.url'
+      ]);
+
+    if (directUrl) return directUrl;
+
+    const envUrl =
+      getNestedValue(window.SKH_RUNTIME, [
+        'endpoints.' + env + '.apiBaseUrl',
+        'endpoints.' + env + '.webAppUrl',
+        'endpoints.' + env + '.appsScriptUrl',
+        'appsScript.' + env + '.url'
+      ]) ||
+      getNestedValue(window.SKHPS_RUNTIME, [
+        'endpoints.' + env + '.apiBaseUrl',
+        'endpoints.' + env + '.webAppUrl',
+        'endpoints.' + env + '.appsScriptUrl',
+        'appsScript.' + env + '.url'
+      ]) ||
+      getNestedValue(window.SKHPS_CONFIG, [
+        'endpoints.' + env + '.apiBaseUrl',
+        'endpoints.' + env + '.webAppUrl',
+        'endpoints.' + env + '.appsScriptUrl',
+        'appsScript.' + env + '.url'
+      ]);
+
+    return envUrl || '';
   }
 
   function buildHealthUrl(baseUrl) {
@@ -103,7 +172,7 @@
       })
       .then(function (data) {
         const current = data.current || {};
-        const envKey = current.env || data.defaultEnv || 'dev';
+        const envKey = current.env || data.defaultEnv || getRuntimeEnv() || 'dev';
         const envInfo =
           data.environments && data.environments[envKey]
             ? data.environments[envKey]
@@ -134,11 +203,6 @@
 
     if (!apiUrl) {
       setItem(footer, 'api', 'Apps Script', 'not configured', 'error');
-
-      if (hasStatus(statusList, 'calendar')) {
-        setItem(footer, 'calendar', 'Calendar', 'hidden: API not configured', 'error');
-      }
-
       return;
     }
 
@@ -148,7 +212,7 @@
     })
       .then(function (response) {
         if (!response.ok) {
-          throw new Error('Apps Script HTTP ' + response.status);
+          throw new Error('HTTP ' + response.status);
         }
         return response.json();
       })
@@ -157,22 +221,24 @@
           throw new Error(data && data.message ? data.message : 'health check failed');
         }
 
-        setItem(footer, 'api', 'Apps Script', data.env ? 'OK / ' + data.env : 'OK', 'ok');
+        setItem(
+          footer,
+          'api',
+          'Apps Script',
+          data.env ? 'OK / ' + data.env : 'OK',
+          'ok'
+        );
 
         if (hasStatus(statusList, 'calendar')) {
           const calendarText =
             data.calendarName ||
             data.calendarId ||
             data.calendar ||
-            'not configured';
+            '';
 
-          setItem(
-            footer,
-            'calendar',
-            'Calendar',
-            calendarText,
-            calendarText === 'not configured' ? 'error' : 'ok'
-          );
+          if (calendarText) {
+            setItem(footer, 'calendar', 'Calendar', calendarText, 'ok');
+          }
         }
       })
       .catch(function (error) {
@@ -214,8 +280,3 @@
     initFooter();
   }
 })();
-
-
-
-
-
