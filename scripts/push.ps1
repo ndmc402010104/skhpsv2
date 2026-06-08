@@ -1,4 +1,4 @@
-﻿param(
+param(
   [string]$CommitMessage = "",
   [switch]$ManualCommitMessage,
   [switch]$NoClaspDeploy,
@@ -45,6 +45,37 @@ function Test-Yes {
   return @("Y", "YES", "1", "TRUE") -contains $v
 }
 
+function Get-ConfigDeploymentId {
+  $configPath = Join-Path $repoRoot "config.json"
+
+  if (!(Test-Path $configPath)) {
+    throw "config.json not found."
+  }
+
+  $config = Get-Content $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
+
+  $deploymentId = ""
+
+  if (
+    $config.api -and
+    ($config.api.PSObject.Properties.Name -contains "deploymentId") -and
+    -not [string]::IsNullOrWhiteSpace([string]$config.api.deploymentId)
+  ) {
+    $deploymentId = [string]$config.api.deploymentId
+  } elseif (
+    $config.api -and
+    ($config.api.PSObject.Properties.Name -contains "webAppUrl") -and
+    ([string]$config.api.webAppUrl -match "/s/([^/]+)/exec")
+  ) {
+    $deploymentId = $Matches[1]
+  }
+
+  if ([string]::IsNullOrWhiteSpace($deploymentId)) {
+    throw "Missing api.deploymentId in config.json, and cannot parse deployment id from api.webAppUrl."
+  }
+
+  return $deploymentId
+}
 function New-AutoCommitMessage {
   $stamp = Get-Date -Format "yyyyMMdd-HHmm"
   return "update skhpsv2 $stamp"
@@ -357,12 +388,14 @@ try {
         Write-Host ""
         Write-Host "==== clasp deploy ====" -ForegroundColor Cyan
 
-        $deployOutput = & clasp deploy -d "$deployDescription" 2>&1
+        $deployOutput = & $deploymentId = Get-ConfigDeploymentId
+        Write-Host "Deployment ID from config.json: $deploymentId"
+        clasp deploy -i $deploymentId -d "$deployDescription" 2>&1
         $deployText = ($deployOutput | Out-String)
 
         Write-Host $deployText
 
-        $deploymentId = Get-DeploymentIdFromText $deployText
+        $deploymentId = ""
 
         if ([string]::IsNullOrWhiteSpace($deploymentId)) {
           throw "Cannot parse deployment id from clasp deploy output."
@@ -371,8 +404,8 @@ try {
         Pop-Location
         $poppedForConfig = $true
 
-        $newWebAppUrl = Update-ConfigWebAppUrl -DeploymentId $deploymentId
-        Test-WebAppAllowedActions -WebAppUrl $newWebAppUrl
+        $newWebAppUrl = ""
+        
 
         Push-Location $appsScriptDir
       }
@@ -430,3 +463,4 @@ try {
 finally {
   Pop-Location
 }
+
