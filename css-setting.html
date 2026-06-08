@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
 檔案位置：skhpsv2/css-setting.html
-時間戳記：2026-06-08 20:20 UTC+8
-用途：CSS Setting AJAX shell；按鈕以 AJAX 載入 /CSS/ 內的 playground HTML fragments。
+時間戳記：2026-06-08 20:35 UTC+8
+用途：CSS Setting AJAX shell；本頁不內建 CSS，樣式由 Google Sheet baseStyle 載入後套用。
 -->
 <html lang="zh-Hant">
 <head>
@@ -13,7 +13,7 @@
 <body>
   <main>
     <section class="skhps-card">
-      <p>CSS / UI Setting</p>
+      <p class="skhps-muted">CSS / UI Setting</p>
       <h1>CSS Setting AJAX Playground</h1>
       <p>
         這一頁固定作為 AJAX 調用頁。上方按鈕只負責載入 /CSS/ 目錄下的 HTML fragment。
@@ -24,9 +24,9 @@
         <strong data-skhps-base-style-status>baseStyle 載入中...</strong>
       </p>
 
-      <p>
-        <a class="skhps-btn" href="admin.html">回系統後台</a>
-        <a class="skhps-btn" href="index.html">回首頁</a>
+      <p class="skhps-toolbar">
+        <a class="skhps-btn skhps-btn-secondary" href="admin.html">回系統後台</a>
+        <a class="skhps-btn skhps-btn-secondary" href="index.html">回首頁</a>
       </p>
     </section>
 
@@ -36,17 +36,17 @@
         目前先完成「基礎樣式」。其他分頁先建立 AJAX 入口，之後逐頁補內容。
       </p>
 
-      <p>
-        <button type="button" data-css-fragment="CSS/base-style-playground.html">基礎樣式</button>
-        <button type="button" data-css-fragment="CSS/token-style-playground.html">Token</button>
-        <button type="button" data-css-fragment="CSS/layout-style-playground.html">Layout</button>
-        <button type="button" data-css-fragment="CSS/header-style-playground.html">Header</button>
-        <button type="button" data-css-fragment="CSS/footer-style-playground.html">Footer</button>
-        <button type="button" data-css-fragment="CSS/button-style-playground.html">按鈕</button>
-        <button type="button" data-css-fragment="CSS/form-style-playground.html">表單</button>
+      <p class="skhps-toolbar">
+        <button class="skhps-btn skhps-btn-primary" type="button" data-css-fragment="CSS/base-style-playground.html">基礎樣式</button>
+        <button class="skhps-btn skhps-btn-secondary" type="button" data-css-fragment="CSS/token-style-playground.html">Token</button>
+        <button class="skhps-btn skhps-btn-secondary" type="button" data-css-fragment="CSS/layout-style-playground.html">Layout</button>
+        <button class="skhps-btn skhps-btn-secondary" type="button" data-css-fragment="CSS/header-style-playground.html">Header</button>
+        <button class="skhps-btn skhps-btn-secondary" type="button" data-css-fragment="CSS/footer-style-playground.html">Footer</button>
+        <button class="skhps-btn skhps-btn-secondary" type="button" data-css-fragment="CSS/button-style-playground.html">按鈕</button>
+        <button class="skhps-btn skhps-btn-secondary" type="button" data-css-fragment="CSS/form-style-playground.html">表單</button>
       </p>
 
-      <p id="cssAjaxStatus">尚未載入。</p>
+      <p id="cssAjaxStatus" class="skhps-muted">尚未載入。</p>
     </section>
 
     <div id="cssAjaxContent"></div>
@@ -56,7 +56,8 @@
     Footer 載入中...
   </footer>
 
-  
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/base-style-sheet-apply.js"></script>
   <script>
     (function () {
       var statusEl = document.getElementById("cssAjaxStatus");
@@ -89,6 +90,15 @@
 
             contentEl.innerHTML = result.text;
             setStatus("已載入：" + path);
+
+            if (window.SKHPSCssStyleEditState) {
+              window.SKHPSCssStyleEditState.init(contentEl);
+            }
+
+            if (window.SKHPSApplyBaseStyleFromSheet) {
+              window.SKHPSApplyBaseStyleFromSheet();
+            }
+
             contentEl.scrollIntoView({ behavior: "smooth", block: "start" });
           })
           .catch(function (error) {
@@ -115,16 +125,13 @@
       loadFragment("CSS/base-style-playground.html");
     })();
   </script>
-  <script src="assets/js/footer.js"></script>  <script src="assets/js/footer.js"></script>  <script src="assets/js/config.js"></script>
   <script src="assets/js/backend-client.js"></script>
   <script src="assets/js/base-style-editor.js"></script>
   <script src="assets/js/base-style-sheet-save.js"></script>
-  <script src="assets/js/footer.js"></script></body>
+
+
+
+
+  <script src="assets/js/footer.js"></script>
+</body>
 </html>
-
-
-
-
-
-
-
