@@ -1,11 +1,19 @@
 /*
 檔案位置：skhpsv2/assets/css/skhps-loading.css
-時間戳記：2026-06-09 22:05 UTC+8
+時間戳記：2026-06-09 23:05 UTC+8
 用途：全站唯一固定載入動畫；所有頁面在 CSS Sheet runtime 完成前共用此動畫。此檔為前端固定動畫，不由 Sheet 控制。
 */
 
+/*
+  重點：
+  1. 每一頁 <html> 預設要有 class="skhps-css-loading"
+  2. loading 階段 body 必須 display:none，避免 CSS runtime 慢半拍時先看到裸畫面
+  3. loading 動畫只掛在 html::before / html::after，不掛在 body，因為 body 被 display:none
+  4. css-sheet-runtime.js 成功後會移除 skhps-css-loading，body 才恢復顯示
+*/
+
 html.skhps-css-loading body {
-  visibility: hidden;
+  display: none;
 }
 
 html.skhps-css-loading::before {
@@ -30,10 +38,10 @@ html.skhps-css-loading::after {
   align-items: center;
   justify-content: center;
   min-width: 220px;
-  padding: 18px 24px 18px 58px;
+  padding: 18px 24px;
   border: 1px solid rgba(159, 196, 220, .75);
   border-radius: 999px;
-  background: rgba(255, 255, 255, .88);
+  background: rgba(255, 255, 255, .9);
   box-shadow: 0 18px 50px rgba(15, 23, 42, .14);
   color: #061833;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -41,31 +49,6 @@ html.skhps-css-loading::after {
   font-weight: 800;
   letter-spacing: .04em;
   animation: skhps-loading-pulse 1.2s ease-in-out infinite;
-}
-
-body::before {
-  content: "";
-}
-
-html.skhps-css-loading body::before {
-  visibility: visible;
-  content: "";
-  position: fixed;
-  left: calc(50% - 92px);
-  top: calc(50% - 10px);
-  z-index: 100000;
-  width: 22px;
-  height: 22px;
-  border: 3px solid rgba(15, 129, 120, .18);
-  border-top-color: #0f8178;
-  border-radius: 999px;
-  animation: skhps-loading-spin .75s linear infinite;
-}
-
-@keyframes skhps-loading-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @keyframes skhps-loading-pulse {
