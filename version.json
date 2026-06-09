@@ -1,6 +1,6 @@
-﻿{
-    "app":  "skhpsv2",
-    "env":  "prod",
-    "version":  "prod v0.1.5-prod-202606092027",
-    "updatedAt":  "2026-06-09 20:27 UTC+8"
+{
+  "app": "skhpsv2",
+  "env": "prod",
+  "version": "prod v0.1.5-prod-202606092035",
+  "updatedAt": "2026-06-09 20:35 UTC+8"
 }
