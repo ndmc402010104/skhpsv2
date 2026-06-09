@@ -1,0 +1,105 @@
+/*
+檔案位置：skhpsv2/assets/css/skhps-loading.css
+時間戳記：2026-06-10 00:55 UTC+8
+用途：全站唯一固定載入動畫；所有頁面在 CSS Sheet runtime 完成前共用此動畫。此檔為前端固定動畫，不由 Sheet 控制。
+*/
+
+/*
+  規則：
+  1. 每一頁 <html> 預設要有 class="skhps-css-loading"
+  2. loading 文案由 <html data-loading-title="..."> 控制
+  3. loading 階段 body 必須 display:none，避免 CSS runtime 慢半拍時先看到裸畫面
+  4. 動畫只掛在 html::before / html::after，不掛在 body，因為 body 被 display:none
+  5. css-sheet-runtime.js 成功後會移除 skhps-css-loading，body 才恢復顯示
+*/
+
+html.skhps-css-loading {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 35% 20%, rgba(52, 79, 159, .16), transparent 32%),
+    radial-gradient(circle at 65% 80%, rgba(15, 129, 120, .14), transparent 34%),
+    #eef6fb;
+}
+
+html.skhps-css-loading body {
+  display: none;
+}
+
+/*
+  文字膠囊。
+  左 padding 加大，預留 spinner 空間，避免圈圈跟文字卡在一起。
+*/
+html.skhps-css-loading::before {
+  content: attr(data-loading-title) " 載入中";
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+  display: block;
+  min-width: 240px;
+  max-width: calc(100vw - 48px);
+  box-sizing: border-box;
+  padding: 18px 28px 18px 74px;
+  border: 1px solid rgba(159, 196, 220, .75);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, .14);
+  color: #061833;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-align: left;
+  animation: skhps-loading-pulse 1.2s ease-in-out infinite;
+}
+
+html.skhps-css-loading:not([data-loading-title])::before,
+html.skhps-css-loading[data-loading-title=""]::before {
+  content: "載入中";
+}
+
+/*
+  簡單版 spinner。
+  不用 mask / conic-gradient，改用最穩的 border-top 旋轉。
+  位置比文字更左，對齊膠囊左側 padding。
+*/
+html.skhps-css-loading::after {
+  content: "";
+  position: fixed;
+  left: calc(50% - 96px);
+  top: calc(50% - 13px);
+  z-index: 100000;
+  width: 26px;
+  height: 26px;
+  box-sizing: border-box;
+  border: 4px solid #dbeafe;
+  border-top-color: #0f8178;
+  border-right-color: #344f9f;
+  border-radius: 50%;
+  animation: skhps-loading-spin .8s linear infinite;
+}
+
+@keyframes skhps-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes skhps-loading-pulse {
+  0%, 100% {
+    opacity: .94;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.012);
+  }
+}

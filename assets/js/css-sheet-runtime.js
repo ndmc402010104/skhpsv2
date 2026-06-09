@@ -1,7 +1,7 @@
 /*
 檔案位置：skhpsv2/assets/js/css-sheet-runtime.js
-時間戳記：2026-06-09 22:25 UTC+8
-用途：統一 CSS Sheet runtime；第一次進入網域一定重新抓 Sheet 並顯示 loading，同一次瀏覽流程換頁才使用 localStorage cache。正式預設走 CSV，避免後端 action 尚未完成時噴 JSONP failed。
+時間戳記：2026-06-10 00:20 UTC+8
+用途：統一 CSS Sheet runtime；第一次進入網域一定重新抓 Sheet 並顯示 loading，同一次瀏覽流程換頁才使用 localStorage cache；loading title 由 config.json / pages / document.title 自動帶入。正式預設走 CSV，避免後端 action 尚未完成時噴 JSONP failed。
 */
 
 (function () {
@@ -85,6 +85,46 @@
       return res.json();
     });
   }
+
+
+
+  function normalizePath(path) {
+    return String(path || "")
+      .split("?")[0]
+      .split("#")[0]
+      .replace(/^\.\//, "")
+      .replace(/^\//, "");
+  }
+
+  function getCurrentPageFile() {
+    var path = normalizePath(window.location.pathname);
+    var parts = path.split("/").filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : "index.html";
+  }
+
+  function findPageTitle(config) {
+    var current = getCurrentPageFile();
+    var pages = config && Array.isArray(config.pages) ? config.pages : [];
+    var match = pages.find(function (page) {
+      return normalizePath(page && page.href) === current;
+    });
+
+    return (match && match.title) ||
+      (config && config.title) ||
+      document.title ||
+      "";
+  }
+
+  function applyLoadingTitle(config) {
+    var title = String(findPageTitle(config) || "").trim();
+
+    if (title) {
+      document.documentElement.setAttribute("data-loading-title", title);
+    } else {
+      document.documentElement.removeAttribute("data-loading-title");
+    }
+  }
+
 
   function getCssSheets(config) {
     return config && config.sheets && config.sheets.cssSheets
@@ -510,6 +550,8 @@
     options = options || {};
 
     return getConfig().then(function (config) {
+      applyLoadingTitle(config);
+
       var sheetKeys = getEnabledSheetKeys(config);
 
       if (!sheetKeys.length) {
