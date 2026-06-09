@@ -1,6 +1,6 @@
 ﻿# 檔案位置：skhpsv2/scripts/push.ps1
-# 時間戳記：2026-06-08 20:30 UTC+8
-# 用途：skhpsv2 簡化中文 push 工具；平常推 GitHub，必要時同步 Apps Script 後端。
+# 時間戳記：2026-06-09 13:45 UTC+8
+# 用途：skhpsv2 簡化中文 push 工具；平常推 GitHub，必要時同步 Apps Script 後端；none 會保留版號但刷新版本時間。
 # 規則：
 # - skhpsv2 根目錄不可有 .clasp.json。
 # - Apps Script 後端只放在 apps-script/。
@@ -210,13 +210,23 @@ function Update-VersionJson {
   $minor = [int]$Matches.minor
   $patch = [int]$Matches.patch
 
+  $envName = "prod"
+
+  if ($json.PSObject.Properties.Name -contains "env") {
+    if (![string]::IsNullOrWhiteSpace([string]$json.env)) {
+      $envName = [string]$json.env
+    }
+  } elseif ($current -match '^(?<env>[A-Za-z0-9_-]+)\s+v') {
+    $envName = $Matches.env
+  }
+
   Write-Host ""
   Write-Host "目前版本：$current" -ForegroundColor Cyan
   Write-Host "版本更新："
-  Write-Host "1. patch：小修改"
-  Write-Host "2. minor：新增功能"
-  Write-Host "3. major：大改版"
-  Write-Host "4. none：不更新，預設"
+  Write-Host "1. patch：小修改，版號 +0.0.1，並更新時間"
+  Write-Host "2. minor：新增功能，版號 +0.1.0，並更新時間"
+  Write-Host "3. major：大改版，版號 +1.0.0，並更新時間"
+  Write-Host "4. none：不改版號，只更新時間，預設"
   Write-Host ""
 
   $choice = Read-Host "輸入 1/2/3/4，Enter = 4 none"
@@ -237,28 +247,22 @@ function Update-VersionJson {
     $minor = 0
     $patch = 0
   } elseif ($choice -eq "4" -or $choice -eq "none") {
-    Write-Host "version.json 不更新。" -ForegroundColor Yellow
-    return
+    Write-Host "選擇 none：保留 v$major.$minor.$patch，只更新 version 時間。" -ForegroundColor Yellow
   } else {
     Write-Host "不支援的選項，略過版本更新。" -ForegroundColor Yellow
     return
   }
 
-  $envName = "prod"
-
-  if ($json.PSObject.Properties.Name -contains "env") {
-    if (![string]::IsNullOrWhiteSpace([string]$json.env)) {
-      $envName = [string]$json.env
-    }
-  }
-
   $timestamp = Get-Date -Format "yyyyMMddHHmm"
+  $updatedAt = (Get-Date -Format "yyyy-MM-dd HH:mm") + " UTC+8"
   $newVersion = "$envName v$major.$minor.$patch-$envName-$timestamp"
 
   $json.version = $newVersion
 
   if ($json.PSObject.Properties.Name -contains "updatedAt") {
-    $json.updatedAt = (Get-Date -Format "yyyy-MM-dd HH:mm") + " UTC+8"
+    $json.updatedAt = $updatedAt
+  } else {
+    $json | Add-Member -NotePropertyName "updatedAt" -NotePropertyValue $updatedAt
   }
 
   $json |
@@ -269,8 +273,8 @@ function Update-VersionJson {
   Write-Host "version.json 已更新：" -ForegroundColor Green
   Write-Host "  $current"
   Write-Host "  -> $newVersion"
+  Write-Host "  updatedAt：$updatedAt"
 }
-
 
 function Get-DeploymentIdFromConfig {
   $configPath = Join-Path $repoRoot "config.json"
