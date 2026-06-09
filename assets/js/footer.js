@@ -1,11 +1,17 @@
-(function(){
-  var FOOTER_STYLE_ID = "skhps-footer-style-from-sheet";
+/*
+檔案位置：skhpsv2/assets/js/footer.js
+時間戳記：2026-06-09 20:55 UTC+8
+用途：Footer 狀態列；只負責渲染 footer、version、Apps Script 與 Sheet 狀態。不再讀取 footerStyle CSV、不再注入 footer CSS，避免與 css-sheet-runtime.js 打架。
+*/
 
-  function findFooter(){
+(function () {
+  "use strict";
+
+  function findFooter() {
     return document.querySelector("[data-skhps-footer]");
   }
 
-  function createFooterItem(labelText, valueText, extraClass){
+  function createFooterItem(labelText, valueText, extraClass) {
     var item = document.createElement("span");
     item.className = "skhps-footer-item" + (extraClass ? " " + extraClass : "");
 
@@ -23,10 +29,10 @@
     return item;
   }
 
-  function renderFooter(state){
+  function renderFooter(state) {
     var footer = findFooter();
 
-    if(!footer){
+    if (!footer) {
       return;
     }
 
@@ -41,260 +47,154 @@
     );
 
     track.appendChild(
-      createFooterItem("Apps Script：", state.apiText || "testing", "")
+      createFooterItem("Apps Script：", state.apiText || "testing", state.apiOk ? "is-ok" : "is-warn")
     );
 
     track.appendChild(
-      createFooterItem("Sheet：", state.sheetText || "testing", "")
+      createFooterItem("Sheet：", state.sheetText || "testing", state.sheetOk ? "is-ok" : "is-warn")
     );
 
     footer.appendChild(track);
   }
 
-  function parseCsv(text){
-    var rows = [];
-    var row = [];
-    var cell = "";
-    var quote = false;
-
-    for(var i = 0; i < text.length; i++){
-      var c = text[i];
-      var n = text[i + 1];
-
-      if(quote){
-        if(c === '"' && n === '"'){
-          cell += '"';
-          i++;
-        } else if(c === '"'){
-          quote = false;
-        } else {
-          cell += c;
-        }
-      } else {
-        if(c === '"'){
-          quote = true;
-        } else if(c === ","){
-          row.push(cell);
-          cell = "";
-        } else if(c === "\n"){
-          row.push(cell);
-          rows.push(row);
-          row = [];
-          cell = "";
-        } else if(c !== "\r"){
-          cell += c;
-        }
-      }
-    }
-
-    row.push(cell);
-    rows.push(row);
-
-    return rows.filter(function(r){
-      return r.some(function(x){
-        return String(x || "").trim() !== "";
-      });
-    });
-  }
-
-  function buildFooterCss(rows){
-    var header = rows[0] || [];
-    var idx = {};
-    var map = {};
-
-    header.forEach(function(h, i){
-      idx[String(h || "").trim()] = i;
-    });
-
-    rows.slice(1).forEach(function(row){
-      var component = String(row[idx.component] || "").trim();
-      var className = String(row[idx.className] || "").trim();
-      var property = String(row[idx.property] || "").trim();
-      var value = String(row[idx.value] || "").trim();
-
-      if(component !== "footer" || !className || !property){
-        return;
-      }
-
-      /*
-        Sheet 越下面越新。
-        同 selector + property 後面的 row 蓋掉前面的 row。
-      */
-      var key = className + "||" + property;
-
-      map[key] = {
-        className: className,
-        property: property,
-        value: value
-      };
-    });
-
-    var grouped = {};
-
-    Object.keys(map).forEach(function(key){
-      var item = map[key];
-      grouped[item.className] = grouped[item.className] || [];
-      grouped[item.className].push("  " + item.property + ": " + item.value + ";");
-    });
-
-    return Object.keys(grouped).map(function(selector){
-      return selector + "{\n" + grouped[selector].join("\n") + "\n}";
-    }).join("\n\n");
-  }
-
-  function injectFooterCss(css){
-    var style = document.getElementById(FOOTER_STYLE_ID);
-
-    if(!style){
-      style = document.createElement("style");
-      style.id = FOOTER_STYLE_ID;
-      style.setAttribute("data-source", "footerStyle Sheet");
-      document.head.appendChild(style);
-    }
-
-    style.textContent = css;
-  }
-
-  function applyFooterStyleFromSheet(){
-    var loadConfig = window.SKHPSConfig && window.SKHPSConfig.loadConfig
-      ? window.SKHPSConfig.loadConfig()
-      : fetch("config.json", { cache: "no-store" }).then(function(res){ return res.json(); });
-
-    return loadConfig
-      .then(function(config){
-        var id = config && config.sheets && config.sheets.mainSpreadsheetId;
-        var tab = config && config.sheets && config.sheets.cssSheets && config.sheets.cssSheets.footerStyle;
-
-        if(!id || !tab || tab.tabGid === undefined || tab.tabGid === null || tab.tabGid === ""){
-          throw new Error("footerStyle config missing");
-        }
-
-        var url = "https://docs.google.com/spreadsheets/d/" +
-          encodeURIComponent(id) +
-          "/export?format=csv&gid=" +
-          encodeURIComponent(tab.tabGid);
-
-        return fetch(url, { cache: "no-store" });
-      })
-      .then(function(res){
-        return res.text().then(function(text){
-          if(!res.ok){
-            throw new Error("footerStyle CSV HTTP " + res.status);
-          }
-          return text;
-        });
-      })
-      .then(function(csv){
-        injectFooterCss(buildFooterCss(parseCsv(csv)));
-      })
-      .catch(function(error){
-        console.warn("footerStyle apply failed:", error);
-      });
-  }
-
-  function setState(state, patch){
-    Object.keys(patch).forEach(function(key){
+  function setState(state, patch) {
+    Object.keys(patch || {}).forEach(function (key) {
       state[key] = patch[key];
     });
 
     renderFooter(state);
   }
 
-  function boot(){
-    var state = {
-      versionText: "loading",
-      apiText: "testing",
-      sheetText: "testing"
-    };
-
-    applyFooterStyleFromSheet();
-    renderFooter(state);
-
-    if(!window.SKHPSConfig){
+  function loadVersion(state) {
+    if (!window.SKHPSConfig || typeof window.SKHPSConfig.loadVersion !== "function") {
       setState(state, {
-        versionText: "config failed",
-        apiText: "config failed",
-        sheetText: "config failed"
+        versionText: "config failed"
       });
-      return;
+      return Promise.resolve();
     }
 
-    window.SKHPSConfig.loadVersion()
-      .then(function(version){
+    return window.SKHPSConfig.loadVersion()
+      .then(function (version) {
         setState(state, {
-          versionText: version.version || "unknown"
+          versionText: version && version.version ? version.version : "unknown"
         });
       })
-      .catch(function(){
+      .catch(function () {
         setState(state, {
-          versionText: "version.json failed"
-        });
-      });
-
-    window.SKHPSConfig.loadConfig()
-      .then(function(){
-        if(!window.SKHPSBackend){
-          throw new Error("SKHPSBackend not loaded");
-        }
-
-        return window.SKHPSBackend.call("health");
-      })
-      .then(function(response){
-        if(response && response.ok){
-          setState(state, {
-            apiText: "OK" + (response.env ? " / " + response.env : "")
-          });
-        } else {
-          setState(state, {
-            apiText: "failed"
-          });
-        }
-      })
-      .catch(function(){
-        setState(state, {
-          apiText: "failed"
-        });
-      });
-
-    window.SKHPSConfig.loadConfig()
-      .then(function(){
-        if(!window.SKHPSBackend){
-          throw new Error("SKHPSBackend not loaded");
-        }
-
-        return window.SKHPSBackend.call("sheetStatus");
-      })
-      .then(function(response){
-        var data = response && response.data ? response.data : response;
-
-        if(data && data.ok){
-          setState(state, {
-            sheetText: "OK / " + (data.spreadsheetName || "connected")
-          });
-          return;
-        }
-
-        if(data && data.configured === false){
-          setState(state, {
-            sheetText: "not configured"
-          });
-          return;
-        }
-
-        setState(state, {
-          sheetText: "failed"
-        });
-      })
-      .catch(function(){
-        setState(state, {
-          sheetText: "failed"
+          versionText: "version failed"
         });
       });
   }
 
-  if(document.readyState === "loading"){
+  function checkApi(state) {
+    if (!window.SKHPSBackend || typeof window.SKHPSBackend.call !== "function") {
+      setState(state, {
+        apiText: "backend missing",
+        apiOk: false
+      });
+      return Promise.resolve();
+    }
+
+    return window.SKHPSBackend.call("health")
+      .then(function (response) {
+        if (response && response.ok === true) {
+          setState(state, {
+            apiText: "ok",
+            apiOk: true
+          });
+          return;
+        }
+
+        setState(state, {
+          apiText: "failed",
+          apiOk: false
+        });
+      })
+      .catch(function () {
+        setState(state, {
+          apiText: "failed",
+          apiOk: false
+        });
+      });
+  }
+
+  function checkSheet(state) {
+    if (!window.SKHPSBackend || typeof window.SKHPSBackend.call !== "function") {
+      setState(state, {
+        sheetText: "backend missing",
+        sheetOk: false
+      });
+      return Promise.resolve();
+    }
+
+    return window.SKHPSBackend.call("sheetStatus")
+      .then(function (response) {
+        if (response && response.ok === true) {
+          setState(state, {
+            sheetText: "ok",
+            sheetOk: true
+          });
+          return;
+        }
+
+        setState(state, {
+          sheetText: "failed",
+          sheetOk: false
+        });
+      })
+      .catch(function () {
+        setState(state, {
+          sheetText: "failed",
+          sheetOk: false
+        });
+      });
+  }
+
+  function reflectCssRuntime(state) {
+    function updateFromRuntime(detail) {
+      var runtime = detail || window.SKHPSCssSheetRuntime;
+
+      if (!runtime) return;
+
+      setState(state, {
+        sheetText: "css " + (runtime.sheetKeys ? runtime.sheetKeys.length : "?") + " sheets",
+        sheetOk: true
+      });
+    }
+
+    if (window.SKHPSCssSheetRuntime) {
+      updateFromRuntime(window.SKHPSCssSheetRuntime);
+    }
+
+    document.addEventListener("skhps-css-sheet-runtime-ready", function (event) {
+      updateFromRuntime(event.detail);
+    });
+  }
+
+  function boot() {
+    var state = {
+      versionText: "loading",
+      apiText: "testing",
+      apiOk: false,
+      sheetText: "testing",
+      sheetOk: false
+    };
+
+    renderFooter(state);
+    reflectCssRuntime(state);
+
+    loadVersion(state);
+    checkApi(state);
+    checkSheet(state);
+  }
+
+  if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
   } else {
     boot();
   }
+
+  window.SKHPSFooter = {
+    render: renderFooter
+  };
 })();
