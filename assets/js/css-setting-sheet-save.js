@@ -1,11 +1,27 @@
 /*
 檔案位置：skhpsv2/assets/js/css-setting-sheet-save.js
-時間戳記：2026-06-09 19:00 UTC+8
-用途：CSS Setting 共用 Sheet save；依 data-css-setting-component / data-css-setting-tab-key 寫回對應 CSS Sheet。
+時間戳記：2026-06-09 21:45 UTC+8
+用途：CSS Setting 共用 Sheet save；依 data-css-setting-component / data-css-setting-tab-key 寫回對應 CSS Sheet。儲存成功後清除 css-sheet-runtime.js 快取，確保其他頁下次會讀取最新 CSS。
 */
 
 (function () {
   "use strict";
+
+  function clearCssRuntimeCache() {
+    if (
+      window.SKHPSCssSheetRuntimeLoader &&
+      typeof window.SKHPSCssSheetRuntimeLoader.clearCache === "function"
+    ) {
+      window.SKHPSCssSheetRuntimeLoader.clearCache();
+      return;
+    }
+
+    try {
+      localStorage.removeItem("skhpsv2.cssSheetRuntimeCache.v1");
+    } catch (error) {
+      console.warn("CSS runtime cache clear failed:", error);
+    }
+  }
 
   function setStatus(scope, message) {
     var status = scope.querySelector("[data-css-setting-status]");
@@ -83,7 +99,9 @@
           throw new Error(response && response.message ? response.message : JSON.stringify(response));
         }
 
-        setStatus(scope, "已寫回 Sheet：" + response.appendedRows + " 筆，updatedAt=" + response.updatedAt);
+        clearCssRuntimeCache();
+
+        setStatus(scope, "已寫回 Sheet：" + response.appendedRows + " 筆，updatedAt=" + response.updatedAt + "；CSS 快取已清除。");
 
         dispatch(scope, "skhps-css-setting-save-success", {
           response: response,

@@ -1,7 +1,7 @@
 /*
 檔案位置：skhpsv2/assets/js/css-sheet-runtime.js
-時間戳記：2026-06-09 20:40 UTC+8
-用途：統一 CSS Sheet runtime；從 config.json 的 sheets.cssSheets 動態讀取所有 CSS Sheet，優先走 Apps Script 後端，失敗時 fallback 直接讀 Google Sheet CSV，並把 rows 轉成頁面可用 CSS。
+時間戳記：2026-06-09 22:25 UTC+8
+用途：統一 CSS Sheet runtime；第一次進入網域一定重新抓 Sheet 並顯示 loading，同一次瀏覽流程換頁才使用 localStorage cache。正式預設走 CSV，避免後端 action 尚未完成時噴 JSONP failed。
 */
 
 (function () {
@@ -9,6 +9,18 @@
 
   var STYLE_ID = "skhps-css-sheet-runtime";
   var STATUS_ATTR = "data-css-sheet-runtime-status";
+  var LOADING_CLASS = "skhps-css-loading";
+
+  /*
+    localStorage：
+    保存 CSS 文字，讓同一次瀏覽流程切到 admin/css-setting/其他頁時可以立即套用。
+
+    sessionStorage：
+    只記錄「這次開網域後是否已經抓過一次 Sheet」。
+    關閉分頁/瀏覽器後，下次第一次進網域會重新抓 Sheet。
+  */
+  var CACHE_KEY = "skhpsv2.cssSheetRuntimeCache.v1";
+  var SESSION_READY_KEY = "skhpsv2.cssSheetRuntimeSessionReady.v1";
 
   function ready(fn) {
     if (document.readyState === "loading") {
@@ -21,9 +33,42 @@
   function setStatus(message, ok) {
     var el = document.querySelector("[" + STATUS_ATTR + "]");
     if (!el) return;
-
     el.textContent = message;
     el.setAttribute("data-ok", ok ? "true" : "false");
+  }
+
+  function showPage() {
+    document.documentElement.classList.remove(LOADING_CLASS);
+    document.documentElement.setAttribute("data-skhps-css-ready", "true");
+  }
+
+  function keepLoading() {
+    document.documentElement.classList.add(LOADING_CLASS);
+    document.documentElement.setAttribute("data-skhps-css-ready", "false");
+  }
+
+  function getSessionReady() {
+    try {
+      return sessionStorage.getItem(SESSION_READY_KEY) === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setSessionReady() {
+    try {
+      sessionStorage.setItem(SESSION_READY_KEY, "1");
+    } catch (error) {
+      console.warn("CSS Sheet runtime session flag write failed:", error);
+    }
+  }
+
+  function clearSessionReady() {
+    try {
+      sessionStorage.removeItem(SESSION_READY_KEY);
+    } catch (error) {
+      console.warn("CSS Sheet runtime session flag clear failed:", error);
+    }
   }
 
   function getConfig() {
@@ -42,9 +87,7 @@
   }
 
   function getCssSheets(config) {
-    return config &&
-      config.sheets &&
-      config.sheets.cssSheets
+    return config && config.sheets && config.sheets.cssSheets
       ? config.sheets.cssSheets
       : {};
   }
@@ -59,15 +102,10 @@
   }
 
   function csvUrl(config, sheetKey) {
-    var spreadsheetId = config &&
-      config.sheets &&
-      config.sheets.mainSpreadsheetId;
-
+    var spreadsheetId = config && config.sheets && config.sheets.mainSpreadsheetId;
     var sheet = getCssSheets(config)[sheetKey];
 
-    if (!spreadsheetId) {
-      throw new Error("config.json missing sheets.mainSpreadsheetId");
-    }
+    if (!spreadsheetId) throw new Error("config.json missing sheets.mainSpreadsheetId");
 
     if (!sheet || sheet.tabGid === undefined || sheet.tabGid === null || sheet.tabGid === "") {
       throw new Error("config.json missing sheets.cssSheets." + sheetKey + ".tabGid");
@@ -153,104 +191,12 @@
     });
   }
 
-  function normalizeBackendRows(response, sheetKeys) {
-    if (!response) return [];
-
-    if (Array.isArray(response)) {
-      return response;
-    }
-
-    if (Array.isArray(response.rows)) {
-      return response.rows;
-    }
-
-    if (Array.isArray(response.data)) {
-      return response.data;
-    }
-
-    var out = [];
-
-    sheetKeys.forEach(function (sheetKey) {
-      var section = response[sheetKey];
-
-      if (!section) return;
-
-      if (Array.isArray(section)) {
-        section.forEach(function (row) {
-          if (!row.sheetKey) row.sheetKey = sheetKey;
-          out.push(row);
-        });
-        return;
-      }
-
-      if (Array.isArray(section.rows)) {
-        section.rows.forEach(function (row) {
-          if (!row.sheetKey) row.sheetKey = sheetKey;
-          out.push(row);
-        });
-      }
-    });
-
-    return out;
-  }
-
-  function loadRowsFromBackend(config, sheetKeys) {
-    if (!window.SKHPSBackend || typeof window.SKHPSBackend.call !== "function") {
-      return Promise.reject(new Error("SKHPSBackend.call not available"));
-    }
-
-    /*
-      後端理想支援：
-      action = getCssSheetRuntime 或 getCssSheetPreview
-      payload = {
-        sheetKeys: ["baseStyle", "tokenStyle", ...],
-        sheets: ["baseStyle", "tokenStyle", ...]
-      }
-
-      這裡先試 getCssSheetRuntime；如果後端還沒有，再試 getCssSheetPreview。
-    */
-    return window.SKHPSBackend.call("getCssSheetRuntime", {
-      sheetKeys: sheetKeys,
-      sheets: sheetKeys
-    }).then(function (res) {
-      if (!res || res.ok === false) {
-        throw new Error(res && (res.message || res.error) ? (res.message || res.error) : "getCssSheetRuntime failed");
-      }
-
-      var rows = normalizeBackendRows(res, sheetKeys);
-      if (!rows.length) {
-        throw new Error("getCssSheetRuntime returned no rows");
-      }
-
-      return rows;
-    }).catch(function () {
-      return window.SKHPSBackend.call("getCssSheetPreview", {
-        sheetKeys: sheetKeys,
-        sheets: sheetKeys
-      }).then(function (res) {
-        if (!res || res.ok === false) {
-          throw new Error(res && (res.message || res.error) ? (res.message || res.error) : "getCssSheetPreview failed");
-        }
-
-        var rows = normalizeBackendRows(res, sheetKeys);
-        if (!rows.length) {
-          throw new Error("getCssSheetPreview returned no rows");
-        }
-
-        return rows;
-      });
-    });
-  }
-
   function loadRowsFromCsv(config, sheetKeys) {
     return Promise.all(sheetKeys.map(function (sheetKey) {
       return fetch(csvUrl(config, sheetKey), { cache: "no-store" })
         .then(function (res) {
           return res.text().then(function (text) {
-            if (!res.ok) {
-              throw new Error(sheetKey + " CSV HTTP " + res.status);
-            }
-
+            if (!res.ok) throw new Error(sheetKey + " CSV HTTP " + res.status);
             return rowsFromCsv(sheetKey, parseCsv(text));
           });
         });
@@ -261,23 +207,92 @@
     });
   }
 
+  function normalizeBackendRows(response, sheetKeys) {
+    if (!response) return [];
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response.rows)) return response.rows;
+    if (Array.isArray(response.data)) return response.data;
+
+    var out = [];
+
+    sheetKeys.forEach(function (sheetKey) {
+      var section = response[sheetKey];
+      if (!section) return;
+
+      if (Array.isArray(section)) {
+        section.forEach(function (row) {
+          if (!row.sheetKey) row.sheetKey = sheetKey;
+          out.push(row);
+        });
+      } else if (Array.isArray(section.rows)) {
+        section.rows.forEach(function (row) {
+          if (!row.sheetKey) row.sheetKey = sheetKey;
+          out.push(row);
+        });
+      }
+    });
+
+    return out;
+  }
+
+  function loadRowsFromBackend(sheetKeys) {
+    if (!window.SKHPSBackend || typeof window.SKHPSBackend.call !== "function") {
+      return Promise.reject(new Error("SKHPSBackend.call not available"));
+    }
+
+    return window.SKHPSBackend.call("getCssSheetRuntime", {
+      sheetKeys: sheetKeys,
+      sheets: sheetKeys
+    }).then(function (res) {
+      if (!res || res.ok === false) {
+        throw new Error(res && (res.message || res.error) ? (res.message || res.error) : "getCssSheetRuntime failed");
+      }
+
+      var rows = normalizeBackendRows(res, sheetKeys);
+      if (!rows.length) throw new Error("getCssSheetRuntime returned no rows");
+      return rows;
+    });
+  }
+
+  function shouldUseBackend(config) {
+    /*
+      現階段預設 false，避免 Apps Script 尚未支援 getCssSheetRuntime 時，
+      每次載入都噴 JSONP failed。
+      之後後端補好後，在 config.json 加：
+      "cssRuntime": { "source": "backend" }
+      就能切回後端。
+    */
+    return config && config.cssRuntime && config.cssRuntime.source === "backend";
+  }
+
+  function loadRows(config, sheetKeys) {
+    if (shouldUseBackend(config)) {
+      return loadRowsFromBackend(sheetKeys).catch(function (error) {
+        console.warn("CSS Sheet backend failed, fallback to CSV:", error);
+        return loadRowsFromCsv(config, sheetKeys);
+      });
+    }
+
+    return loadRowsFromCsv(config, sheetKeys);
+  }
+
   function normalizeSelector(className, component) {
     var raw = String(className || "").trim();
 
-    if (!raw && component) {
-      raw = String(component || "").trim();
-    }
-
+    if (!raw && component) raw = String(component || "").trim();
     if (!raw) return "";
 
     if (
+      raw === "*" ||
+      raw.indexOf("*::") === 0 ||
       raw === "body" ||
       raw === "html" ||
       raw === ":root" ||
       raw.indexOf(".") === 0 ||
       raw.indexOf("#") === 0 ||
       raw.indexOf("[") === 0 ||
-      raw.indexOf(":") === 0
+      raw.indexOf(":") === 0 ||
+      raw.indexOf("@media") === 0
     ) {
       return raw;
     }
@@ -294,11 +309,7 @@
     var updatedAt = String(row.updatedAt || "").trim();
 
     if (!isDated(updatedAt)) {
-      return {
-        rank: 1,
-        time: 0,
-        index: index
-      };
+      return { rank: 1, time: 0, index: index };
     }
 
     var parsed = new Date(updatedAt.replace(/\//g, "-")).getTime();
@@ -350,15 +361,30 @@
   function buildCss(rows) {
     var latest = pickLatestRows(rows);
     var grouped = {};
+    var mediaGrouped = {};
 
     latest.forEach(function (row) {
-      grouped[row.selector] = grouped[row.selector] || [];
-      grouped[row.selector].push(row);
+      var selector = row.selector;
+
+      if (selector.indexOf("@media") === 0) {
+        var match = selector.match(/^(@media[^{]+)\{\s*([^}]+)\s*\}$/);
+
+        if (match) {
+          var media = match[1].trim();
+          var innerSelector = match[2].trim();
+
+          mediaGrouped[media] = mediaGrouped[media] || {};
+          mediaGrouped[media][innerSelector] = mediaGrouped[media][innerSelector] || [];
+          mediaGrouped[media][innerSelector].push(row);
+          return;
+        }
+      }
+
+      grouped[selector] = grouped[selector] || [];
+      grouped[selector].push(row);
     });
 
-    var css = [
-      "/* skhps css sheet runtime generated */"
-    ];
+    var css = ["/* skhps css sheet runtime generated */"];
 
     Object.keys(grouped).forEach(function (selector) {
       css.push("");
@@ -366,6 +392,23 @@
 
       grouped[selector].forEach(function (row) {
         css.push("  " + row.property + ": " + row.value + ";");
+      });
+
+      css.push("}");
+    });
+
+    Object.keys(mediaGrouped).forEach(function (media) {
+      css.push("");
+      css.push(media + " {");
+
+      Object.keys(mediaGrouped[media]).forEach(function (selector) {
+        css.push("  " + selector + " {");
+
+        mediaGrouped[media][selector].forEach(function (row) {
+          css.push("    " + row.property + ": " + row.value + ";");
+        });
+
+        css.push("  }");
       });
 
       css.push("}");
@@ -390,7 +433,82 @@
     style.textContent = cssText || "";
   }
 
-  function load() {
+  function readCache() {
+    try {
+      var raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+
+      var cache = JSON.parse(raw);
+      if (!cache || !cache.cssText) return null;
+
+      return cache;
+    } catch (error) {
+      console.warn("CSS Sheet runtime cache read failed:", error);
+      return null;
+    }
+  }
+
+  function writeCache(data) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        savedAt: Date.now(),
+        source: data.source,
+        sheetKeys: data.sheetKeys,
+        rowsCount: data.rows ? data.rows.length : 0,
+        latestRowsCount: data.latestRows ? data.latestRows.length : 0,
+        cssText: data.cssText
+      }));
+    } catch (error) {
+      console.warn("CSS Sheet runtime cache write failed:", error);
+    }
+  }
+
+  function clearCache() {
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch (error) {
+      console.warn("CSS Sheet runtime cache clear failed:", error);
+    }
+
+    clearSessionReady();
+  }
+
+  function applyCacheIfAvailable() {
+    var cache = readCache();
+
+    if (!cache) {
+      return false;
+    }
+
+    injectCss(cache.cssText);
+    showPage();
+
+    setStatus(
+      "CSS Sheet：已套用本次瀏覽快取 " +
+      (cache.sheetKeys ? cache.sheetKeys.length : "?") +
+      " 張 / " +
+      (cache.latestRowsCount || "?") +
+      " 組樣式",
+      true
+    );
+
+    window.SKHPSCssSheetRuntime = {
+      source: "cache",
+      sheetKeys: cache.sheetKeys || [],
+      rows: [],
+      latestRows: [],
+      cssText: cache.cssText,
+      reload: load,
+      clearCache: clearCache,
+      clearSession: clearSessionReady
+    };
+
+    return true;
+  }
+
+  function load(options) {
+    options = options || {};
+
     return getConfig().then(function (config) {
       var sheetKeys = getEnabledSheetKeys(config);
 
@@ -398,34 +516,23 @@
         throw new Error("config.json sheets.cssSheets is empty");
       }
 
-      setStatus("CSS Sheet：讀取中（" + sheetKeys.length + " 張）", false);
+      if (!options.silent) {
+        setStatus("CSS Sheet：重新讀取 Sheet（" + sheetKeys.length + " 張）", false);
+      }
 
-      return loadRowsFromBackend(config, sheetKeys)
-        .then(function (rows) {
-          return {
-            source: "backend",
-            config: config,
-            sheetKeys: sheetKeys,
-            rows: rows
-          };
-        })
-        .catch(function (backendError) {
-          console.warn("CSS Sheet backend failed, fallback to CSV:", backendError);
-
-          return loadRowsFromCsv(config, sheetKeys).then(function (rows) {
-            return {
-              source: "csv",
-              config: config,
-              sheetKeys: sheetKeys,
-              rows: rows,
-              backendError: backendError
-            };
-          });
-        });
+      return loadRows(config, sheetKeys).then(function (rows) {
+        return {
+          source: shouldUseBackend(config) ? "backend" : "csv",
+          config: config,
+          sheetKeys: sheetKeys,
+          rows: rows
+        };
+      });
     }).then(function (result) {
       var built = buildCss(result.rows);
 
       injectCss(built.cssText);
+      showPage();
 
       window.SKHPSCssSheetRuntime = {
         source: result.source,
@@ -433,11 +540,16 @@
         rows: result.rows,
         latestRows: built.latestRows,
         cssText: built.cssText,
-        reload: load
+        reload: load,
+        clearCache: clearCache,
+        clearSession: clearSessionReady
       };
 
+      writeCache(window.SKHPSCssSheetRuntime);
+      setSessionReady();
+
       setStatus(
-        "CSS Sheet：已套用 " +
+        "CSS Sheet：已重新讀取 " +
         result.sheetKeys.length +
         " 張 / " +
         built.latestRows.length +
@@ -454,16 +566,44 @@
       return window.SKHPSCssSheetRuntime;
     }).catch(function (error) {
       console.error("CSS Sheet runtime failed:", error);
+
+      /*
+        第一次進網域重新抓 Sheet 失敗時，如果 localStorage 有舊 cache，
+        才退回舊 cache，避免畫面壞掉。
+      */
+      if (applyCacheIfAvailable()) {
+        setStatus("CSS Sheet：重新讀取失敗，暫用舊快取：" + (error.message || String(error)), false);
+        return window.SKHPSCssSheetRuntime;
+      }
+
+      showPage();
       setStatus("CSS Sheet：載入失敗：" + (error.message || String(error)), false);
       throw error;
     });
   }
 
   ready(function () {
-    load().catch(function () {});
+    /*
+      核心規則：
+      - 第一次進入這個網域/分頁 session：一定 loading + 重新抓 Sheet。
+      - 同一次 session 換頁：如果有 cache，就直接用 cache，不跳 loading。
+      - CSS Setting save 成功後會 clearCache()，也會清 session flag，所以下次會重新抓。
+    */
+    if (getSessionReady() && applyCacheIfAvailable()) {
+      return;
+    }
+
+    keepLoading();
+    load({
+      silent: false
+    }).catch(function () {});
   });
 
   window.SKHPSCssSheetRuntimeLoader = {
-    load: load
+    load: load,
+    clearCache: clearCache,
+    clearSession: clearSessionReady,
+    cacheKey: CACHE_KEY,
+    sessionReadyKey: SESSION_READY_KEY
   };
 })();

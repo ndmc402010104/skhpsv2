@@ -1,74 +1,45 @@
 ﻿<!DOCTYPE html>
 <!--
 檔案位置：skhpsv2/index.html
-時間戳記：2026-06-09 21:10 UTC+8
-用途：整外資訊系統首頁；接上 css-sheet-runtime.js，讓首頁套用 config.json 登記的 CSS Sheet 樣式。
+時間戳記：2026-06-09 22:05 UTC+8
+用途：整外資訊系統簡約首頁；只保留 Header、標題、主要入口按鈕、Footer，並接上 css-sheet-runtime.js 套用 Sheet CSS。
 -->
-<html lang="zh-Hant">
+<html lang="zh-Hant" class="skhps-css-loading">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>整外資訊系統首頁</title>
+  <link rel="stylesheet" href="assets/css/skhps-loading.css">
 </head>
 <body class="skhps-body">
   <header class="skhps-header">
-    <div class="skhps-container skhps-header-inner">
+    <div class="skhps-header-inner">
       <div class="skhps-brand">
         <div class="skhps-brand-mark">SKH</div>
         <div class="skhps-brand-text">
-          <p class="skhps-eyebrow">Plastic Surgery Information System</p>
-          <h1 class="skhps-page-title">整外資訊系統首頁</h1>
-          <p class="skhps-page-subtitle">系統入口、後台管理與樣式設定。</p>
+          <div class="skhps-eyebrow">Plastic Surgery</div>
+          <div class="skhps-header-title">整外資訊系統</div>
         </div>
       </div>
     </div>
   </header>
 
   <main class="skhps-page">
-    <section class="skhps-container skhps-section">
-      <div class="skhps-grid skhps-grid-2">
-        <a class="skhps-card skhps-link-card" href="admin.html">
-          <div class="skhps-card-body">
-            <p class="skhps-card-kicker">Admin</p>
-            <h2 class="skhps-card-title">系統後台</h2>
-            <p class="skhps-card-text">進入系統後台、連線測試與管理功能。</p>
-            <span class="skhps-btn skhps-btn-primary">進入後台</span>
-          </div>
-        </a>
+    <section class="skhps-container skhps-hero">
+      <div class="skhps-hero-card">
+        <p class="skhps-eyebrow">Shin Kong Hospital</p>
+        <h1 class="skhps-page-title">整外資訊系統首頁</h1>
+        <p class="skhps-page-subtitle">請選擇要進入的系統功能。</p>
 
-        <a class="skhps-card skhps-link-card" href="css-setting.html">
-          <div class="skhps-card-body">
-            <p class="skhps-card-kicker">CSS Setting</p>
-            <h2 class="skhps-card-title">CSS 設定中心</h2>
-            <p class="skhps-card-text">調整 base、token、layout、header、footer、button、form 樣式。</p>
-            <span class="skhps-btn skhps-btn-secondary">進入設定</span>
-          </div>
-        </a>
-      </div>
-    </section>
+        <nav class="skhps-action-grid" aria-label="系統入口">
+          <a class="skhps-btn skhps-btn-primary skhps-btn-lg" href="admin.html">
+            系統後台
+          </a>
 
-    <section class="skhps-container skhps-section">
-      <div class="skhps-card">
-        <div class="skhps-card-body">
-          <p class="skhps-card-kicker">Runtime</p>
-          <h2 class="skhps-card-title">CSS Sheet 狀態</h2>
-          <p class="skhps-card-text">
-            這裡用來確認 css-sheet-runtime.js 是否已經讀取 config.json 裡登記的 CSS Sheet，並轉成 CSS 套進本頁。
-          </p>
-          <div class="skhps-status" data-css-sheet-runtime-status>CSS Sheet：尚未載入</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="skhps-container skhps-section">
-      <div class="skhps-card">
-        <div class="skhps-card-body">
-          <p class="skhps-card-kicker">Backend</p>
-          <h2 class="skhps-card-title">後台連線測試</h2>
-          <p class="skhps-card-text">測試目前 config.json 指向的 Apps Script health action。</p>
-          <button class="skhps-btn skhps-btn-primary" type="button" id="testBackendBtn">測試後台 health</button>
-          <pre class="skhps-code-block" id="backendResult">尚未測試。</pre>
-        </div>
+          <a class="skhps-btn skhps-btn-secondary skhps-btn-lg" href="css-setting.html">
+            CSS 設定
+          </a>
+        </nav>
       </div>
     </section>
   </main>
@@ -81,14 +52,5 @@
   <script src="assets/js/backend-client.js"></script>
   <script src="assets/js/css-sheet-runtime.js"></script>
   <script src="assets/js/footer.js"></script>
-  <script>
-    if (window.SKHPSConfig) {
-      window.SKHPSConfig.loadConfig().then(function () {
-        if (window.SKHPSBackend) {
-          window.SKHPSBackend.bindHealthButton("testBackendBtn", "backendResult");
-        }
-      });
-    }
-  </script>
 </body>
 </html>

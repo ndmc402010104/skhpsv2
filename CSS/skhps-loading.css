@@ -1,0 +1,81 @@
+/*
+檔案位置：skhpsv2/assets/css/skhps-loading.css
+時間戳記：2026-06-09 22:05 UTC+8
+用途：全站唯一固定載入動畫；所有頁面在 CSS Sheet runtime 完成前共用此動畫。此檔為前端固定動畫，不由 Sheet 控制。
+*/
+
+html.skhps-css-loading body {
+  visibility: hidden;
+}
+
+html.skhps-css-loading::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background:
+    radial-gradient(circle at 35% 20%, rgba(52, 79, 159, .16), transparent 32%),
+    radial-gradient(circle at 65% 80%, rgba(15, 129, 120, .14), transparent 34%),
+    #eef6fb;
+}
+
+html.skhps-css-loading::after {
+  content: "整外資訊系統載入中";
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+  padding: 18px 24px 18px 58px;
+  border: 1px solid rgba(159, 196, 220, .75);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .88);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, .14);
+  color: #061833;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  animation: skhps-loading-pulse 1.2s ease-in-out infinite;
+}
+
+body::before {
+  content: "";
+}
+
+html.skhps-css-loading body::before {
+  visibility: visible;
+  content: "";
+  position: fixed;
+  left: calc(50% - 92px);
+  top: calc(50% - 10px);
+  z-index: 100000;
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(15, 129, 120, .18);
+  border-top-color: #0f8178;
+  border-radius: 999px;
+  animation: skhps-loading-spin .75s linear infinite;
+}
+
+@keyframes skhps-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes skhps-loading-pulse {
+  0%, 100% {
+    opacity: .92;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.018);
+  }
+}
