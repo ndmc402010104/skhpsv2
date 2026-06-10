@@ -250,7 +250,13 @@ function normalizeExternalAppPayload_(payload) {
 }
 
 function getExternalAppsSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheetId = getSpreadsheetId_();
+
+  if (!spreadsheetId) {
+    throw new Error('CONFIG_MISSING_MAIN_SPREADSHEET_ID');
+  }
+
+  const ss = SpreadsheetApp.openById(spreadsheetId);
   let sheet = ss.getSheetByName(SKHPS_EXTERNAL_APPS_SHEET_NAME);
 
   if (!sheet) {

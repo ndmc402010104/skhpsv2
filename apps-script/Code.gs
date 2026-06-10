@@ -1,6 +1,6 @@
 /**
  * 檔案位置：skhpsv2/apps-script/Code.gs
- * 時間戳記：2026-06-09 20:00 UTC+8
+ * 時間戳記：2026-06-11 UTC+8
  * 用途：skhpsv2 Apps Script API 入口與 action router；統一 JSON / JSONP 回傳，任何例外都包成 JSONP，避免前端只看到 JSONP failed。
  */
 
@@ -58,7 +58,10 @@ function routeAction_(action, params) {
     'getCssSheetPreview',
     'getCssSheetRuntime',
     'getQuickLoginStaff',
-    'saveCssSheetRows'
+    'saveCssSheetRows',
+    'registerExternalApp',
+    'listExternalApps',
+    'setExternalAppActive'
   ];
 
   if (allowedActions.indexOf(action) === -1) {
@@ -149,7 +152,11 @@ function routeAction_(action, params) {
   if (action === 'getQuickLoginStaff') {
     return {
       ok: true,
-      data: getQuickLoginStaff_(parsePayload_(params))
+      action: action,
+      app: 'skhpsv2',
+      env: getServerEnv_(),
+      data: getQuickLoginStaff_(parsePayload_(params)),
+      serverTime: getServerTime_()
     };
   }
 
@@ -157,11 +164,48 @@ function routeAction_(action, params) {
     var savePayload = parsePayload_(params);
     var saveResult = saveCssSheetRows_(savePayload);
 
+    saveResult.action = action;
     saveResult.app = 'skhpsv2';
     saveResult.env = getServerEnv_();
     saveResult.serverTime = getServerTime_();
 
     return saveResult;
+  }
+
+  if (action === 'registerExternalApp') {
+    var registerPayload = parsePayload_(params);
+    var registerResult = registerExternalApp(registerPayload);
+
+    registerResult.action = action;
+    registerResult.app = 'skhpsv2';
+    registerResult.env = getServerEnv_();
+    registerResult.serverTime = getServerTime_();
+
+    return registerResult;
+  }
+
+  if (action === 'listExternalApps') {
+    var listPayload = parsePayload_(params);
+    var listResult = listExternalApps(listPayload);
+
+    listResult.action = action;
+    listResult.app = 'skhpsv2';
+    listResult.env = getServerEnv_();
+    listResult.serverTime = getServerTime_();
+
+    return listResult;
+  }
+
+  if (action === 'setExternalAppActive') {
+    var activePayload = parsePayload_(params);
+    var activeResult = setExternalAppActive(activePayload);
+
+    activeResult.action = action;
+    activeResult.app = 'skhpsv2';
+    activeResult.env = getServerEnv_();
+    activeResult.serverTime = getServerTime_();
+
+    return activeResult;
   }
 
   return {

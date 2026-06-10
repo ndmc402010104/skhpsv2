@@ -12,6 +12,11 @@ const SKHPS_SERVER_CONFIG = {
         key: 'staffMaster',
         title: '人員主檔',
         tabGid: '1704216215'
+      },
+      externalApps: {
+        key: 'externalApps',
+        title: '外部專案',
+        tabGid: '1739003702'
       }
     }
   }
