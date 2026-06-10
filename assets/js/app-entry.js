@@ -4,10 +4,11 @@
 用途：外部專案接入 skhpsv2 水庫的共用入口。
 
 設計：
-- 不再依賴 app-registry.js。
-- 外部專案自己宣告 window.SKHPS_APP_ID 與 window.SKHPS_APP_CONFIG。
-- app-entry 只負責建立 window.SKHPS_APP_ENV，然後載入 skhpsv2/assets/js/bootstrap.js。
-- URL 參數 skhpsRuntime=local-dev|dev|prod 可指定使用哪個 skhpsv2 runtime。
+- 不依賴 app-registry.js。
+- 支援 window.SKHPS_APP_CARD_URL，例如 app-card.json。
+- app-card.json 可用 versionUrl 指向 version.json。
+- version.json.version 會回填到 SKHPS_APP_CONFIG.version。
+- index.html 仍可用 window.SKHPS_APP_CONFIG 做臨時覆蓋。
 */
 
 (function () {
@@ -42,6 +43,21 @@
 
   function joinUrl(baseUrl, path) {
     return normalizeBaseUrl(baseUrl) + String(path || "").replace(/^\/+/, "");
+  }
+
+  function isAbsoluteUrl(url) {
+    return /^https?:\/\//i.test(String(url || ""));
+  }
+
+  function resolveRelativeUrl(baseUrl, path) {
+    if (!path) return "";
+    if (isAbsoluteUrl(path)) return path;
+
+    try {
+      return new URL(path, baseUrl || window.location.href).toString();
+    } catch (error) {
+      return path;
+    }
   }
 
   function getVersion() {
@@ -102,6 +118,18 @@
     return "prod";
   }
 
+  function fetchJson(url) {
+    return fetch(url, {
+      cache: "no-store"
+    }).then(function (response) {
+      if (!response.ok) {
+        throw new Error("fetch json failed: " + url + " (" + response.status + ")");
+      }
+
+      return response.json();
+    });
+  }
+
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
       var script = document.createElement("script");
@@ -132,38 +160,96 @@
     document.documentElement.classList.remove("skhps-loading");
   }
 
-  function getAppId() {
-    var fromWindow = window.SKHPS_APP_ID;
-    var fromScript = currentScript && currentScript.getAttribute("data-skhps-app");
-    var fromConfig = window.SKHPS_APP_CONFIG && (
-      window.SKHPS_APP_CONFIG.appId ||
-      window.SKHPS_APP_CONFIG.id
-    );
+  function mergeObjects(base, override) {
+    var output = {};
 
-    return String(fromWindow || fromScript || fromConfig || "").trim();
+    Object.keys(base || {}).forEach(function (key) {
+      output[key] = base[key];
+    });
+
+    Object.keys(override || {}).forEach(function (key) {
+      output[key] = override[key];
+    });
+
+    return output;
   }
 
-  function normalizeAppConfig(appId) {
-    var config = window.SKHPS_APP_CONFIG || {};
-
-    if (!config || typeof config !== "object") {
-      config = {};
+  function pickEnvValue(value, env) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      return value[env] || value.prod || value.dev || value["local-dev"] || "";
     }
 
-    if (!config.appId) {
-      config.appId = appId;
+    return value;
+  }
+
+  function getAppCardUrl() {
+    var url = window.SKHPS_APP_CARD_URL || "";
+
+    if (!url) {
+      return "";
     }
 
-    if (!config.id) {
-      config.id = appId;
+    return resolveRelativeUrl(window.location.href, url);
+  }
+
+  function loadAppCard() {
+    var cardUrl = getAppCardUrl();
+
+    if (!cardUrl) {
+      return Promise.resolve({});
+    }
+
+    return fetchJson(cardUrl).then(function (card) {
+      window.SKHPS_APP_CARD = card || {};
+      window.SKHPS_APP_CARD_URL_RESOLVED = cardUrl;
+      return card || {};
+    });
+  }
+
+  function loadVersionForCard(card) {
+    var versionUrl = card && card.versionUrl ? String(card.versionUrl || "").trim() : "";
+
+    if (!versionUrl) {
+      return Promise.resolve(null);
+    }
+
+    var baseUrl = window.SKHPS_APP_CARD_URL_RESOLVED || window.location.href;
+    var resolvedVersionUrl = resolveRelativeUrl(baseUrl, versionUrl);
+
+    return fetchJson(resolvedVersionUrl)
+      .then(function (versionInfo) {
+        window.SKHPS_APP_VERSION_INFO = versionInfo || {};
+        window.SKHPS_APP_VERSION_URL_RESOLVED = resolvedVersionUrl;
+        return versionInfo || {};
+      })
+      .catch(function (error) {
+        console.warn("[SKHPSAppEntry] version.json load failed:", error);
+        return null;
+      });
+  }
+
+  function buildAppConfig(card, versionInfo, env) {
+    var inlineConfig = window.SKHPS_APP_CONFIG || {};
+    var config = mergeObjects(card || {}, inlineConfig || {});
+
+    var versionFromJson = "";
+    if (versionInfo && versionInfo.version) {
+      versionFromJson = String(versionInfo.version || "").trim();
+    }
+
+    if (versionFromJson) {
+      config.version = versionFromJson;
+    } else if (!config.version) {
+      config.version = getVersion();
+    }
+
+    if (config.href && typeof config.href === "object" && !Array.isArray(config.href)) {
+      config.hrefMap = config.href;
+      config.href = pickEnvValue(config.href, env);
     }
 
     if (!config.href) {
       config.href = window.location.href;
-    }
-
-    if (!config.title && document.title) {
-      config.title = document.title;
     }
 
     if (!config.appType) {
@@ -182,60 +268,90 @@
       config.afterScripts = [];
     }
 
-    window.SKHPS_APP_CONFIG = config;
     return config;
   }
 
+  function getAppId(config) {
+    var fromConfig = config && (config.appId || config.id);
+    var fromWindow = window.SKHPS_APP_ID;
+    var fromScript = currentScript && currentScript.getAttribute("data-skhps-app");
+
+    return String(fromConfig || fromWindow || fromScript || "").trim();
+  }
+
   function init() {
-    var appId = getAppId();
-    var version = getVersion();
     var env = inferEnvFromPageLocation();
-
-    if (!appId) {
-      throw new Error("SKHPS_APP_ID missing");
-    }
-
-    var appConfig = normalizeAppConfig(appId);
     var sharedBaseUrl = normalizeBaseUrl(window.SKHPS_ENTRY_BASE_URL || inferSharedBaseUrl());
 
     if (!sharedBaseUrl || sharedBaseUrl === "/") {
       throw new Error("shared base url missing");
     }
 
-    window.SKHPS_APP_ID = appId;
+    return loadAppCard()
+      .then(function (card) {
+        return loadVersionForCard(card).then(function (versionInfo) {
+          return {
+            card: card,
+            versionInfo: versionInfo
+          };
+        });
+      })
+      .then(function (loaded) {
+        var appConfig = buildAppConfig(loaded.card, loaded.versionInfo, env);
+        var appId = getAppId(appConfig);
 
-    window.SKHPS_APP_ENV = {
-      appId: appId,
-      env: env,
-      requestedRuntime: getRuntimeParam() || "",
-      sharedBaseUrl: sharedBaseUrl,
-      version: version || appConfig.version || "",
-      title: appConfig.title || appId,
-      href: appConfig.href || window.location.href,
-      appType: appConfig.appType || "前台",
-      group: appConfig.group || "",
-      order: appConfig.order || 9999,
-      coreScripts: appConfig.coreScripts || null,
-      afterScripts: appConfig.afterScripts || []
-    };
+        if (!appId) {
+          throw new Error("SKHPS appId missing");
+        }
 
-    /*
-      讓 config.js 在外部專案頁面中也能穩定抓 skhpsv2/config.json，
-      不要誤抓外部專案自己的 config.json。
-    */
-    window.SKHPS_CONFIG_BASE_URL = window.SKHPS_APP_ENV.sharedBaseUrl;
+        if (!appConfig.appId) {
+          appConfig.appId = appId;
+        }
 
-    document.documentElement.setAttribute("data-skhps-app-id", appId);
-    document.documentElement.setAttribute("data-skhps-runtime", env);
+        if (!appConfig.id) {
+          appConfig.id = appId;
+        }
 
-    window.SKHPS_APP_ENTRY_LOADED = true;
+        if (!appConfig.title && document.title) {
+          appConfig.title = document.title;
+        }
 
-    return loadScript(
-      withVersion(
-        joinUrl(window.SKHPS_APP_ENV.sharedBaseUrl, "assets/js/bootstrap.js"),
-        window.SKHPS_APP_ENV.version
-      )
-    );
+        window.SKHPS_APP_ID = appId;
+        window.SKHPS_APP_CONFIG = appConfig;
+
+        window.SKHPS_APP_ENV = {
+          appId: appId,
+          env: env,
+          requestedRuntime: getRuntimeParam() || "",
+          sharedBaseUrl: sharedBaseUrl,
+          version: appConfig.version || getVersion() || "",
+          title: appConfig.title || appId,
+          href: appConfig.href || window.location.href,
+          appType: appConfig.appType || "前台",
+          group: appConfig.group || "",
+          order: appConfig.order || 9999,
+          coreScripts: appConfig.coreScripts || null,
+          afterScripts: appConfig.afterScripts || []
+        };
+
+        /*
+          讓 config.js 在外部專案頁面中穩定抓 skhpsv2/config.json，
+          不要誤抓外部專案自己的 config.json。
+        */
+        window.SKHPS_CONFIG_BASE_URL = window.SKHPS_APP_ENV.sharedBaseUrl;
+
+        document.documentElement.setAttribute("data-skhps-app-id", appId);
+        document.documentElement.setAttribute("data-skhps-runtime", env);
+
+        window.SKHPS_APP_ENTRY_LOADED = true;
+
+        return loadScript(
+          withVersion(
+            joinUrl(window.SKHPS_APP_ENV.sharedBaseUrl, "assets/js/bootstrap.js"),
+            window.SKHPS_APP_ENV.version
+          )
+        );
+      });
   }
 
   window.SKHPSAppEntry = {

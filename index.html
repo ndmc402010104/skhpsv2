@@ -1,82 +1,354 @@
 <!DOCTYPE html>
 <!--
 檔案位置：skhpsv2/index.html
-時間戳記：2026-06-10 19:45 UTC+8
-用途：整外資訊系統首頁；首頁只負責顯示三個入口，實際 href 由 assets/js/route.js 從 config.pages 自動補上。
-修正：
-- 明確宣告 loading gate 任務：首頁只等 css-runtime。
-- loading-gate.js 也加版本號，避免瀏覽器吃舊快取。
+時間戳記：2026-06-11 UTC+8
+用途：整外資訊系統首頁。
+
+Loading Gate：
+- 首頁使用 AND gate。
+- 必須等待：
+  1. css-runtime
+  2. external-apps-runtime
+- 任何任務成功或失敗都必須回報 loading gate。
+- 8 秒後若仍未 all-ready，首頁 fallback 強制解除，並保留診斷資訊。
+
+重要規則：
+- 首頁不是外部專案，不載入 app-entry.js。
+- 首頁不會 registerExternalApp。
+- 首頁不放 inline CSS。
+- 首頁只提供語意結構與 class，樣式由 CSS Sheet / 共用 CSS 管理。
 -->
 <html
   lang="zh-Hant"
   class="skhps-css-loading"
   data-loading-title="整外資訊系統首頁"
-  data-skhps-loading-tasks="css-runtime"
+  data-skhps-loading-tasks="css-runtime,external-apps-runtime"
 >
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <link rel="stylesheet" href="assets/css/skhps-loading.css?v=202606101945">
+  <link rel="stylesheet" href="assets/css/skhps-loading.css?v=20260611">
   <title>整外資訊系統首頁</title>
 </head>
+
 <body class="skhps-body">
   <header class="skhps-header">
     <div class="skhps-header-inner">
       <div class="skhps-brand">
         <div class="skhps-brand-mark">SKH</div>
         <div class="skhps-brand-text">
-          <div class="skhps-eyebrow">Plastic Surgery</div>
+          <div class="skhps-eyebrow">Plastic Surgery Information System</div>
           <div class="skhps-header-title">整外資訊系統</div>
         </div>
+      </div>
+
+      <div class="skhps-header-actions" aria-label="系統狀態">
+        <span class="skhps-badge" data-skhps-runtime-label>Runtime 載入中</span>
       </div>
     </div>
   </header>
 
-  <main class="skhps-page">
-    <section class="skhps-container skhps-hero">
-      <div class="skhps-hero-card">
-        <p class="skhps-eyebrow">Shin Kong Hospital</p>
-        <h1 class="skhps-page-title">整外資訊系統首頁</h1>
-        <p class="skhps-page-subtitle">請選擇要進入的系統功能。</p>
+  <main class="skhps-page skhps-index-page">
+    <div class="skhps-container skhps-index-shell">
+      <section class="skhps-hero skhps-index-hero" aria-labelledby="indexTitle">
+        <div class="skhps-hero-card skhps-index-hero-card">
+          <div class="skhps-index-hero-content">
+            <p class="skhps-eyebrow">Shin Kong Wu Ho-Su Memorial Hospital</p>
+            <h1 id="indexTitle" class="skhps-page-title skhps-index-title">
+              整外資訊系統首頁
+            </h1>
+            <p class="skhps-page-subtitle skhps-index-subtitle">
+              這裡是整形外科共用入口。核心功能由 skhpsv2 提供，外部專案會依目前環境與啟用狀態自動顯示。
+            </p>
+          </div>
 
-        <nav class="skhps-action-grid" aria-label="系統入口">
-          <a
-            class="skhps-btn skhps-btn-primary skhps-btn-lg"
-            href="#"
-            data-skhps-page-id="qr-signin"
-          >
-            晨會QR簽到
-          </a>
+          <div class="skhps-meta-grid skhps-index-meta-grid" aria-label="首頁狀態">
+            <div class="skhps-meta-item skhps-index-meta-item">
+              <span class="skhps-meta-label">目前環境</span>
+              <strong class="skhps-meta-value" data-skhps-runtime-text>判斷中</strong>
+            </div>
 
-          <a
-            class="skhps-btn skhps-btn-secondary skhps-btn-lg"
-            href="#"
-            data-skhps-page-id="quick-login"
-          >
-            醫院系統快速登入
-          </a>
+            <div class="skhps-meta-item skhps-index-meta-item">
+              <span class="skhps-meta-label">外部專案</span>
+              <strong class="skhps-meta-value" data-skhps-external-apps-count>載入中</strong>
+            </div>
 
-          <a
-            class="skhps-btn skhps-btn-secondary skhps-btn-lg"
-            href="#"
-            data-skhps-page-id="admin"
+            <div class="skhps-meta-item skhps-index-meta-item">
+              <span class="skhps-meta-label">Loading Gate</span>
+              <strong class="skhps-meta-value" data-skhps-loading-summary>等待中</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="skhps-section skhps-index-section" aria-labelledby="coreAppsTitle">
+        <div class="skhps-section-head skhps-index-section-head">
+          <div>
+            <p class="skhps-eyebrow">Core Apps</p>
+            <h2 id="coreAppsTitle" class="skhps-section-title">核心系統入口</h2>
+          </div>
+          <p class="skhps-page-subtitle skhps-section-description">
+            skhpsv2 內建與核心維護功能。
+          </p>
+        </div>
+
+        <div class="skhps-card-grid skhps-index-card-grid">
+          <article class="skhps-hero-card skhps-app-card skhps-index-card">
+            <div class="skhps-app-card-body">
+              <p class="skhps-eyebrow">Meeting</p>
+              <h3 class="skhps-section-title">晨會 QR 簽到</h3>
+              <p class="skhps-page-subtitle">
+                產生會議簽到 QR Code，提供住院醫師、NP、PGY 與相關人員快速簽到。
+              </p>
+            </div>
+
+            <div class="skhps-app-card-actions">
+              <a
+                class="skhps-btn skhps-btn-primary skhps-btn-lg"
+                href="#"
+                data-skhps-page-id="qr-signin"
+              >
+                進入 QR 簽到
+              </a>
+            </div>
+          </article>
+
+          <article class="skhps-hero-card skhps-app-card skhps-index-card">
+            <div class="skhps-app-card-body">
+              <p class="skhps-eyebrow">Admin</p>
+              <h3 class="skhps-section-title">系統後台</h3>
+              <p class="skhps-page-subtitle">
+                管理系統設定、CSS Sheet、runtime 狀態、外部專案與診斷資訊。
+              </p>
+            </div>
+
+            <div class="skhps-app-card-actions">
+              <a
+                class="skhps-btn skhps-btn-secondary skhps-btn-lg"
+                href="#"
+                data-skhps-page-id="admin"
+              >
+                進入後台
+              </a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="skhps-section skhps-index-section" aria-labelledby="externalAppsTitle">
+        <div class="skhps-section-head skhps-index-section-head">
+          <div>
+            <p class="skhps-eyebrow">External Apps</p>
+            <h2 id="externalAppsTitle" class="skhps-section-title">外部系統入口</h2>
+          </div>
+          <p class="skhps-page-subtitle skhps-section-description">
+            外部專案自行報到，並由 Sheet 啟用後顯示。
+          </p>
+        </div>
+
+        <div class="skhps-hero-card skhps-external-apps-card skhps-index-external-card">
+          <p
+            class="skhps-page-subtitle"
+            data-skhps-external-apps-status
           >
-            進入後台
-          </a>
-        </nav>
-      </div>
-    </section>
+            外部專案清單載入中...
+          </p>
+
+          <nav
+            class="skhps-action-grid skhps-external-apps-grid"
+            aria-label="外部系統入口"
+            data-skhps-external-apps
+          ></nav>
+        </div>
+      </section>
+
+      <section class="skhps-section skhps-index-section" aria-label="Runtime 診斷">
+        <details class="skhps-hero-card skhps-diagnostics-card skhps-index-diagnostics">
+          <summary class="skhps-section-title">Runtime 診斷</summary>
+
+          <div class="skhps-diagnostics-grid">
+            <div>
+              <p class="skhps-eyebrow">Loading Tasks</p>
+              <pre class="skhps-code-block" data-skhps-loading-state>等待 runtime 回報...</pre>
+            </div>
+
+            <div>
+              <p class="skhps-eyebrow">External Apps Runtime</p>
+              <pre class="skhps-code-block" data-skhps-external-apps-debug>等待外部專案 runtime...</pre>
+            </div>
+          </div>
+        </details>
+      </section>
+    </div>
   </main>
 
   <footer data-skhps-footer class="skhps-footer">
     Footer 載入中...
   </footer>
 
-  <script src="assets/js/loading-gate.js?v=202606101945"></script>
-  <script src="assets/js/config.js?v=202606101945"></script>
-  <script src="assets/js/route.js?v=202606101945"></script>
-  <script src="assets/js/backend-client.js?v=202606101945"></script>
-  <script src="assets/js/css-sheet-runtime.js?v=202606101945"></script>
-  <script src="assets/js/footer.js?v=202606101945"></script>
+  <script src="assets/js/loading-gate.js?v=20260611"></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      window.setTimeout(function () {
+        var html = document.documentElement;
+
+        if (
+          window.SKHPSLoading &&
+          typeof window.SKHPSLoading.getState === "function"
+        ) {
+          var state = window.SKHPSLoading.getState();
+
+          if (state && state.released) {
+            return;
+          }
+
+          var required = state && Array.isArray(state.required) ? state.required : [];
+          var done = state && Array.isArray(state.done) ? state.done : [];
+          var failed = state && Array.isArray(state.failed) ? state.failed : [];
+
+          required.forEach(function (task) {
+            if (done.indexOf(task) >= 0 || failed.indexOf(task) >= 0) {
+              return;
+            }
+
+            console.warn("[SKHPSIndex] fallback fail pending task:", task);
+
+            if (typeof window.SKHPSLoading.fail === "function") {
+              window.SKHPSLoading.fail(task, new Error("index fallback timeout"));
+            }
+          });
+
+          html.setAttribute("data-skhps-index-fallback-at", new Date().toISOString());
+          return;
+        }
+
+        console.warn("[SKHPSIndex] fallback release without SKHPSLoading");
+
+        html.classList.remove("skhps-css-loading");
+        html.classList.remove("skhps-loading");
+
+        if (document.body) {
+          document.body.classList.remove("skhps-css-loading");
+          document.body.classList.remove("skhps-loading");
+        }
+
+        html.setAttribute("data-skhps-loading-released", "true");
+        html.setAttribute("data-skhps-loading-release-reason", "index-fallback-no-gate");
+        html.setAttribute("data-skhps-index-fallback-at", new Date().toISOString());
+      }, 8000);
+    })();
+  </script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      function $(selector) {
+        return document.querySelector(selector);
+      }
+
+      function getRuntime() {
+        var fromHtml = document.documentElement.getAttribute("data-skhps-runtime");
+        if (fromHtml) return fromHtml;
+
+        var host = String(window.location.hostname || "").toLowerCase();
+
+        if (host === "127.0.0.1" || host === "localhost" || host === "") {
+          return "local-dev";
+        }
+
+        if (
+          host.indexOf("dev-") === 0 ||
+          host.indexOf("dev.") === 0 ||
+          host.indexOf("dev-skhps") >= 0
+        ) {
+          return "dev";
+        }
+
+        return "prod";
+      }
+
+      function safeJson(value) {
+        try {
+          return JSON.stringify(value, null, 2);
+        } catch (error) {
+          return String(value);
+        }
+      }
+
+      function updateDiagnostics() {
+        var runtime = getRuntime();
+        var loadingState = null;
+
+        if (
+          window.SKHPSLoading &&
+          typeof window.SKHPSLoading.getState === "function"
+        ) {
+          loadingState = window.SKHPSLoading.getState();
+        }
+
+        var runtimeLabel = $("[data-skhps-runtime-label]");
+        var runtimeText = $("[data-skhps-runtime-text]");
+        var loadingSummary = $("[data-skhps-loading-summary]");
+        var loadingStateBox = $("[data-skhps-loading-state]");
+        var externalDebugBox = $("[data-skhps-external-apps-debug]");
+        var externalCount = $("[data-skhps-external-apps-count]");
+
+        if (runtimeLabel) runtimeLabel.textContent = runtime;
+        if (runtimeText) runtimeText.textContent = runtime;
+
+        if (loadingSummary) {
+          loadingSummary.textContent = loadingState && loadingState.releaseReason
+            ? loadingState.releaseReason
+            : "等待中";
+        }
+
+        if (loadingStateBox) {
+          loadingStateBox.textContent = loadingState
+            ? safeJson(loadingState)
+            : "SKHPSLoading 尚未建立";
+        }
+
+        if (externalDebugBox) {
+          externalDebugBox.textContent = safeJson({
+            ready: document.documentElement.getAttribute("data-skhps-external-apps-runtime-ready"),
+            error: document.documentElement.getAttribute("data-skhps-external-apps-runtime-error"),
+            runtime: runtime
+          });
+        }
+
+        if (externalCount) {
+          var buttons = document.querySelectorAll("[data-skhps-external-app-id]");
+          if (document.documentElement.getAttribute("data-skhps-external-apps-runtime-ready") === "true") {
+            externalCount.textContent = String(buttons.length);
+          } else {
+            externalCount.textContent = "載入中";
+          }
+        }
+      }
+
+      window.SKHPSIndexDiagnostics = {
+        update: updateDiagnostics
+      };
+
+      window.setInterval(updateDiagnostics, 1000);
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", updateDiagnostics);
+      } else {
+        updateDiagnostics();
+      }
+    })();
+  </script>
+
+  <script src="assets/js/config.js?v=20260611"></script>
+  <script src="assets/js/route.js?v=20260611"></script>
+  <script src="assets/js/backend-client.js?v=20260611"></script>
+  <script src="assets/js/css-sheet-runtime.js?v=20260611"></script>
+  <script src="assets/js/footer.js?v=20260611"></script>
+  <script src="assets/js/external-apps-runtime.js?v=20260611"></script>
 </body>
 </html>
