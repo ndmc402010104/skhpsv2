@@ -4,13 +4,20 @@
  *
  * Sheet：外部專案
  * 欄位：
- * 專案ID、專案名稱、入口網址、顯示位置、顯示群組、排序、啟用、版本、最後報到時間、報到次數
+ * 專案ID、環境、專案名稱、入口網址、顯示位置、顯示群組、排序、啟用、版本、最後報到時間、報到次數
+ *
+ * 規則：
+ * - 唯一鍵 = 專案ID + 環境
+ * - 第一次看到 專案ID + 環境：新增，啟用 = FALSE
+ * - 再次看到 專案ID + 環境：更新名片資料，但不動啟用
+ * - 啟用只能由 setExternalAppActive 修改
  */
 
 const SKHPS_EXTERNAL_APPS_SHEET_NAME = '外部專案';
 
 const SKHPS_EXTERNAL_APPS_HEADERS = [
   '專案ID',
+  '環境',
   '專案名稱',
   '入口網址',
   '顯示位置',
@@ -35,6 +42,13 @@ function registerExternalApp(payload) {
     };
   }
 
+  if (!app.env) {
+    return {
+      ok: false,
+      message: '缺少環境'
+    };
+  }
+
   if (!app.title) {
     return {
       ok: false,
@@ -51,13 +65,16 @@ function registerExternalApp(payload) {
 
   const sheet = getExternalAppsSheet_();
   const table = readExternalAppsTable_(sheet);
+
   const found = table.rows.find(function (row) {
-    return String(row['專案ID'] || '').trim() === app.appId;
+    return String(row['專案ID'] || '').trim() === app.appId &&
+      String(row['環境'] || '').trim() === app.env;
   });
 
   if (!found) {
     sheet.appendRow([
       app.appId,
+      app.env,
       app.title,
       app.href,
       app.appType,
@@ -73,6 +90,7 @@ function registerExternalApp(payload) {
       ok: true,
       status: 'created',
       appId: app.appId,
+      env: app.env,
       active: false,
       message: '外部專案第一次報到，已建立為未啟用'
     };
@@ -97,6 +115,7 @@ function registerExternalApp(payload) {
     ok: true,
     status: 'updated',
     appId: app.appId,
+    env: app.env,
     active: currentActive,
     message: '外部專案已存在，已更新報到資訊，啟用狀態維持不變'
   };
@@ -107,6 +126,7 @@ function listExternalApps(payload) {
 
   const activeOnly = payload.activeOnly === true;
   const appType = String(payload.appType || '').trim();
+  const env = String(payload.env || payload.runtime || '').trim();
 
   const sheet = getExternalAppsSheet_();
   const table = readExternalAppsTable_(sheet);
@@ -114,6 +134,7 @@ function listExternalApps(payload) {
   let apps = table.rows.map(function (row) {
     return {
       appId: String(row['專案ID'] || '').trim(),
+      env: String(row['環境'] || '').trim(),
       title: String(row['專案名稱'] || '').trim(),
       href: String(row['入口網址'] || '').trim(),
       appType: String(row['顯示位置'] || '').trim() || '前台',
@@ -125,7 +146,7 @@ function listExternalApps(payload) {
       registerCount: Number(row['報到次數'] || 0) || 0
     };
   }).filter(function (app) {
-    return app.appId && app.title && app.href;
+    return app.appId && app.env && app.title && app.href;
   });
 
   if (activeOnly) {
@@ -137,6 +158,12 @@ function listExternalApps(payload) {
   if (appType) {
     apps = apps.filter(function (app) {
       return app.appType === appType;
+    });
+  }
+
+  if (env) {
+    apps = apps.filter(function (app) {
+      return app.env === env;
     });
   }
 
@@ -156,6 +183,7 @@ function setExternalAppActive(payload) {
   payload = payload || {};
 
   const appId = String(payload.appId || payload['專案ID'] || '').trim();
+  const env = String(payload.env || payload['環境'] || '').trim();
   const active = payload.active === true || payload.active === 'TRUE' || payload.active === 'true';
 
   if (!appId) {
@@ -165,16 +193,25 @@ function setExternalAppActive(payload) {
     };
   }
 
+  if (!env) {
+    return {
+      ok: false,
+      message: '缺少環境'
+    };
+  }
+
   const sheet = getExternalAppsSheet_();
   const table = readExternalAppsTable_(sheet);
+
   const found = table.rows.find(function (row) {
-    return String(row['專案ID'] || '').trim() === appId;
+    return String(row['專案ID'] || '').trim() === appId &&
+      String(row['環境'] || '').trim() === env;
   });
 
   if (!found) {
     return {
       ok: false,
-      message: '找不到外部專案：' + appId
+      message: '找不到外部專案：' + appId + ' / ' + env
     };
   }
 
@@ -185,6 +222,7 @@ function setExternalAppActive(payload) {
   return {
     ok: true,
     appId: appId,
+    env: env,
     active: active,
     message: active ? '已啟用外部專案' : '已停用外部專案'
   };
@@ -204,6 +242,14 @@ function normalizeExternalAppPayload_(payload) {
       payload.appId ||
       payload.id ||
       ''
+    ).trim(),
+
+    env: String(
+      config.env ||
+      payload.env ||
+      payload.runtime ||
+      payload.requestedRuntime ||
+      'prod'
     ).trim(),
 
     title: String(
@@ -299,6 +345,7 @@ function readExternalAppsTable_(sheet) {
   }
 
   const values = sheet.getRange(1, 1, lastRow, lastColumn).getValues();
+
   const headers = values[0].map(function (header) {
     return String(header || '').trim();
   });
