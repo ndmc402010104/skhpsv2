@@ -1,183 +1,132 @@
 ﻿/*
-檔案位置：skhpsv2/config.js
+檔案位置：skhpsv2/assets/js/config.js
 時間戳記：2026-06-10 UTC+8
-用途：skhpsv2 共用設定；保留原本 api/appsScript/sheets 設定，加入 local-dev/dev/prod 環境分流。
+用途：SKHPS config loader。
+原則：
+- 不在 config.js 寫死整包設定。
+- config.js 只負責讀取 skhpsv2/config.json。
+- 成功後設定 window.SKHPS_CONFIG。
 */
 
-window.SKHPS_CONFIG = {
-  "app": "skhpsv2",
-  "env": "dev",
-  "title": "整外資訊系統首頁",
-  "versionUrl": "version.json",
-  "api": {
-    "webAppUrl": "https://script.google.com/macros/s/AKfycbx4mAdLeVPKbkuEo0LZZGDalBTZE7PB8AJ4OFKGld7HoVt7iJHYrk4tI6QovFjn6eoWRQ/exec",
-    "deploymentId": "AKfycbx4mAdLeVPKbkuEo0LZZGDalBTZE7PB8AJ4OFKGld7HoVt7iJHYrk4tI6QovFjn6eoWRQ"
-  },
-  "pages": [
-    {
-      "id": "index",
-      "title": "整外資訊系統首頁",
-      "href": {
-        "local-dev": "index.html",
-        "dev": "index.html",
-        "prod": "index.html"
-      }
-    },
-    {
-      "id": "qr-signin",
-      "title": "晨會QR簽到",
-      "href": {
-        "local-dev": "http://127.0.0.1:5500/skhps-qr/",
-        "dev": "https://ndmc402010104.github.io/skhps-qr/",
-        "prod": "https://ndmc402010104.github.io/skhps-qr/"
-      }
-    },
-    {
-      "id": "quick-login",
-      "title": "醫院系統快速登入",
-      "href": {
-        "local-dev": "http://127.0.0.1:5500/skhps-quick-login/",
-        "dev": "https://dev-skhps-login.jonaminz.com/",
-        "prod": "https://ndmc402010104.github.io/skhps-quick-login/"
-      }
-    },
-    {
-      "id": "admin",
-      "title": "系統後台",
-      "href": {
-        "local-dev": "admin.html",
-        "dev": "admin.html",
-        "prod": "admin.html"
-      }
-    },
-    {
-      "id": "css-setting",
-      "title": "CSS Setting",
-      "href": {
-        "local-dev": "css-setting.html",
-        "dev": "css-setting.html",
-        "prod": "css-setting.html"
-      }
-    }
-  ],
-  "appsScript": {
-    "scriptId": "1Qp-aHNtuDr4Jv_yYx006bo8JVfMkUikmdrhhL2YPBYoQYWszKHdVX7d2",
-    "rootDir": "apps-script"
-  },
-  "sheets": {
-    "mainSpreadsheetId": "1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50",
-    "mainUrl": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit",
-    "cssSheets": {
-      "baseStyle": {
-        "key": "baseStyle",
-        "title": "基礎樣式",
-        "tabGid": "311728002",
-        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=311728002#gid=311728002"
-      },
-      "tokenStyle": {
-        "key": "tokenStyle",
-        "title": "Token",
-        "tabGid": "1124186481",
-        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1124186481#gid=1124186481"
-      },
-      "layoutStyle": {
-        "key": "layoutStyle",
-        "title": "Layout",
-        "tabGid": "1670979619",
-        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1670979619#gid=1670979619"
-      },
-      "headerStyle": {
-        "key": "headerStyle",
-        "title": "Header",
-        "tabGid": "1632413533",
-        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1632413533#gid=1632413533"
-      },
-      "footerStyle": {
-        "key": "footerStyle",
-        "title": "Footer",
-        "tabGid": "1469302944",
-        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1469302944#gid=1469302944"
-      },
-      "buttonStyle": {
-        "key": "buttonStyle",
-        "title": "按鈕",
-        "tabGid": "0",
-        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=0#gid=0"
-      },
-      "formStyle": {
-        "key": "formStyle",
-        "title": "表單",
-        "tabGid": "1178004000",
-        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1178004000#gid=1178004000"
-      }
-    },
-    "databaseName": "skhpsv2 後端資料庫",
-    "dataSheets": {
-      "staffMaster": {
-        "key": "staffMaster",
-        "title": "人員主檔",
-        "tabGid": "1704216215",
-        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1704216215#gid=1704216215"
-      }
-    }
-  },
-  "site": {
-    "baseUrl": {
-      "local-dev": "http://127.0.0.1:5500/skhpsv2/",
-      "dev": "https://dev-skhps.jonaminz.com/",
-      "prod": "https://skhps.jonaminz.com/"
-    },
-    "quickLoginBaseUrl": {
-      "local-dev": "http://127.0.0.1:5500/skhps-quick-login/",
-      "dev": "https://dev-skhps-login.jonaminz.com/",
-      "prod": "https://ndmc402010104.github.io/skhps-quick-login/"
-    },
-    "qrBaseUrl": {
-      "local-dev": "http://127.0.0.1:5500/skhps-qr/",
-      "dev": "https://ndmc402010104.github.io/skhps-qr/",
-      "prod": "https://ndmc402010104.github.io/skhps-qr/"
-    }
-  }
-};
+(function () {
+  "use strict";
 
-window.SKHPSConfig = window.SKHPSConfig || {};
+  var currentScript = document.currentScript;
+  var cachedConfigPromise = null;
 
-window.SKHPSConfig.loadConfig = function () {
-  return Promise.resolve(window.SKHPS_CONFIG);
-};
-
-window.SKHPSConfig.getEnv = function (config) {
-  config = config || window.SKHPS_CONFIG || {};
-  return config.env || "prod";
-};
-
-window.SKHPSConfig.getEnvValue = function (value, config) {
-  var env = window.SKHPSConfig.getEnv(config);
-
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value[env] || value.prod || value.dev || value["local-dev"] || "";
+  function stripQueryAndHash(url) {
+    return String(url || "").split("#")[0].split("?")[0];
   }
 
-  return value;
-};
+  function inferBaseUrlFromCurrentScript() {
+    var src = currentScript && currentScript.src ? currentScript.src : "";
 
-window.SKHPSConfig.getSiteBaseUrl = function (config) {
-  config = config || window.SKHPS_CONFIG || {};
-  return window.SKHPSConfig.getEnvValue(
-    config.site && config.site.baseUrl,
-    config
-  );
-};
+    if (!src) {
+      return "";
+    }
 
-window.SKHPSConfig.joinUrl = function (base, path) {
-  if (!base) return path || "";
-  if (!path) return base || "";
-
-  var rawPath = String(path);
-
-  if (/^https?:\/\//i.test(rawPath)) {
-    return rawPath;
+    return stripQueryAndHash(src)
+      .replace(/\/assets\/js\/config\.js$/i, "/");
   }
 
-  return String(base).replace(/\/+$/, "") + "/" + rawPath.replace(/^\/+/, "");
-};
+  function normalizeBaseUrl(baseUrl) {
+    return String(baseUrl || "").replace(/\/+$/, "") + "/";
+  }
+
+  function joinUrl(baseUrl, path) {
+    return normalizeBaseUrl(baseUrl) + String(path || "").replace(/^\/+/, "");
+  }
+
+  function getConfigUrl() {
+    if (window.SKHPS_CONFIG_URL) {
+      return window.SKHPS_CONFIG_URL;
+    }
+
+    var baseUrl = window.SKHPS_CONFIG_BASE_URL || inferBaseUrlFromCurrentScript();
+
+    if (baseUrl) {
+      return joinUrl(baseUrl, "config.json");
+    }
+
+    return "config.json";
+  }
+
+  function loadConfig(force) {
+    if (!force && window.SKHPS_CONFIG) {
+      return Promise.resolve(window.SKHPS_CONFIG);
+    }
+
+    if (!force && cachedConfigPromise) {
+      return cachedConfigPromise;
+    }
+
+    cachedConfigPromise = fetch(getConfigUrl(), {
+      cache: "no-store"
+    }).then(function (res) {
+      if (!res.ok) {
+        throw new Error("config.json HTTP " + res.status);
+      }
+
+      return res.json();
+    }).then(function (config) {
+      window.SKHPS_CONFIG = config;
+      return config;
+    });
+
+    return cachedConfigPromise;
+  }
+
+  function getEnv(config) {
+    config = config || window.SKHPS_CONFIG || {};
+
+    if (window.SKHPS_APP_ENV && window.SKHPS_APP_ENV.env) {
+      return window.SKHPS_APP_ENV.env;
+    }
+
+    return config.env || "prod";
+  }
+
+  function getEnvValue(value, config) {
+    var env = getEnv(config);
+
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      return value[env] || value.prod || value.dev || value["local-dev"] || "";
+    }
+
+    return value || "";
+  }
+
+  function getSiteBaseUrl(config) {
+    config = config || window.SKHPS_CONFIG || {};
+
+    return getEnvValue(
+      config.site && config.site.baseUrl,
+      config
+    );
+  }
+
+  function joinConfigUrl(base, path) {
+    if (!base) return path || "";
+    if (!path) return base || "";
+
+    var rawPath = String(path);
+
+    if (/^https?:\/\//i.test(rawPath)) {
+      return rawPath;
+    }
+
+    return String(base).replace(/\/+$/, "") + "/" + rawPath.replace(/^\/+/, "");
+  }
+
+  window.SKHPSConfig = window.SKHPSConfig || {};
+  window.SKHPSConfig.loadConfig = loadConfig;
+  window.SKHPSConfig.reloadConfig = function () {
+    cachedConfigPromise = null;
+    return loadConfig(true);
+  };
+  window.SKHPSConfig.getConfigUrl = getConfigUrl;
+  window.SKHPSConfig.getEnv = getEnv;
+  window.SKHPSConfig.getEnvValue = getEnvValue;
+  window.SKHPSConfig.getSiteBaseUrl = getSiteBaseUrl;
+  window.SKHPSConfig.joinUrl = joinConfigUrl;
+})();

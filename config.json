@@ -31,7 +31,7 @@
       "title": "醫院系統快速登入",
       "href": {
         "local-dev": "http://127.0.0.1:5500/skhps-quick-login/",
-        "dev": "https://dev-skhps-login.jonaminz.com/",
+        "dev": "https://ndmc402010104.github.io/skhps-quick-login/",
         "prod": "https://ndmc402010104.github.io/skhps-quick-login/"
       }
     },
@@ -121,15 +121,15 @@
       "dev": "https://dev-skhps.jonaminz.com/",
       "prod": "https://skhps.jonaminz.com/"
     },
-    "quickLoginBaseUrl": {
-      "local-dev": "http://127.0.0.1:5500/skhps-quick-login/",
-      "dev": "https://dev-skhps-login.jonaminz.com/",
-      "prod": "https://ndmc402010104.github.io/skhps-quick-login/"
-    },
     "qrBaseUrl": {
       "local-dev": "http://127.0.0.1:5500/skhps-qr/",
       "dev": "https://ndmc402010104.github.io/skhps-qr/",
       "prod": "https://ndmc402010104.github.io/skhps-qr/"
+    },
+    "quickLoginBaseUrl": {
+      "local-dev": "http://127.0.0.1:5500/skhps-quick-login/",
+      "dev": "https://ndmc402010104.github.io/skhps-quick-login/",
+      "prod": "https://ndmc402010104.github.io/skhps-quick-login/"
     }
   }
 }
