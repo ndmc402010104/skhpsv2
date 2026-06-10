@@ -1,40 +1,42 @@
 /*
 檔案位置：skhpsv2/assets/css/skhps-loading.css
-時間戳記：2026-06-10 04:35 UTC+8
+時間戳記：2026-06-10 07:58 UTC+8
 用途：全站唯一固定載入動畫；所有頁面在 CSS Sheet runtime 完成前共用此動畫。此檔為前端固定動畫，不由 Sheet 控制。
 */
 
 /*
-  最終方向：
-  - 選 4：純文字 + 下方光條
+  Theme 40｜Indigo Paper Admin 方向：
+  - 去掉原本偏綠的 #0f8178 / #344f9f
+  - 改成靛藍灰 + 和紙米白 + 淡紙棕
+  - 保留：純文字 + 下方光條
   - 不要圈圈
   - 不要膠囊
   - 不要外框
   - loading 階段 body display:none
-  - loading 文案由 config / runtime 寫入 <html data-loading-title="..."> 控制
+  - loading 文案由 <html data-loading-title="..."> 控制
 */
 
 html.skhps-css-loading {
   min-height: 100%;
   background:
-    radial-gradient(circle at 35% 20%, rgba(52, 79, 159, .16), transparent 32%),
-    radial-gradient(circle at 65% 80%, rgba(15, 129, 120, .14), transparent 34%),
-    radial-gradient(circle at 15% 85%, rgba(52, 79, 159, .08), transparent 30%),
-    radial-gradient(circle at 88% 18%, rgba(15, 129, 120, .08), transparent 28%),
-    #eef6fb;
+    radial-gradient(circle at 24% 18%, rgba(81, 109, 135, .18), transparent 34%),
+    radial-gradient(circle at 78% 24%, rgba(167, 141, 114, .13), transparent 30%),
+    radial-gradient(circle at 18% 82%, rgba(91, 123, 150, .10), transparent 32%),
+    radial-gradient(circle at 88% 84%, rgba(167, 141, 114, .08), transparent 28%),
+    linear-gradient(135deg, #eceff3 0%, #f4f6f8 42%, #edf3f6 100%);
   background-size:
-    120% 120%,
+    125% 125%,
     130% 130%,
     140% 140%,
-    125% 125%,
+    128% 128%,
     auto;
   background-position:
     0% 0%,
-    100% 100%,
-    0% 100%,
     100% 0%,
+    0% 100%,
+    100% 100%,
     0 0;
-  animation: skhps-loading-bg 8s ease-in-out infinite;
+  animation: skhps-loading-bg 9s ease-in-out infinite;
 }
 
 html.skhps-css-loading body {
@@ -42,10 +44,8 @@ html.skhps-css-loading body {
 }
 
 /*
-  純文字。
-  參數：
-  title-top: 42%
-  title-size: 23px
+  純文字 loading。
+  Theme 40：文字改深靛藍，不再用偏綠色系。
 */
 html.skhps-css-loading::before {
   content: attr(data-loading-title) " 載入中";
@@ -57,17 +57,17 @@ html.skhps-css-loading::before {
   display: block;
   max-width: calc(100vw - 48px);
   color: #061833;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif;
   font-size: 23px;
-  font-weight: 800;
-  letter-spacing: .04em;
-  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: .045em;
+  line-height: 1.22;
   white-space: nowrap;
   text-align: center;
   text-shadow:
-    0 1px 0 rgba(255, 255, 255, .75),
-    0 10px 30px rgba(15, 23, 42, .08);
-  animation: skhps-loading-text 1.6s ease-in-out infinite;
+    0 1px 0 rgba(255, 255, 255, .82),
+    0 12px 32px rgba(31, 45, 55, .10);
+  animation: skhps-loading-text 1.65s ease-in-out infinite;
 }
 
 html.skhps-css-loading:not([data-loading-title])::before,
@@ -77,26 +77,7 @@ html.skhps-css-loading[data-loading-title=""]::before {
 
 /*
   下方光條。
-  套用你調整後的參數：
-  bar-gap: 41px
-  bar-height: 6px
-  bar-width: 8ch
-  bar-min-width: 240px
-  bar-speed: 1.8s
-  bar-size: 175%
-  bar-from: 177%
-  bar-to: -245%
-  bar-main: #0f8178
-  bar-accent: #344f9f
-  bar-bg-alpha: 20
-  bar-soft-alpha: 18
-  p1: 51
-  p2: 55
-  p3: 68
-  p4: 28
-  p5: 39
-  p6: 62
-  p7: 80
+  Theme 40：靛藍灰主色 + 紙棕副色，不再偏綠。
 */
 html.skhps-css-loading::after {
   content: "";
@@ -113,93 +94,77 @@ html.skhps-css-loading::after {
   background:
     repeating-linear-gradient(
       90deg,
-      rgba(15, 129, 120, .20) 0%,
-      rgba(15, 129, 120, .20) 51%,
-      rgba(15, 129, 120, .18) 55%,
-      #0f8178 68%,
-      #344f9f 28%,
-      #0f8178 39%,
-      rgba(15, 129, 120, .18) 62%,
-      rgba(15, 129, 120, .20) 80%,
-      rgba(15, 129, 120, .20) 100%
+      rgba(81, 109, 135, .18) 0%,
+      rgba(81, 109, 135, .18) 36%,
+      rgba(167, 141, 114, .20) 48%,
+      #516d87 58%,
+      #a78d72 66%,
+      #5b7b96 76%,
+      rgba(81, 109, 135, .16) 88%,
+      rgba(81, 109, 135, .18) 100%
     );
-  background-size: 175% 100%;
-  background-position: 177% 0;
+  background-size: 185% 100%;
+  background-position: 165% 0;
   box-shadow:
-    0 1px 8px rgba(15, 129, 120, .18),
-    0 0 1px rgba(52, 79, 159, .22);
-  animation: skhps-loading-bar 1.8s linear infinite;
+    0 1px 8px rgba(81, 109, 135, .18),
+    0 0 1px rgba(167, 141, 114, .28);
+  animation: skhps-loading-bar 1.9s linear infinite;
 }
 
-/*
-  背景微動：0 / 20 / 40 / 60 / 80 / 100。
-*/
 @keyframes skhps-loading-bg {
   0% {
     background-position:
       0% 0%,
-      100% 100%,
-      0% 100%,
       100% 0%,
+      0% 100%,
+      100% 100%,
       0 0;
   }
 
-  20% {
+  25% {
     background-position:
       8% 4%,
-      92% 96%,
-      4% 92%,
-      94% 6%,
+      92% 8%,
+      6% 92%,
+      94% 96%,
       0 0;
   }
 
-  40% {
+  50% {
     background-position:
       14% 10%,
-      84% 90%,
-      10% 86%,
-      88% 12%,
+      86% 14%,
+      12% 88%,
+      88% 90%,
       0 0;
   }
 
-  60% {
+  75% {
     background-position:
-      10% 16%,
-      90% 84%,
-      16% 90%,
-      84% 18%,
-      0 0;
-  }
-
-  80% {
-    background-position:
-      4% 8%,
-      96% 92%,
-      8% 96%,
-      92% 10%,
+      6% 14%,
+      94% 6%,
+      14% 94%,
+      86% 86%,
       0 0;
   }
 
   100% {
     background-position:
       0% 0%,
-      100% 100%,
-      0% 100%,
       100% 0%,
+      0% 100%,
+      100% 100%,
       0 0;
   }
 }
 
-/*
-  光條動畫。
-*/
 @keyframes skhps-loading-bar {
   from {
-    background-position: 177% 0;
+    background-position: 165% 0;
   }
 
   to {
-    background-position: -245% 0;
+    background-position: -235% 0;
   }
 }
 
