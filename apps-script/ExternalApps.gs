@@ -11,6 +11,7 @@
  * - 第一次看到 專案ID + 環境：新增，啟用 = FALSE
  * - 再次看到 專案ID + 環境：更新名片資料，但不動啟用
  * - 啟用只能由 setExternalAppActive 修改
+ * - 表頭不覆蓋；只在空表時建立，或缺必要欄位時 append 到最後
  */
 
 const SKHPS_EXTERNAL_APPS_SHEET_NAME = '外部專案';
@@ -72,19 +73,19 @@ function registerExternalApp(payload) {
   });
 
   if (!found) {
-    sheet.appendRow([
-      app.appId,
-      app.env,
-      app.title,
-      app.href,
-      app.appType,
-      app.group,
-      app.order,
-      false,
-      app.version,
-      now,
-      1
-    ]);
+    appendExternalAppRow_(sheet, {
+      '專案ID': app.appId,
+      '環境': app.env,
+      '專案名稱': app.title,
+      '入口網址': app.href,
+      '顯示位置': app.appType,
+      '顯示群組': app.group,
+      '排序': app.order,
+      '啟用': false,
+      '版本': app.version,
+      '最後報到時間': now,
+      '報到次數': 1
+    });
 
     return {
       ok: true,
@@ -314,20 +315,35 @@ function getExternalAppsSheet_() {
 }
 
 function ensureExternalAppsHeaders_(sheet) {
-  const lastColumn = Math.max(sheet.getLastColumn(), SKHPS_EXTERNAL_APPS_HEADERS.length);
-  const current = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
 
-  let needsWrite = false;
-
-  SKHPS_EXTERNAL_APPS_HEADERS.forEach(function (header, index) {
-    if (String(current[index] || '').trim() !== header) {
-      needsWrite = true;
-    }
-  });
-
-  if (needsWrite) {
+  /*
+    如果整張表是空的，才自動建立標準表頭。
+    如果你已經手動建立表頭，就不要自動覆蓋，避免把未來新增欄位洗掉。
+  */
+  if (lastRow === 0 || lastColumn === 0) {
     sheet.getRange(1, 1, 1, SKHPS_EXTERNAL_APPS_HEADERS.length)
       .setValues([SKHPS_EXTERNAL_APPS_HEADERS]);
+    return;
+  }
+
+  const current = sheet.getRange(1, 1, 1, lastColumn).getValues()[0]
+    .map(function (header) {
+      return String(header || '').trim();
+    });
+
+  const missing = SKHPS_EXTERNAL_APPS_HEADERS.filter(function (header) {
+    return current.indexOf(header) === -1;
+  });
+
+  /*
+    如果缺少必要欄位，只把缺少欄位 append 到最後。
+    不重排、不覆蓋、不刪除既有欄位。
+  */
+  if (missing.length) {
+    sheet.getRange(1, lastColumn + 1, 1, missing.length)
+      .setValues([missing]);
   }
 }
 
@@ -339,7 +355,7 @@ function readExternalAppsTable_(sheet) {
 
   if (lastRow < 2) {
     return {
-      headers: SKHPS_EXTERNAL_APPS_HEADERS.slice(),
+      headers: getExternalAppsHeaders_(sheet),
       rows: []
     };
   }
@@ -370,11 +386,33 @@ function readExternalAppsTable_(sheet) {
   };
 }
 
-function updateExternalAppRow_(sheet, rowIndex, patch) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+function getExternalAppsHeaders_(sheet) {
+  const lastColumn = Math.max(sheet.getLastColumn(), SKHPS_EXTERNAL_APPS_HEADERS.length);
+
+  return sheet.getRange(1, 1, 1, lastColumn).getValues()[0]
     .map(function (header) {
       return String(header || '').trim();
     });
+}
+
+function appendExternalAppRow_(sheet, rowObject) {
+  const headers = getExternalAppsHeaders_(sheet);
+
+  const row = headers.map(function (header) {
+    if (!header) return '';
+
+    if (Object.prototype.hasOwnProperty.call(rowObject, header)) {
+      return rowObject[header];
+    }
+
+    return '';
+  });
+
+  sheet.appendRow(row);
+}
+
+function updateExternalAppRow_(sheet, rowIndex, patch) {
+  const headers = getExternalAppsHeaders_(sheet);
 
   Object.keys(patch).forEach(function (key) {
     const colIndex = headers.indexOf(key) + 1;
@@ -389,6 +427,11 @@ function updateExternalAppRow_(sheet, rowIndex, patch) {
 
 function toBoolean_(value) {
   if (value === true) return true;
+
   const text = String(value || '').trim().toLowerCase();
-  return text === 'true' || text === '是' || text === '1' || text === 'yes';
+
+  return text === 'true' ||
+    text === '是' ||
+    text === '1' ||
+    text === 'yes';
 }
