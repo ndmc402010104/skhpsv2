@@ -1,7 +1,8 @@
 /*
 檔案位置：skhpsv2/assets/js/route.js
-時間戳記：2026-06-10 19:42 UTC+8
+時間戳記：2026-06-10 UTC+8
 用途：skhpsv2 前端頁面路由 helper；等待 config.pages 載入完成後，依 page id 自動補上 href。
+修正：支援 page.href 為字串，或 { local-dev, dev, prod } 環境物件。
 */
 
 (function () {
@@ -13,10 +14,33 @@
   function getConfig() {
     return (
       window.SKHPS_CONFIG ||
-      window.SKHPSConfig ||
       window.skhpsConfig ||
       {}
     );
+  }
+
+  function getEnv(config) {
+    config = config || getConfig();
+
+    if (
+      window.SKHPSConfig &&
+      typeof window.SKHPSConfig.getEnv === "function"
+    ) {
+      return window.SKHPSConfig.getEnv(config);
+    }
+
+    return config.env || "prod";
+  }
+
+  function getEnvValue(value, config) {
+    config = config || getConfig();
+    var env = getEnv(config);
+
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      return value[env] || value.prod || value.dev || value["local-dev"] || "";
+    }
+
+    return value;
   }
 
   function getPages() {
@@ -41,10 +65,11 @@
   }
 
   function getHref(pageId, fallbackHref) {
+    var config = getConfig();
     var page = getPageById(pageId);
 
     if (page && page.href) {
-      return page.href;
+      return getEnvValue(page.href, config) || fallbackHref || "#";
     }
 
     return fallbackHref || "#";
@@ -114,6 +139,8 @@
 
   window.SKHPSRoute = {
     getConfig: getConfig,
+    getEnv: getEnv,
+    getEnvValue: getEnvValue,
     getPages: getPages,
     getPageById: getPageById,
     getHref: getHref,

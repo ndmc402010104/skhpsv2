@@ -1,58 +1,183 @@
-﻿(function(){
-  var state = {
-    config: null,
-    version: null
-  };
+﻿/*
+檔案位置：skhpsv2/config.js
+時間戳記：2026-06-10 UTC+8
+用途：skhpsv2 共用設定；保留原本 api/appsScript/sheets 設定，加入 local-dev/dev/prod 環境分流。
+*/
 
-  function loadJson(url){
-    return fetch(url, {
-      cache: "no-store"
-    }).then(function(response){
-      if(!response.ok){
-        throw new Error(url + " failed: HTTP " + response.status);
+window.SKHPS_CONFIG = {
+  "app": "skhpsv2",
+  "env": "dev",
+  "title": "整外資訊系統首頁",
+  "versionUrl": "version.json",
+  "api": {
+    "webAppUrl": "https://script.google.com/macros/s/AKfycbx4mAdLeVPKbkuEo0LZZGDalBTZE7PB8AJ4OFKGld7HoVt7iJHYrk4tI6QovFjn6eoWRQ/exec",
+    "deploymentId": "AKfycbx4mAdLeVPKbkuEo0LZZGDalBTZE7PB8AJ4OFKGld7HoVt7iJHYrk4tI6QovFjn6eoWRQ"
+  },
+  "pages": [
+    {
+      "id": "index",
+      "title": "整外資訊系統首頁",
+      "href": {
+        "local-dev": "index.html",
+        "dev": "index.html",
+        "prod": "index.html"
       }
-
-      return response.json();
-    });
-  }
-
-  function loadConfig(){
-    if(state.config){
-      return Promise.resolve(state.config);
+    },
+    {
+      "id": "qr-signin",
+      "title": "晨會QR簽到",
+      "href": {
+        "local-dev": "http://127.0.0.1:5500/skhps-qr/",
+        "dev": "https://ndmc402010104.github.io/skhps-qr/",
+        "prod": "https://ndmc402010104.github.io/skhps-qr/"
+      }
+    },
+    {
+      "id": "quick-login",
+      "title": "醫院系統快速登入",
+      "href": {
+        "local-dev": "http://127.0.0.1:5500/skhps-quick-login/",
+        "dev": "https://dev-skhps-login.jonaminz.com/",
+        "prod": "https://ndmc402010104.github.io/skhps-quick-login/"
+      }
+    },
+    {
+      "id": "admin",
+      "title": "系統後台",
+      "href": {
+        "local-dev": "admin.html",
+        "dev": "admin.html",
+        "prod": "admin.html"
+      }
+    },
+    {
+      "id": "css-setting",
+      "title": "CSS Setting",
+      "href": {
+        "local-dev": "css-setting.html",
+        "dev": "css-setting.html",
+        "prod": "css-setting.html"
+      }
     }
+  ],
+  "appsScript": {
+    "scriptId": "1Qp-aHNtuDr4Jv_yYx006bo8JVfMkUikmdrhhL2YPBYoQYWszKHdVX7d2",
+    "rootDir": "apps-script"
+  },
+  "sheets": {
+    "mainSpreadsheetId": "1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50",
+    "mainUrl": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit",
+    "cssSheets": {
+      "baseStyle": {
+        "key": "baseStyle",
+        "title": "基礎樣式",
+        "tabGid": "311728002",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=311728002#gid=311728002"
+      },
+      "tokenStyle": {
+        "key": "tokenStyle",
+        "title": "Token",
+        "tabGid": "1124186481",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1124186481#gid=1124186481"
+      },
+      "layoutStyle": {
+        "key": "layoutStyle",
+        "title": "Layout",
+        "tabGid": "1670979619",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1670979619#gid=1670979619"
+      },
+      "headerStyle": {
+        "key": "headerStyle",
+        "title": "Header",
+        "tabGid": "1632413533",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1632413533#gid=1632413533"
+      },
+      "footerStyle": {
+        "key": "footerStyle",
+        "title": "Footer",
+        "tabGid": "1469302944",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1469302944#gid=1469302944"
+      },
+      "buttonStyle": {
+        "key": "buttonStyle",
+        "title": "按鈕",
+        "tabGid": "0",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=0#gid=0"
+      },
+      "formStyle": {
+        "key": "formStyle",
+        "title": "表單",
+        "tabGid": "1178004000",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1178004000#gid=1178004000"
+      }
+    },
+    "databaseName": "skhpsv2 後端資料庫",
+    "dataSheets": {
+      "staffMaster": {
+        "key": "staffMaster",
+        "title": "人員主檔",
+        "tabGid": "1704216215",
+        "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1704216215#gid=1704216215"
+      }
+    }
+  },
+  "site": {
+    "baseUrl": {
+      "local-dev": "http://127.0.0.1:5500/skhpsv2/",
+      "dev": "https://dev-skhps.jonaminz.com/",
+      "prod": "https://skhps.jonaminz.com/"
+    },
+    "quickLoginBaseUrl": {
+      "local-dev": "http://127.0.0.1:5500/skhps-quick-login/",
+      "dev": "https://dev-skhps-login.jonaminz.com/",
+      "prod": "https://ndmc402010104.github.io/skhps-quick-login/"
+    },
+    "qrBaseUrl": {
+      "local-dev": "http://127.0.0.1:5500/skhps-qr/",
+      "dev": "https://ndmc402010104.github.io/skhps-qr/",
+      "prod": "https://ndmc402010104.github.io/skhps-qr/"
+    }
+  }
+};
 
-    return loadJson("config.json").then(function(config){
-      state.config = config;
-      window.SKHPS_CONFIG = config;
-      return config;
-    });
+window.SKHPSConfig = window.SKHPSConfig || {};
+
+window.SKHPSConfig.loadConfig = function () {
+  return Promise.resolve(window.SKHPS_CONFIG);
+};
+
+window.SKHPSConfig.getEnv = function (config) {
+  config = config || window.SKHPS_CONFIG || {};
+  return config.env || "prod";
+};
+
+window.SKHPSConfig.getEnvValue = function (value, config) {
+  var env = window.SKHPSConfig.getEnv(config);
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value[env] || value.prod || value.dev || value["local-dev"] || "";
   }
 
-  function loadVersion(){
-    return loadConfig().then(function(config){
-      var versionUrl = config.versionUrl || "version.json";
+  return value;
+};
 
-      return loadJson(versionUrl).then(function(version){
-        state.version = version;
-        window.SKHPS_VERSION = version;
-        return version;
-      });
-    });
+window.SKHPSConfig.getSiteBaseUrl = function (config) {
+  config = config || window.SKHPS_CONFIG || {};
+  return window.SKHPSConfig.getEnvValue(
+    config.site && config.site.baseUrl,
+    config
+  );
+};
+
+window.SKHPSConfig.joinUrl = function (base, path) {
+  if (!base) return path || "";
+  if (!path) return base || "";
+
+  var rawPath = String(path);
+
+  if (/^https?:\/\//i.test(rawPath)) {
+    return rawPath;
   }
 
-  function getConfig(){
-    return state.config || window.SKHPS_CONFIG || null;
-  }
-
-  function getVersion(){
-    return state.version || window.SKHPS_VERSION || null;
-  }
-
-  window.SKHPSConfig = {
-    loadJson: loadJson,
-    loadConfig: loadConfig,
-    loadVersion: loadVersion,
-    getConfig: getConfig,
-    getVersion: getVersion
-  };
-})();
+  return String(base).replace(/\/+$/, "") + "/" + rawPath.replace(/^\/+/, "");
+};

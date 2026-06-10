@@ -11,27 +11,47 @@
     {
       "id": "index",
       "title": "整外資訊系統首頁",
-      "href": "index.html"
+      "href": {
+        "local-dev": "index.html",
+        "dev": "index.html",
+        "prod": "index.html"
+      }
     },
     {
       "id": "qr-signin",
       "title": "晨會QR簽到",
-      "href": "https://ndmc402010104.github.io/skhps-qr/"
+      "href": {
+        "local-dev": "http://127.0.0.1:5500/skhps-qr/",
+        "dev": "https://ndmc402010104.github.io/skhps-qr/",
+        "prod": "https://ndmc402010104.github.io/skhps-qr/"
+      }
     },
     {
       "id": "quick-login",
       "title": "醫院系統快速登入",
-      "href": "https://ndmc402010104.github.io/skhps-quick-login/"
+      "href": {
+        "local-dev": "http://127.0.0.1:5500/skhps-quick-login/",
+        "dev": "https://dev-skhps-login.jonaminz.com/",
+        "prod": "https://ndmc402010104.github.io/skhps-quick-login/"
+      }
     },
     {
       "id": "admin",
       "title": "系統後台",
-      "href": "admin.html"
+      "href": {
+        "local-dev": "admin.html",
+        "dev": "admin.html",
+        "prod": "admin.html"
+      }
     },
     {
       "id": "css-setting",
       "title": "CSS Setting",
-      "href": "css-setting.html"
+      "href": {
+        "local-dev": "css-setting.html",
+        "dev": "css-setting.html",
+        "prod": "css-setting.html"
+      }
     }
   ],
   "appsScript": {
@@ -93,6 +113,23 @@
         "tabGid": "1704216215",
         "url": "https://docs.google.com/spreadsheets/d/1Kd2T_XhkeAUyDzmdXvDUBcHKbmGII-7sky5nfJ8PY50/edit?gid=1704216215#gid=1704216215"
       }
+    }
+  },
+  "site": {
+    "baseUrl": {
+      "local-dev": "http://127.0.0.1:5500/skhpsv2/",
+      "dev": "https://dev-skhps.jonaminz.com/",
+      "prod": "https://skhps.jonaminz.com/"
+    },
+    "quickLoginBaseUrl": {
+      "local-dev": "http://127.0.0.1:5500/skhps-quick-login/",
+      "dev": "https://dev-skhps-login.jonaminz.com/",
+      "prod": "https://ndmc402010104.github.io/skhps-quick-login/"
+    },
+    "qrBaseUrl": {
+      "local-dev": "http://127.0.0.1:5500/skhps-qr/",
+      "dev": "https://ndmc402010104.github.io/skhps-qr/",
+      "prod": "https://ndmc402010104.github.io/skhps-qr/"
     }
   }
 }

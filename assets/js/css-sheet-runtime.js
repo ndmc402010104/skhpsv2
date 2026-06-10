@@ -149,6 +149,21 @@
   }
 
   function applyLoadingTitle(config) {
+    /*
+      Respect page-level loading title first.
+
+      External child apps such as skhps-quick-login can set:
+      <html data-loading-title="快速登入">
+
+      In that case, css-sheet-runtime must not overwrite it with skhpsv2
+      config.title or config.pages title.
+    */
+    var currentTitle = document.documentElement.getAttribute("data-loading-title");
+
+    if (String(currentTitle || "").trim()) {
+      return;
+    }
+
     var title = String(findPageTitle(config) || "").trim();
 
     if (title) {
