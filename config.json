@@ -1,6 +1,6 @@
 ﻿{
   "app": "skhpsv2",
-  "env": "prod",
+  "env": "dev",
   "title": "整外資訊系統首頁",
   "versionUrl": "version.json",
   "api": {
