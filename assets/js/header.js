@@ -10,6 +10,7 @@
 - Header 左側按下去回目前區域首頁。
 - Header 右側目前只顯示「登入」。
 - 登入先不做 auth，直接連到 admin.html。
+- 外部 App 使用 sharedBaseUrl / SKHPS_ENTRY_BASE_URL 回到 skhpsv2/admin.html。
 - Header 不顯示外部專案入口；外部專案入口留在首頁「系統入口」區塊。
 - Header 不顯示目前頁面標題。
 - Header 不顯示 runtime / backend / CSS / version 狀態。
@@ -40,6 +41,33 @@
 
   function normalizeText(value) {
     return String(value == null ? "" : value).trim();
+  }
+
+  function normalizeBaseUrl(baseUrl) {
+    return String(baseUrl || "").replace(/\/+$/, "") + "/";
+  }
+
+  function joinUrl(baseUrl, path) {
+    return normalizeBaseUrl(baseUrl) + String(path || "").replace(/^\/+/, "");
+  }
+
+  function getSharedBaseUrl() {
+    if (window.SKHPS_APP_ENV && window.SKHPS_APP_ENV.sharedBaseUrl) {
+      return window.SKHPS_APP_ENV.sharedBaseUrl;
+    }
+
+    if (window.SKHPS_ENTRY_BASE_URL) {
+      return window.SKHPS_ENTRY_BASE_URL;
+    }
+
+    if (
+      window.SKHPSConfig &&
+      typeof window.SKHPSConfig.getSiteBaseUrl === "function"
+    ) {
+      return window.SKHPSConfig.getSiteBaseUrl(window.SKHPS_CONFIG);
+    }
+
+    return "";
   }
 
   function getHeaderMode() {
@@ -82,6 +110,24 @@
     return "index.html";
   }
 
+  function getLoginHref() {
+    var fromHtml = normalizeText(
+      document.documentElement.getAttribute("data-skhps-header-login-href")
+    );
+
+    if (fromHtml) {
+      return fromHtml;
+    }
+
+    var sharedBaseUrl = getSharedBaseUrl();
+
+    if (sharedBaseUrl) {
+      return joinUrl(sharedBaseUrl, LOGIN_HREF);
+    }
+
+    return LOGIN_HREF;
+  }
+
   function renderHeader() {
     var root = getHeaderRoot();
 
@@ -91,6 +137,7 @@
 
     var mode = getHeaderMode();
     var homeHref = getHomeHref();
+    var loginHref = getLoginHref();
 
     root.classList.add("skhps-header");
     root.setAttribute("data-skhps-header-ready", "true");
@@ -115,7 +162,7 @@
         '<nav class="skhps-header-actions" aria-label="主要導覽">',
           '<a',
             ' class="skhps-btn skhps-btn-primary skhps-header-login-btn"',
-            ' href="' + escapeHtml(LOGIN_HREF) + '"',
+            ' href="' + escapeHtml(loginHref) + '"',
             ' data-skhps-login-link',
           '>',
             '登入',
