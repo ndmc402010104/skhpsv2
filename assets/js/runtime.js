@@ -113,7 +113,8 @@
     loadingGate: {
       requiredTasks: [],
       completedTasks: [],
-      failedTasks: []
+      failedTasks: [],
+      releaseReason: ""
     },
     modules: {},
     logs: []
@@ -323,6 +324,11 @@
     emitUpdated();
   }
 
+  function setLoadingGate(data) {
+    state.loadingGate = Object.assign({}, state.loadingGate || {}, data || {});
+    emitUpdated();
+  }
+
   function taskDone(taskName) {
     taskName = String(taskName || "").trim();
     if (!taskName) return;
@@ -377,6 +383,7 @@
     style.id = STYLE_ID;
     style.textContent = [
       ".skhps-runtime-panel{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#101820;color:#f5f7fb;border-top:1px solid rgba(255,255,255,.14);padding:16px;line-height:1.5;font-size:13px}",
+      ".skhps-runtime-panel.is-hidden{display:none}",
       ".skhps-runtime-section{margin:0 0 14px}",
       ".skhps-runtime-title{font-weight:700;margin:0 0 6px;color:#ffffff}",
       ".skhps-runtime-row{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.08);padding:3px 0}",
@@ -1161,7 +1168,8 @@
     if (!panel) return null;
 
     ensureStyle();
-    panel.className = "skhps-runtime-panel";
+    panel.className = "skhps-runtime-panel" +
+      (document.documentElement.getAttribute("data-skhps-runtime-panel-open") === "true" ? "" : " is-hidden");
     panel.innerHTML = "";
 
     var overall = summarizeOverall();
@@ -1286,6 +1294,7 @@
     setBackendCall: setBackendCall,
     setCssRuntime: setCssRuntime,
     setLoadingRequired: setLoadingRequired,
+    setLoadingGate: setLoadingGate,
     taskDone: taskDone,
     taskFailed: taskFailed,
     getState: getState,

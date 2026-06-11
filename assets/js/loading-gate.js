@@ -49,6 +49,12 @@
     if (runtime() && typeof runtime().setLoadingRequired === "function") {
       runtime().setLoadingRequired(requiredTasks());
     }
+
+    if (runtime() && typeof runtime().setLoadingGate === "function") {
+      runtime().setLoadingGate({
+        releaseReason: state.releaseReason || ""
+      });
+    }
   }
 
   function runtimeTaskDone(task) {
@@ -170,10 +176,54 @@
       });
     }
 
+    if (runtime() && typeof runtime().setLoadingGate === "function") {
+      runtime().setLoadingGate({
+        releaseReason: state.releaseReason
+      });
+    }
+
     log("released", getState());
     traceFunction("release", "done", {
       reason: state.releaseReason
     });
+  }
+
+  function isSpareElement(el) {
+    if (!el || !el.matches) return false;
+    return el.matches(
+      "header, footer, #skhps-header, #skhps-footer, #header, #footer, .skhps-header, .skhps-footer, [data-skhps-loading-spare], #skhps-runtime-panel, script, style, link"
+    );
+  }
+
+  function markLoadingElements() {
+    if (!document.body) return;
+
+    Array.prototype.slice.call(document.body.children || []).forEach(function (el) {
+      if (isSpareElement(el)) {
+        el.classList.add("skhps-loading-spared");
+        el.classList.remove("skhps-loading-gated");
+      } else {
+        el.classList.add("skhps-loading-gated");
+        el.classList.remove("skhps-loading-spared");
+      }
+    });
+  }
+
+  function startSpareObserver() {
+    if (!document.body || window.__SKHPSLoadingSpareObserver) return;
+
+    window.__SKHPSLoadingSpareObserver = new MutationObserver(function () {
+      markLoadingElements();
+    });
+
+    window.__SKHPSLoadingSpareObserver.observe(document.body, {
+      childList: true
+    });
+  }
+
+  function initSpareLoadingElements() {
+    markLoadingElements();
+    startSpareObserver();
   }
 
   function check() {
@@ -385,6 +435,11 @@
     getState: getState
   };
 
+  if (document.body) {
+    initSpareLoadingElements();
+  } else {
+    document.addEventListener("DOMContentLoaded", initSpareLoadingElements);
+  }
   loadInitialTasksFromHtml();
 
   /*

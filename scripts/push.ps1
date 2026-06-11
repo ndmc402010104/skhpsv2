@@ -237,6 +237,71 @@ function Get-VersionParts {
   }
 }
 
+function Get-VersionJsValue {
+  param(
+    [string]$Text,
+    [string]$Name,
+    [object]$Default
+  )
+
+  $pattern = '(?m)^\s*' + [regex]::Escape($Name) + '\s*:\s*("(?<str>[^"]*)"|(?<num>\d+))'
+  if ($Text -match $pattern) {
+    if ($Matches.num) { return [int]$Matches.num }
+    return [string]$Matches.str
+  }
+
+  return $Default
+}
+
+function Update-VersionJs {
+  param([string]$Path)
+
+  if (!(Test-Path $Path)) {
+    Write-Host "找不到 version.js，略過版本更新：$Path" -ForegroundColor Yellow
+    return
+  }
+
+  $text = Get-Content $Path -Raw -Encoding UTF8
+  $appId = [string](Get-VersionJsValue -Text $text -Name "appId" -Default (Split-Path (Split-Path $Path -Parent) -Leaf))
+  $major = [int](Get-VersionJsValue -Text $text -Name "major" -Default 0)
+  $minor = [int](Get-VersionJsValue -Text $text -Name "minor" -Default 1)
+  $patch = [int](Get-VersionJsValue -Text $text -Name "patch" -Default 0)
+  $build = [int](Get-VersionJsValue -Text $text -Name "build" -Default 0)
+
+  $build += 1
+  $buildAt = Get-Date -Format "yyyyMMddHHmm"
+  $updatedAt = Get-Date -Format "yyyy-MM-dd HH:mm"
+  $version = "v.$major.$minor.$patch.$build-$buildAt"
+
+  $content = @"
+window.SKHPS_VERSION = {
+  appId: "$appId",
+  version: "$version",
+  major: $major,
+  minor: $minor,
+  patch: $patch,
+  build: $build,
+  buildAt: "$buildAt",
+  updatedAt: "$updatedAt",
+  source: "version.js"
+};
+"@
+
+  [System.IO.File]::WriteAllText(
+    $Path,
+    $content,
+    [System.Text.UTF8Encoding]::new($false)
+  )
+
+  git add $Path
+  Write-Host "version.js -> $version" -ForegroundColor Green
+}
+
+function Update-VersionJsForRepo {
+  $versionJsPath = Join-Path $repoRoot "version.js"
+  Update-VersionJs -Path $versionJsPath
+}
+
 function Update-VersionJsonForTarget {
   param(
     [hashtable]$Target,
@@ -332,6 +397,7 @@ function Prepare-FrontendTargetState {
   Set-CNameForTarget -Target $Target
   Set-ConfigEnvForTarget -Target $Target
   Update-VersionJsonForTarget -Target $Target -AskVersion:$AskVersion
+  Update-VersionJsForRepo
 }
 
 function Show-Status {

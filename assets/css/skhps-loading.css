@@ -12,7 +12,7 @@
   - 不要圈圈
   - 不要膠囊
   - 不要外框
-  - loading 階段 body display:none
+  - loading 階段只隱藏 gated content，不隱藏 header/footer/body
   - loading 文案由 <html data-loading-title="..."> 控制
 */
 
@@ -39,8 +39,103 @@ html.skhps-css-loading {
   animation: skhps-loading-bg 9s ease-in-out infinite;
 }
 
-html.skhps-css-loading body {
-  display: none;
+html.skhps-css-loading .skhps-loading-gated,
+html.skhps-loading .skhps-loading-gated {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+html:not(.skhps-css-loading):not(.skhps-loading) .skhps-loading-gated {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.skhps-loading-gated {
+  transition: opacity .18s ease;
+}
+
+.skhps-loading-spared {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.skhps-footer {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+  padding: 6px 12px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+  font-size: 12px;
+  background: rgba(245, 248, 252, .94);
+  border-top: 1px solid rgba(81, 109, 135, .22);
+  color: #12233a;
+}
+
+.skhps-footer-left,
+.skhps-footer-center,
+.skhps-footer-right {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.skhps-footer-left {
+  justify-content: flex-start;
+}
+
+.skhps-footer-center {
+  justify-content: center;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.skhps-footer-right {
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.skhps-footer-page,
+.skhps-footer-env,
+.skhps-footer-lamp,
+.skhps-footer-runtime-toggle {
+  white-space: nowrap;
+}
+
+.skhps-footer-env,
+.skhps-footer-runtime-toggle {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.skhps-footer-lamp {
+  font-weight: 750;
+}
+
+@media (max-width: 720px) {
+  .skhps-footer {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .skhps-footer-left,
+  .skhps-footer-center,
+  .skhps-footer-right {
+    justify-content: center;
+  }
 }
 
 /*
