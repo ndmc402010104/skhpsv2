@@ -303,10 +303,19 @@
 
   function deriveData(state) {
     var gate = state && state.loadingGate ? state.loadingGate : {};
+    var data = state && state.data ? state.data : {};
     var task = pageDataTask(state);
     var completed = completedTasks(gate);
     var failed = failedTasks(gate);
+    var dataTask = data.task || task || "Data";
+    var dataMessage = data.message || dataTask;
+    var status = String(data.status || "").toLowerCase();
 
+    if (status === "ok" || status === "green" || status === "success") return traffic("green", "Data", dataMessage);
+    if (status === "warn" || status === "warning" || status === "yellow") return traffic("yellow", "Data", dataMessage);
+    if (status === "fail" || status === "failed" || status === "error" || status === "red") return traffic("red", "Data", dataMessage);
+    if (status === "waiting" || status === "loading" || status === "pending" || status === "run") return traffic("yellow", "Data", dataMessage);
+    if (status === "gray" || status === "idle") return traffic("gray", "Data", dataMessage);
     if (!task) return traffic("gray", "Data", "not specified");
     if (failed.some(function (entry) { return entry.task === task || entry === task; })) return traffic("red", "Data", task + " failed");
     if (completed.indexOf(task) >= 0) return traffic("green", "Data", task);

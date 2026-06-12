@@ -10,6 +10,8 @@
   var MAX_LOGS = 200;
   var PANEL_ID = "skhps-runtime-panel";
   var STYLE_ID = "skhps-runtime-panel-style";
+  var expandedFlowCards = {};
+  var expandAllFlowCards = false;
   var preRuntimeLogQueue = window.SKHPSRuntimeLog && Array.isArray(window.SKHPSRuntimeLog.__queue)
     ? window.SKHPSRuntimeLog.__queue.slice()
     : [];
@@ -200,6 +202,13 @@
       completedTasks: [],
       failedTasks: [],
       releaseReason: ""
+    },
+    data: {
+      task: "",
+      status: "",
+      message: "",
+      detail: null,
+      updatedAt: ""
     },
     modules: {},
     logs: []
@@ -427,6 +436,53 @@
     emitUpdated();
   }
 
+  function setDataStatus(data) {
+    data = data || {};
+
+    var status = String(data.status || data.state || "").trim().toLowerCase();
+    var allowed = {
+      ok: true,
+      green: true,
+      success: true,
+      warn: true,
+      warning: true,
+      yellow: true,
+      fail: true,
+      failed: true,
+      error: true,
+      red: true,
+      waiting: true,
+      loading: true,
+      pending: true,
+      run: true,
+      gray: true,
+      idle: true
+    };
+
+    if (!allowed[status]) status = status ? "warn" : "";
+
+    mergeSection("data", {
+      task: String(data.task || data.name || state.data.task || "").trim(),
+      status: status,
+      message: String(data.message || data.error || "").trim(),
+      detail: data.detail || data.data || null,
+      updatedAt: nowIso()
+    });
+
+    log({
+      level: status === "fail" || status === "failed" || status === "error" || status === "red" ? "error" : "info",
+      module: "data",
+      message: data.message || data.task || "data status updated",
+      data: data.detail || data.data || null,
+      source: data.source || "runtime.js",
+      category: "data",
+      action: "setDataStatus",
+      status: status === "fail" || status === "failed" || status === "error" || status === "red" ? "FAIL" :
+        status === "warn" || status === "warning" || status === "yellow" ? "WARN" :
+          status === "waiting" || status === "loading" || status === "pending" || status === "run" ? "RUN" : "OK"
+    });
+  }
+
   function setCssRuntime(data) {
     mergeSection("cssRuntime", data);
   }
@@ -531,8 +587,13 @@
       ".skhps-runtime-checkmeta{color:#aebbd0;font-size:12px;overflow-wrap:anywhere;word-break:break-word;white-space:normal}",
       ".skhps-runtime-flow{display:flex;flex-direction:column;gap:10px;min-width:0;max-width:100%}",
       ".skhps-runtime-flow-card{position:relative;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);border-radius:8px;padding:10px;width:100%;box-sizing:border-box}",
+      ".skhps-runtime-flow-card.is-collapsed{padding-bottom:8px}",
+      ".skhps-runtime-flow-card.is-collapsed .skhps-runtime-flow-head{border-bottom:0;margin-bottom:0;padding-bottom:0}",
+      ".skhps-runtime-flow-card.is-collapsed .skhps-runtime-flow-steps{display:none}",
       ".skhps-runtime-flow-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:7px;margin-bottom:7px}",
       ".skhps-runtime-flow-head>div:first-child{min-width:0;max-width:100%;flex:1 1 auto}",
+      ".skhps-runtime-flow-toggle{appearance:none;border:0;background:transparent;color:inherit;font:inherit;text-align:left;padding:0;margin:0;cursor:pointer;display:block;width:100%}",
+      ".skhps-runtime-flow-toggle:hover .skhps-runtime-flow-title,.skhps-runtime-flow-toggle:focus-visible .skhps-runtime-flow-title{color:#d6e8ff}",
       ".skhps-runtime-flow-number{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:20px;border-radius:999px;background:rgba(184,215,255,.16);color:#b8d7ff;font-size:12px;font-weight:700;margin-right:6px}",
       ".skhps-runtime-flow-title{font-weight:700;color:#fff;overflow-wrap:anywhere;word-break:break-word;white-space:normal}",
       ".skhps-runtime-flow-meta{color:#aebbd0;font-size:12px;overflow-wrap:anywhere;word-break:break-word;white-space:normal;margin-top:2px}",
@@ -558,7 +619,10 @@
       ".skhps-runtime-ok{color:#8ee69f}",
       ".skhps-runtime-fail{color:#ff9a9a}",
       ".skhps-runtime-waiting{color:#ffd479}",
-      ".skhps-runtime-log{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:#d8e1ef;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}"
+      ".skhps-runtime-log{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:#d8e1ef;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}",
+      ".skhps-runtime-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px}",
+      ".skhps-runtime-copy-btn{border:1px solid rgba(255,255,255,.16);border-radius:6px;background:rgba(255,255,255,.06);color:#d8e1ef;font:inherit;font-size:12px;font-weight:800;padding:5px 9px;cursor:pointer;white-space:nowrap}",
+      ".skhps-runtime-copy-btn:hover,.skhps-runtime-copy-btn:focus-visible{background:rgba(255,255,255,.12);color:#fff}"
     ].join("\n");
     document.head.appendChild(style);
   }
@@ -682,6 +746,68 @@
     return section;
   }
 
+  function formatRuntimeLog(entry) {
+    return [
+      entry.timestamp,
+      "[" + entry.level + "] " + logSource(entry) + " - " + entry.message + logDetail(entry)
+    ].filter(Boolean).join("\n");
+  }
+
+  function copyText(textValue, button) {
+    function done(ok) {
+      if (!button) return;
+      var original = button.getAttribute("data-original-text") || button.textContent || "Copy";
+      button.textContent = ok ? "Copied" : "Failed";
+      window.setTimeout(function () {
+        button.textContent = original;
+      }, 1200);
+    }
+
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(textValue).then(function () {
+        done(true);
+      }).catch(function () {
+        done(false);
+      });
+      return;
+    }
+
+    try {
+      var textarea = document.createElement("textarea");
+      textarea.value = textValue;
+      textarea.setAttribute("readonly", "readonly");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      done(document.execCommand("copy"));
+      document.body.removeChild(textarea);
+    } catch (error) {
+      done(false);
+    }
+  }
+
+  function addSectionAction(section, label, title, onClick) {
+    var heading = section.querySelector(".skhps-runtime-title");
+    if (!heading) return null;
+
+    var row = document.createElement("div");
+    row.className = "skhps-runtime-title-row";
+
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "skhps-runtime-copy-btn";
+    button.textContent = label;
+    button.setAttribute("data-original-text", label);
+    button.title = title || label;
+    button.addEventListener("click", onClick);
+
+    section.insertBefore(row, heading);
+    row.appendChild(heading);
+    row.appendChild(button);
+    return button;
+  }
+
   function latestLogMatch(test) {
     var i;
 
@@ -723,6 +849,114 @@
     return {
       label: "尚未宣告任務",
       className: "skhps-runtime-waiting"
+    };
+  }
+
+  function summarizeConfig() {
+    if (state.config && state.config.error) {
+      return {
+        label: state.config.error,
+        className: "skhps-runtime-fail",
+        reason: state.config.error
+      };
+    }
+
+    if (state.config && state.config.loaded) {
+      return {
+        label: "loaded",
+        className: "skhps-runtime-ok",
+        reason: state.config.source || "config loaded"
+      };
+    }
+
+    return {
+      label: "waiting",
+      className: "skhps-runtime-waiting",
+      reason: "config not loaded"
+    };
+  }
+
+  function summarizeBackend() {
+    if (state.backend && state.backend.healthy === false) {
+      return {
+        label: state.backend.error || "unhealthy",
+        className: "skhps-runtime-fail",
+        reason: state.backend.endpoint || state.backend.error || "backend unhealthy"
+      };
+    }
+
+    if (state.backend && state.backend.loaded) {
+      return {
+        label: state.backend.healthy === true ? "healthy" : "loaded",
+        className: "skhps-runtime-ok",
+        reason: state.backend.endpoint || "backend loaded"
+      };
+    }
+
+    return {
+      label: "waiting",
+      className: "skhps-runtime-waiting",
+      reason: "backend not loaded"
+    };
+  }
+
+  function summarizeCssRuntime() {
+    if (state.cssRuntime && state.cssRuntime.loaded) {
+      return {
+        label: state.cssRuntime.source || "loaded",
+        className: "skhps-runtime-ok",
+        reason: state.cssRuntime.source || "css runtime loaded"
+      };
+    }
+
+    return {
+      label: "waiting",
+      className: "skhps-runtime-waiting",
+      reason: "css runtime not loaded"
+    };
+  }
+
+  function summarizeData() {
+    var data = state.data || {};
+    var status = String(data.status || "").toLowerCase();
+    var label = data.message || data.task || "not specified";
+
+    if (status === "ok" || status === "green" || status === "success") {
+      return {
+        label: label,
+        className: "skhps-runtime-ok",
+        reason: data.task || "data ok"
+      };
+    }
+
+    if (status === "fail" || status === "failed" || status === "error" || status === "red") {
+      return {
+        label: label,
+        className: "skhps-runtime-fail",
+        reason: data.task || "data failed"
+      };
+    }
+
+    if (status === "warn" || status === "warning" || status === "yellow") {
+      return {
+        label: label,
+        className: "skhps-runtime-waiting",
+        reason: data.task || "data warning"
+      };
+    }
+
+    if (status === "waiting" || status === "loading" || status === "pending" || status === "run") {
+      return {
+        label: label,
+        className: "skhps-runtime-waiting",
+        reason: data.task || "data loading"
+      };
+    }
+
+    return {
+      label: "not specified",
+      className: "skhps-runtime-waiting",
+      reason: "page data status not reported"
     };
   }
 
@@ -1159,13 +1393,20 @@
   }
 
   function addFlowCard(parent, flow, number) {
+    var flowKey = String(flow.source || flow.title || number);
+    var expanded = Boolean(expandAllFlowCards || expandedFlowCards[flowKey]);
     var card = document.createElement("article");
-    card.className = "skhps-runtime-flow-card";
+    card.className = "skhps-runtime-flow-card" + (expanded ? "" : " is-collapsed");
 
     var head = document.createElement("div");
     head.className = "skhps-runtime-flow-head";
 
     var titleWrap = document.createElement("div");
+    var toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "skhps-runtime-flow-toggle";
+    toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    toggle.title = expanded ? "收合流程內容" : "展開流程內容";
 
     var title = document.createElement("div");
     title.className = "skhps-runtime-flow-title";
@@ -1185,8 +1426,25 @@
     status.className = "skhps-runtime-flow-status " + statusClass(flow.status);
     status.textContent = statusLabel(flow.status);
 
-    titleWrap.appendChild(title);
-    if (meta.textContent) titleWrap.appendChild(meta);
+    toggle.appendChild(title);
+    if (meta.textContent) toggle.appendChild(meta);
+    toggle.addEventListener("click", function () {
+      var nextExpanded = card.classList.contains("is-collapsed");
+
+      if (nextExpanded) {
+        expandedFlowCards[flowKey] = true;
+        card.classList.remove("is-collapsed");
+        toggle.setAttribute("aria-expanded", "true");
+        toggle.title = "收合流程內容";
+      } else {
+        delete expandedFlowCards[flowKey];
+        card.classList.add("is-collapsed");
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.title = "展開流程內容";
+      }
+    });
+
+    titleWrap.appendChild(toggle);
     head.appendChild(titleWrap);
     head.appendChild(status);
 
@@ -1314,13 +1572,26 @@
 
     var overall = summarizeOverall();
     var gateSummary = summarizeLoadingGate();
+    var configSummary = summarizeConfig();
+    var backendSummary = summarizeBackend();
+    var cssSummary = summarizeCssRuntime();
+    var dataSummary = summarizeData();
     var summary = document.createElement("div");
     summary.className = "skhps-runtime-summary";
-    addCard(summary, "目前狀態", overall.label, overall.className);
-    addCard(summary, "環境", (state.host.env || "UNKNOWN") + " / " + (state.runtime.effective || "UNKNOWN"), statusClass(state.runtime.effective));
-    addCard(summary, "Loading Gate", gateSummary.label, gateSummary.className);
-    addCard(summary, "Backend", state.backend.healthy === true ? "healthy" : state.backend.loaded ? "loaded" : "waiting", statusClass(state.backend.healthy === false ? "fail" : state.backend.loaded ? "ok" : "waiting"));
+    addCard(summary, "Gate", gateSummary.label, gateSummary.className);
+    addCard(summary, "Config", configSummary.label, configSummary.className);
+    addCard(summary, "Backend", backendSummary.label, backendSummary.className);
+    addCard(summary, "CSS", cssSummary.label, cssSummary.className);
+    addCard(summary, "Data", dataSummary.label, dataSummary.className);
     panel.appendChild(summary);
+
+    var traffic = addSection(panel, "Traffic Lights");
+    addRow(traffic, "Gate", gateSummary.reason || gateSummary.label, gateSummary.className);
+    addRow(traffic, "Config", configSummary.reason || configSummary.label, configSummary.className);
+    addRow(traffic, "Backend", backendSummary.reason || backendSummary.label, backendSummary.className);
+    addRow(traffic, "CSS", cssSummary.reason || cssSummary.label, cssSummary.className);
+    addRow(traffic, "Data", dataSummary.reason + " | " + dataSummary.label, dataSummary.className);
+    addRow(traffic, "Overall", overall.label, overall.className);
 
     var env = addSection(panel, "Environment");
     addRow(env, "Host", state.host.hostname || "(file)");
@@ -1351,6 +1622,33 @@
     addRow(gate, "Failed", state.loadingGate.failedTasks.map(function (item) {
       return item.task + ": " + item.error;
     }).join(" | ") || "-", state.loadingGate.failedTasks.length ? "skhps-runtime-fail" : "skhps-runtime-ok");
+
+    var dataDetail = state.data && state.data.detail ? state.data.detail : {};
+    var calendarDetail = dataDetail.calendar || {};
+    var diagnostics = dataDetail.diagnostics || dataDetail.detail && dataDetail.detail.diagnostics || {};
+    var hasCalendarDetail = Boolean(
+      calendarDetail.id ||
+      calendarDetail.name ||
+      diagnostics.calendarId ||
+      diagnostics.calendarName ||
+      diagnostics.visibleCalendarsSample
+    );
+    var dataSection = addSection(panel, "Data");
+    addRow(dataSection, "Task", state.data && state.data.task || "-", dataSummary.className);
+    addRow(dataSection, "Status", state.data && state.data.status || "-", dataSummary.className);
+    addRow(dataSection, "Message", state.data && state.data.message || "-", dataSummary.className);
+    if (hasCalendarDetail) {
+      addRow(dataSection, "Calendar Name", calendarDetail.name || diagnostics.calendarName || "-");
+      addRow(dataSection, "Calendar ID", calendarDetail.id || diagnostics.calendarId || "-");
+      addRow(dataSection, "Running Window", calendarDetail.runningWindow ? ("before " + calendarDetail.runningWindow.beforeMinutes + " min / after " + calendarDetail.runningWindow.afterMinutes + " min") : "-");
+      addRow(dataSection, "Calendar Settings", calendarDetail.settingsUrl || diagnostics.calendarSettingsUrl || "-");
+      addRow(dataSection, "Calendar Subscribe", calendarDetail.subscribeUrl || diagnostics.calendarSubscribeUrl || "-");
+      addRow(dataSection, "Can List Calendars", diagnostics.canListCalendars === undefined ? "-" : String(diagnostics.canListCalendars), statusClass(diagnostics.canListCalendars === false ? "fail" : diagnostics.canListCalendars === true ? "ok" : ""));
+      addRow(dataSection, "Target Calendar Visible", diagnostics.targetCalendarVisible === undefined ? "-" : String(diagnostics.targetCalendarVisible), statusClass(diagnostics.targetCalendarVisible === false ? "fail" : diagnostics.targetCalendarVisible === true ? "ok" : ""));
+      addRow(dataSection, "Accessible Calendar Count", diagnostics.accessibleCalendarCount === undefined ? "-" : diagnostics.accessibleCalendarCount);
+      addRow(dataSection, "Visible Calendars Sample", diagnostics.visibleCalendarsSample || "-");
+    }
+    addRow(dataSection, "Raw Detail", dataDetail || "-");
 
     var scriptRows = scriptStatusFromLogs();
     if (scriptRows.length) {
@@ -1396,6 +1694,22 @@
     var flowCards = buildFlowCards();
     if (flowCards.length) {
       var flow = addSection(panel, "Flow");
+      var allFlowExpanded = flowCards.every(function (item, index) {
+        return Boolean(expandAllFlowCards || expandedFlowCards[String(item.source || item.title || index + 1)]);
+      });
+      addSectionAction(flow, allFlowExpanded ? "Collapse all" : "Expand all", allFlowExpanded ? "收起全部 Flow 卡片" : "展開全部 Flow 卡片", function () {
+        var shouldExpand = !allFlowExpanded;
+        expandAllFlowCards = shouldExpand;
+        expandedFlowCards = {};
+
+        if (shouldExpand) {
+          flowCards.forEach(function (item, index) {
+            expandedFlowCards[String(item.source || item.title || index + 1)] = true;
+          });
+        }
+
+        renderPanel();
+      });
       var note = document.createElement("div");
       note.className = "skhps-runtime-flow-note";
       note.textContent = "RUN 表示已開始但尚未收到完成回報，不一定是錯；FAIL 才代表錯誤。卡片依實際發生時間排序。";
@@ -1409,7 +1723,11 @@
     }
 
     var logs = addSection(panel, "Recent Logs");
-    state.logs.slice(-20).forEach(function (entry) {
+    var recentLogs = state.logs.slice(-20);
+    addSectionAction(logs, "Copy", "複製最近 20 筆 runtime logs", function () {
+      copyText(recentLogs.map(formatRuntimeLog).join("\n"), this);
+    });
+    recentLogs.forEach(function (entry) {
       addRow(
         logs,
         entry.timestamp,
@@ -1506,6 +1824,7 @@
     setConfig: setConfig,
     setBackend: setBackend,
     setBackendCall: setBackendCall,
+    setDataStatus: setDataStatus,
     setCssRuntime: setCssRuntime,
     setExternalApps: setExternalApps,
     setLoadingRequired: setLoadingRequired,
