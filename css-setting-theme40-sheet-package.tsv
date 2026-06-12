@@ -1,0 +1,126 @@
+component	className	property	value	enabled	updatedAt	description
+tokens	:root	--skhps-color-bg	#eceff3	TRUE	default	Indigo Paper Admin bg
+tokens	:root	--skhps-color-bg-soft	#f3f5f7	TRUE	default	Indigo Paper Admin bg soft
+tokens	:root	--skhps-color-paper	#fbfbf8	TRUE	default	Indigo Paper Admin paper
+tokens	:root	--skhps-color-surface	#ffffff	TRUE	default	Indigo Paper Admin surface
+tokens	:root	--skhps-color-panel	#edf3f6	TRUE	default	Indigo Paper Admin panel
+tokens	:root	--skhps-color-primary	#516d87	TRUE	default	Indigo Paper Admin primary
+tokens	:root	--skhps-color-primary-strong	#314b63	TRUE	default	Indigo Paper Admin primary strong
+tokens	:root	--skhps-color-primary-soft	#dbe6ee	TRUE	default	Indigo Paper Admin primary soft
+tokens	:root	--skhps-color-accent	#a78d72	TRUE	default	Indigo Paper Admin accent
+tokens	:root	--skhps-color-accent-soft	#eadfce	TRUE	default	Indigo Paper Admin accent soft
+tokens	:root	--skhps-color-border	#d0d9e3	TRUE	default	Indigo Paper Admin border
+tokens	:root	--skhps-color-border-soft	#e3e9ef	TRUE	default	Indigo Paper Admin border soft
+tokens	:root	--skhps-color-text	#24313d	TRUE	default	Indigo Paper Admin text
+tokens	:root	--skhps-color-muted	#6b7a88	TRUE	default	Indigo Paper Admin muted
+tokens	:root	--skhps-color-subtle	#8a98a6	TRUE	default	Indigo Paper Admin subtle
+tokens	:root	--skhps-color-success	#4d7c68	TRUE	default	Indigo Paper Admin success
+tokens	:root	--skhps-color-success-soft	#dcebe4	TRUE	default	Indigo Paper Admin success soft
+tokens	:root	--skhps-color-warning	#a27c3c	TRUE	default	Indigo Paper Admin warning
+tokens	:root	--skhps-color-warning-soft	#f0e4cf	TRUE	default	Indigo Paper Admin warning soft
+tokens	:root	--skhps-color-danger	#a15c5c	TRUE	default	Indigo Paper Admin danger
+tokens	:root	--skhps-color-danger-soft	#f0dddd	TRUE	default	Indigo Paper Admin danger soft
+tokens	:root	--skhps-radius-card	18px	TRUE	default	Indigo Paper Admin card radius
+tokens	:root	--skhps-radius-panel	22px	TRUE	default	Indigo Paper Admin panel radius
+tokens	:root	--skhps-radius-pill	999px	TRUE	default	Indigo Paper Admin pill radius
+tokens	:root	--skhps-shadow-card	0 10px 30px rgba(36, 49, 61, 0.08)	TRUE	default	Indigo Paper Admin card shadow
+tokens	:root	--skhps-shadow-soft	0 4px 16px rgba(36, 49, 61, 0.06)	TRUE	default	Indigo Paper Admin soft shadow
+tokens	:root	--skhps-space-xs	4px	TRUE	default	Indigo Paper Admin space
+tokens	:root	--skhps-space-sm	8px	TRUE	default	Indigo Paper Admin space
+tokens	:root	--skhps-space-md	14px	TRUE	default	Indigo Paper Admin space
+tokens	:root	--skhps-space-lg	20px	TRUE	default	Indigo Paper Admin space
+tokens	:root	--skhps-space-xl	28px	TRUE	default	Indigo Paper Admin space
+base	html	background	var(--skhps-color-bg)	TRUE	default	Page background
+base	body	background	var(--skhps-color-bg)	TRUE	default	Page background
+base	body	color	var(--skhps-color-text)	TRUE	default	Default text color
+base	body	letter-spacing	0	TRUE	default	Default letter spacing
+base	body	overflow-x	hidden	TRUE	default	Prevent accidental horizontal scroll
+layout	main	background	linear-gradient(180deg, var(--skhps-color-bg-soft) 0%, var(--skhps-color-bg) 100%)	TRUE	default	Main matte background
+layout	main	color	var(--skhps-color-text)	TRUE	default	Main text color
+layout	main	padding	24px 0 72px	TRUE	default	Main desktop breathing room
+layout	skhps-page	background	transparent	TRUE	default	Page container background
+layout	skhps-page	padding	24px 0 72px	TRUE	default	Page desktop breathing room
+layout	.page, .container, .skhps-page	max-width	min(1120px, calc(100vw - 32px))	TRUE	default	Content max width
+layout	.page, .container, .skhps-page	margin	0 auto	TRUE	default	Content centered
+typography	h1, h2, h3, h4, h5, h6	color	var(--skhps-color-primary-strong)	TRUE	default	Heading color
+typography	h1, h2, h3, h4, h5, h6	letter-spacing	0	TRUE	default	Heading letter spacing
+typography	h1, h2, h3	margin-top	0	TRUE	default	Heading rhythm
+typography	.muted, .skhps-muted, .description, small	color	var(--skhps-color-muted)	TRUE	default	Muted text color
+card	.card, .panel, .skhps-card, .skhps-panel, .app-card, .css-card, .setting-card, .status-card	background	var(--skhps-color-paper)	TRUE	default	Paper card background
+card	.card, .panel, .skhps-card, .skhps-panel, .app-card, .css-card, .setting-card, .status-card	border	1px solid var(--skhps-color-border-soft)	TRUE	default	Soft card border
+card	.card, .panel, .skhps-card, .skhps-panel, .app-card, .css-card, .setting-card, .status-card	border-radius	var(--skhps-radius-card)	TRUE	default	Card radius
+card	.card, .panel, .skhps-card, .skhps-panel, .app-card, .css-card, .setting-card, .status-card	box-shadow	var(--skhps-shadow-card)	TRUE	default	Soft card shadow
+card	.card, .panel, .skhps-card, .skhps-panel, .app-card, .css-card, .setting-card, .status-card	color	var(--skhps-color-text)	TRUE	default	Card text
+card	.app-card:hover, .skhps-card:hover, .card:hover	border-color	var(--skhps-color-border)	TRUE	default	Subtle hover border
+card	.app-card:hover, .skhps-card:hover, .card:hover	box-shadow	0 14px 34px rgba(36, 49, 61, 0.10)	TRUE	default	Subtle hover shadow
+panel	.section, .skhps-section, .toolbar, .admin-panel, .runtime-panel	background	var(--skhps-color-paper)	TRUE	default	Panel paper background
+panel	.section, .skhps-section, .toolbar, .admin-panel, .runtime-panel	border	1px solid var(--skhps-color-border)	TRUE	default	Panel border
+panel	.section, .skhps-section, .toolbar, .admin-panel, .runtime-panel	border-radius	var(--skhps-radius-panel)	TRUE	default	Panel radius
+panel	.section, .skhps-section, .toolbar, .admin-panel, .runtime-panel	box-shadow	var(--skhps-shadow-soft)	TRUE	default	Panel shadow
+table	table	background	var(--skhps-color-paper)	TRUE	default	Table background
+table	th	background	var(--skhps-color-primary-soft)	TRUE	default	Table header background
+table	th	color	var(--skhps-color-primary-strong)	TRUE	default	Table header text
+table	td, th	border-color	var(--skhps-color-border-soft)	TRUE	default	Table borders
+button	button, .button, .btn, .skhps-button	border-radius	var(--skhps-radius-pill)	TRUE	default	Pill button
+button	button, .button, .btn, .skhps-button	border	1px solid var(--skhps-color-border)	TRUE	default	Button border
+button	button, .button, .btn, .skhps-button	background	var(--skhps-color-paper)	TRUE	default	Button background
+button	button, .button, .btn, .skhps-button	color	var(--skhps-color-primary-strong)	TRUE	default	Button text
+button	button, .button, .btn, .skhps-button	box-shadow	var(--skhps-shadow-soft)	TRUE	default	Button shadow
+button	button:hover, .button:hover, .btn:hover, .skhps-button:hover	background	var(--skhps-color-primary-soft)	TRUE	default	Button hover background
+button	button:hover, .button:hover, .btn:hover, .skhps-button:hover	border-color	var(--skhps-color-primary)	TRUE	default	Button hover border
+badge	.badge, .pill, .tag, .status-badge, .skhps-badge	border-radius	var(--skhps-radius-pill)	TRUE	default	Badge pill
+badge	.badge, .pill, .tag, .status-badge, .skhps-badge	background	var(--skhps-color-accent-soft)	TRUE	default	Badge accent background
+badge	.badge, .pill, .tag, .status-badge, .skhps-badge	color	#6d5741	TRUE	default	Badge text
+badge	.badge, .pill, .tag, .status-badge, .skhps-badge	border	1px solid rgba(167, 141, 114, 0.32)	TRUE	default	Badge border
+form	input, select, textarea	background	var(--skhps-color-paper)	TRUE	default	Input background
+form	input, select, textarea	border	1px solid var(--skhps-color-border)	TRUE	default	Input border
+form	input, select, textarea	border-radius	14px	TRUE	default	Input radius
+form	input, select, textarea	color	var(--skhps-color-text)	TRUE	default	Input text
+form	input:focus, select:focus, textarea:focus	outline	2px solid rgba(81, 109, 135, 0.22)	TRUE	default	Accessible focus ring
+form	input:focus, select:focus, textarea:focus	border-color	var(--skhps-color-primary)	TRUE	default	Focus border
+state	.success, .ok, [data-status='OK']	color	var(--skhps-color-success)	TRUE	default	Success color
+state	.warning, .warn, [data-status='WARN']	color	var(--skhps-color-warning)	TRUE	default	Warning color
+state	.danger, .error, .fail, [data-status='FAIL']	color	var(--skhps-color-danger)	TRUE	default	Danger color
+state	.success-bg, .ok-bg	background	var(--skhps-color-success-soft)	TRUE	default	Success soft background
+state	.warning-bg, .warn-bg	background	var(--skhps-color-warning-soft)	TRUE	default	Warning soft background
+state	.danger-bg, .error-bg, .fail-bg	background	var(--skhps-color-danger-soft)	TRUE	default	Danger soft background
+footer	.skhps-footer	background	rgba(251, 251, 248, 0.96)	TRUE	default	Footer paper background
+footer	.skhps-footer	color	var(--skhps-color-muted)	TRUE	default	Footer muted text
+footer	.skhps-footer	border-top	1px solid var(--skhps-color-border)	TRUE	default	Footer top border
+footer	.skhps-footer	box-shadow	0 -8px 22px rgba(36, 49, 61, 0.07)	TRUE	default	Footer soft shadow
+footer	.skhps-footer	min-height	48px	TRUE	default	Footer compact height
+footer	.skhps-footer	padding	0 12px	TRUE	default	Footer compact padding
+footer	.skhps-footer	gap	10px	TRUE	default	Footer compact gap
+footer	.skhps-footer	max-width	100vw	TRUE	default	Footer prevent overflow
+footer	.skhps-footer	width	100%	TRUE	default	Footer viewport width
+footer	.skhps-footer	overflow-x	hidden	TRUE	default	Footer prevent horizontal overflow
+footer	.skhps-footer	box-sizing	border-box	TRUE	default	Footer width calculation
+footer	.skhps-footer-left, .skhps-footer-center, .skhps-footer-right	min-width	0	TRUE	default	Footer columns can shrink
+footer	.skhps-footer-left, .skhps-footer-center, .skhps-footer-right	max-width	100%	TRUE	default	Footer columns max width
+footer	.skhps-footer-page	overflow	hidden	TRUE	default	Footer page text overflow
+footer	.skhps-footer-page	text-overflow	ellipsis	TRUE	default	Footer page text ellipsis
+footer	.skhps-footer-page	white-space	nowrap	TRUE	default	Footer page text single line
+footer	.skhps-footer-page	max-width	min(38vw, 280px)	TRUE	default	Footer page text width
+footer	.skhps-footer-right	flex-wrap	wrap	TRUE	default	Footer status wrap
+footer	.skhps-footer-right	gap	6px	TRUE	default	Footer status gap
+footer	.skhps-footer-lamp, .skhps-footer-env, .skhps-footer-runtime-toggle	flex	0 0 auto	TRUE	default	Footer item fixed flex
+footer	.skhps-footer-runtime-toggle	color	var(--skhps-color-primary-strong)	TRUE	default	Footer runtime toggle text
+footer	.skhps-footer-runtime-toggle	background	var(--skhps-color-primary-soft)	TRUE	default	Footer runtime toggle background
+footer	.skhps-footer-runtime-toggle	border-radius	var(--skhps-radius-pill)	TRUE	default	Footer runtime toggle radius
+responsive	@media (max-width: 760px) { main }	padding	20px 12px 64px	TRUE	default	Mobile main padding
+responsive	@media (max-width: 760px) { .skhps-page }	padding	20px 12px 64px	TRUE	default	Mobile page padding
+responsive	@media (max-width: 760px) { .page, .container, .skhps-page }	max-width	calc(100vw - 24px)	TRUE	default	Mobile content width
+responsive	@media (max-width: 760px) { .card, .panel, .skhps-card, .skhps-panel, .app-card, .css-card, .setting-card, .status-card }	border-radius	16px	TRUE	default	Mobile card radius
+responsive	@media (max-width: 760px) { .skhps-footer }	width	100%	TRUE	default	Mobile footer width
+responsive	@media (max-width: 760px) { .skhps-footer }	max-width	100vw	TRUE	default	Mobile footer prevent overflow
+responsive	@media (max-width: 760px) { .skhps-footer }	overflow-x	hidden	TRUE	default	Mobile footer prevent horizontal overflow
+responsive	@media (max-width: 760px) { .skhps-footer }	min-height	46px	TRUE	default	Mobile footer compact height
+responsive	@media (max-width: 760px) { .skhps-footer }	padding	0 8px	TRUE	default	Mobile footer compact padding
+responsive	@media (max-width: 760px) { .skhps-footer }	gap	5px 8px	TRUE	default	Mobile footer compact gap
+responsive	@media (max-width: 760px) { .skhps-footer-left }	flex	1 1 100%	TRUE	default	Mobile footer page row
+responsive	@media (max-width: 760px) { .skhps-footer-left }	justify-content	center	TRUE	default	Mobile footer page centered
+responsive	@media (max-width: 760px) { .skhps-footer-page }	max-width	72vw	TRUE	default	Mobile footer page width
+responsive	@media (max-width: 760px) { .skhps-footer-center }	font-size	11px	TRUE	default	Mobile footer version size
+responsive	@media (max-width: 760px) { .skhps-footer-right }	width	100%	TRUE	default	Mobile footer status width
+responsive	@media (max-width: 760px) { .skhps-footer-right }	justify-content	center	TRUE	default	Mobile footer status centered
+responsive	@media (max-width: 760px) { .skhps-footer-lamp }	font-size	11px	TRUE	default	Mobile footer lamp size

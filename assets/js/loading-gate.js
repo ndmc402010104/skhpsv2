@@ -530,7 +530,7 @@
       統一接收入口，未來新程式可以只丟狀態進來，不需要知道 gate 內部。
       支援：
       - "css-runtime"                         => require
-      - ["css-runtime", "quick-login-staff"]  => requireMany
+      - ["css-runtime", "external-app-data"]  => requireMany
       - { task: "css-runtime", status: "done" }
       - { task: "x", status: "fail", error: err }
       - { require: ["a", "b"], done: ["a"], fail: [{ task: "b", error: err }] }

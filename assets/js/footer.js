@@ -527,24 +527,32 @@
     pending: function (key, value, detail) { setRuntimeStatus(key, "pending", detail || value); },
     info: function (key, value, detail) { logViaRuntime("info", key, value, detail); },
     setRuntimeStatus: setRuntimeStatus,
-    taskPending: function (taskName) {
+    taskPending: function (taskName, detail) {
       if (runtime() && typeof runtime().setLoadingRequired === "function") {
         var state = getState();
         var required = state && state.loadingGate ? (state.loadingGate.requiredTasks || []).slice() : [];
         if (required.indexOf(taskName) < 0) required.push(taskName);
         runtime().setLoadingRequired(required);
       }
+      logViaRuntime("info", taskName, "pending", detail || null);
     },
-    taskDone: function (taskName) {
+    taskDone: function (taskName, detail) {
       if (runtime() && typeof runtime().taskDone === "function") runtime().taskDone(taskName);
+      logViaRuntime("info", taskName, "done", detail || null);
     },
     taskWarn: function (taskName, detail) { logViaRuntime("warn", taskName, "warning", detail); },
     taskError: function (taskName, detail) {
       if (runtime() && typeof runtime().taskFailed === "function") runtime().taskFailed(taskName, detail || "failed");
+      logViaRuntime("error", taskName, "failed", detail || null);
     },
-    quickLoginStaffPending: function (detail) { setRuntimeStatus("quick-login-staff", "pending", detail); },
-    quickLoginStaffReady: function (count, detail) { setRuntimeStatus("quick-login-staff", "ok", detail || ("count: " + count)); },
-    quickLoginStaffFailed: function (errorMessage) { setRuntimeStatus("quick-login-staff", "error", errorMessage); },
+    taskReady: function (taskName, detail) {
+      if (runtime() && typeof runtime().taskDone === "function") runtime().taskDone(taskName);
+      setRuntimeStatus(taskName, "ok", detail || "done");
+    },
+    taskFailed: function (taskName, detail) {
+      if (runtime() && typeof runtime().taskFailed === "function") runtime().taskFailed(taskName, detail || "failed");
+      setRuntimeStatus(taskName, "error", detail || "failed");
+    },
     getFooterRuntimeSummary: getFooterRuntimeSummary,
     toggleRuntimePanel: toggleRuntimePanel,
     render: render,
