@@ -147,6 +147,29 @@ Purpose: render the shared SKHPS page map / breadcrumb.
       document.querySelector("main");
   }
 
+  function claimExistingNav() {
+    var shared = document.querySelector(NAV_SELECTOR);
+    var legacy = Array.prototype.slice.call(
+      document.querySelectorAll("nav.skhps-page-map:not([data-skhps-page-map])")
+    );
+
+    if (shared) {
+      legacy.forEach(function (nav) {
+        if (nav && nav.parentNode) nav.parentNode.removeChild(nav);
+      });
+      return shared;
+    }
+
+    if (!legacy.length) return null;
+
+    legacy.slice(1).forEach(function (nav) {
+      if (nav && nav.parentNode) nav.parentNode.removeChild(nav);
+    });
+
+    legacy[0].setAttribute("data-skhps-page-map", "");
+    return legacy[0];
+  }
+
   function makeLink(item) {
     var link = document.createElement("a");
     link.className = "skhps-page-map-link";
@@ -174,7 +197,7 @@ Purpose: render the shared SKHPS page map / breadcrumb.
   function render() {
     var target = getTarget();
     var items = getItems();
-    var existing = document.querySelector(NAV_SELECTOR);
+    var existing = claimExistingNav();
     var nav;
 
     if (!target || !items.length) return;

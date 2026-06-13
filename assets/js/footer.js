@@ -67,36 +67,69 @@
       ".skhps-footer-left,.skhps-footer-center,.skhps-footer-right{min-width:0}",
       ".skhps-footer-left{overflow:hidden}",
       ".skhps-footer-page{overflow:hidden;text-overflow:ellipsis}",
+      ".skhps-footer-page-line,.skhps-footer-runtime-line{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}",
+      ".skhps-footer-runtime-line{font-size:.86em;opacity:.88;flex-wrap:wrap;row-gap:2px}",
+      ".skhps-footer-env-summary{display:inline-flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}",
+      ".skhps-footer-env-chip{font-weight:800;letter-spacing:.02em;white-space:nowrap}",
+      ".skhps-footer-env{font-weight:500}",
       ".skhps-footer-right{min-width:0;flex-wrap:wrap}",
       ".skhps-footer-lamp,.skhps-footer-env,.skhps-footer-css-refresh,.skhps-footer-runtime-toggle{flex:0 0 auto}",
       ".skhps-footer-css-refresh{border:0;background:transparent;color:inherit;font:inherit;font-weight:750;cursor:pointer;padding:2px 4px;white-space:nowrap}",
-      "html[data-skhps-footer-fixed='true'][data-skhps-footer-reserve='true'] body{padding-bottom:var(--skhps-footer-safe-bottom,0px)}"
+      "@media (max-width:720px){.skhps-footer{align-items:center}.skhps-footer-left{display:flex;flex-direction:column;align-items:flex-start;gap:2px}.skhps-footer-page-line,.skhps-footer-runtime-line{white-space:normal}.skhps-footer-runtime-line{font-size:11px}.skhps-footer-center{font-size:11px}.skhps-footer-right{gap:4px}}"
     ].join("\n");
     document.head.appendChild(style);
   }
 
+  function visualViewportMetrics() {
+    var viewport = window.visualViewport || null;
+    var layoutHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    var visualHeight = viewport && viewport.height ? viewport.height : layoutHeight;
+    var offsetTop = viewport && viewport.offsetTop ? viewport.offsetTop : 0;
+    var bottomGap = Math.max(0, Math.ceil(layoutHeight - visualHeight - offsetTop));
+
+    return {
+      layoutHeight: Math.max(0, Math.ceil(layoutHeight)),
+      visualHeight: Math.max(0, Math.ceil(visualHeight)),
+      offsetTop: Math.max(0, Math.ceil(offsetTop)),
+      bottomGap: bottomGap
+    };
+  }
+
+  function updateViewportCssVariables() {
+    var metrics = visualViewportMetrics();
+
+    document.documentElement.style.setProperty("--skhps-visual-viewport-height", metrics.visualHeight + "px");
+    document.documentElement.style.setProperty("--skhps-visual-viewport-bottom-gap", metrics.bottomGap + "px");
+    document.documentElement.setAttribute("data-skhps-visual-viewport-bottom-gap", String(metrics.bottomGap));
+    return metrics;
+  }
+
   function updateFooterSafeArea() {
     var footer = findFooter();
+    var metrics = updateViewportCssVariables();
     if (!footer || !document.body) return;
 
     try {
       var style = window.getComputedStyle ? window.getComputedStyle(footer) : null;
       var isFixed = style && style.position === "fixed";
       var footerRect = footer.getBoundingClientRect();
-      var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+      var viewportHeight = metrics.layoutHeight || window.innerHeight || document.documentElement.clientHeight || 0;
       var footerHeight = Math.ceil(footerRect.height || footer.offsetHeight || 0) || 48;
-      var footerDockBottom = Math.max(0, Math.ceil(viewportHeight - footerRect.top)) || footerHeight;
+      var footerDockBottom = isFixed
+        ? footerHeight + metrics.bottomGap
+        : Math.max(0, Math.ceil(viewportHeight - footerRect.top)) || footerHeight;
 
       /*
        * docked full 是 fixed 掛畫，不應該改變 document flow。
        * 只有 flow full 需要讓頁尾 runtime-tail 接續內容；如果 footer 是 fixed，才保留安全距離。
        */
-      var shouldReserve = Boolean(runtimeState === "full" && !runtimeDocked && isFixed);
-      var height = shouldReserve ? footerHeight : 0;
+      var shouldReserve = Boolean(isFixed);
+      var height = shouldReserve ? footerHeight + metrics.bottomGap + 16 : 0;
 
       document.documentElement.setAttribute("data-skhps-footer-fixed", isFixed ? "true" : "false");
       document.documentElement.setAttribute("data-skhps-footer-reserve", shouldReserve ? "true" : "false");
       document.documentElement.style.setProperty("--skhps-footer-safe-bottom", height ? height + "px" : "0px");
+      document.documentElement.style.setProperty("--skhps-footer-page-bottom-space", height ? height + "px" : "0px");
       document.documentElement.style.setProperty("--skhps-footer-height", footerHeight + "px");
       document.documentElement.style.setProperty("--skhps-footer-dock-bottom", footerDockBottom + "px");
     } catch (error) {}
@@ -140,6 +173,65 @@
       document.title ||
       "SKHPS"
     ).trim();
+  }
+
+  function normalizeEnvLabel(value) {
+    value = String(value || "").trim().toLowerCase();
+    if (value === "local-dev" || value === "local" || value === "localdev") return "LOCAL";
+    if (value === "dev") return "DEV";
+    if (value === "prod" || value === "production") return "PROD";
+    if (value === "auto" || value === "") return "";
+    return value.toUpperCase();
+  }
+
+  function runtimeRequestedLabel(state) {
+    var requested = state && state.runtime ? state.runtime.requested : "";
+    requested = normalizeEnvLabel(requested);
+    return requested || "AUTO";
+  }
+
+  function runtimeEffectiveLabel(state) {
+    var runtimeState = state && state.runtime ? state.runtime : {};
+    return normalizeEnvLabel(
+      runtimeState.effective ||
+      (window.SKHPS_APP_ENV && window.SKHPS_APP_ENV.env) ||
+      document.documentElement.getAttribute("data-skhps-runtime") ||
+      hostEnvFromLocation()
+    ) || "UNKNOWN";
+  }
+
+  function pageEnvLabel(state) {
+    state = state || {};
+    return normalizeEnvLabel(state.host && state.host.env || hostEnvFromLocation()) || "UNKNOWN";
+  }
+
+  function scriptEnvLabel(state) {
+    state = state || {};
+    return normalizeEnvLabel(
+      state.backend && state.backend.env ||
+      state.runtime && state.runtime.effective ||
+      (window.SKHPS_APP_ENV && window.SKHPS_APP_ENV.env) ||
+      document.documentElement.getAttribute("data-skhps-runtime")
+    ) || "UNKNOWN";
+  }
+
+  function runtimeSummaryText(state) {
+    var requested = runtimeRequestedLabel(state);
+    var effective = runtimeEffectiveLabel(state);
+
+    if (requested === "AUTO" || requested === effective) {
+      return "Runtime " + effective;
+    }
+
+    return "Runtime " + requested + "→" + effective;
+  }
+
+  function footerEnvSummary(state) {
+    return {
+      page: pageEnvLabel(state),
+      runtime: runtimeSummaryText(state),
+      script: "Script " + scriptEnvLabel(state)
+    };
   }
 
   function hostEnvLabel(state) {
@@ -569,7 +661,9 @@
     var panel = ensureRuntimePanel(false);
     var summary = panel ? panel.querySelector(".skhps-runtime-summary") : null;
     var traffic = panel ? panel.querySelector("[data-skhps-runtime-section='traffic-lights']") : null;
-    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    var viewportMetrics = updateViewportCssVariables();
+    var viewportHeight = viewportMetrics.layoutHeight || window.innerHeight || document.documentElement.clientHeight || 0;
+    var visualViewportHeight = viewportMetrics.visualHeight || viewportHeight;
     var footerHeight = 48;
     var footerDockBottom = 48;
     var panelTop = 0;
@@ -591,7 +685,9 @@
     if (footer) {
       footerRect = footer.getBoundingClientRect();
       footerHeight = Math.ceil(footerRect.height || footer.offsetHeight || 0) || 48;
-      footerDockBottom = Math.max(0, Math.ceil(viewportHeight - footerRect.top)) || footerHeight;
+      footerDockBottom = Math.max(0, Math.ceil(footerHeight + viewportMetrics.bottomGap)) ||
+        Math.max(0, Math.ceil(viewportHeight - footerRect.top)) ||
+        footerHeight;
     }
 
     if (panel) {
@@ -657,6 +753,7 @@
     setRuntimeCssNumber("--skhps-runtime-full-height", fullHeight);
     setRuntimeCssNumber("--skhps-runtime-visible-height", fullHeight);
     setRuntimeCssNumber("--skhps-runtime-tail-height", tailHeight);
+    setRuntimeCssNumber("--skhps-runtime-mobile-max-height", Math.max(0, visualViewportHeight - (footerDockBottom || footerHeight || 48) - 16));
     setRuntimeCssSignedNumber("--skhps-runtime-tail-spacer", tailSpacer);
 
     document.documentElement.setAttribute("data-skhps-runtime-tail-start", String(runtimeTailStart));
@@ -679,6 +776,8 @@
       naturalTailStart: naturalTailStart,
       progress: Math.max(0, scrollY - runtimeTailStart),
       viewportHeight: viewportHeight,
+      visualViewportHeight: visualViewportHeight,
+      visualViewportBottomGap: viewportMetrics.bottomGap,
       runtimeTailStart: runtimeTailStart,
       flowSwitchY: Math.max(0, Math.round(runtimeTailStart - viewportHeight + (footerDockBottom || footerHeight || 48) + summaryHeight))
     };
@@ -796,31 +895,51 @@
     loadVersionJsIfNeeded();
     footer.classList.add("skhps-footer");
     footer.innerHTML = "";
+    var envSummary = footerEnvSummary(state);
 
     var left = document.createElement("div");
     left.className = "skhps-footer-left";
 
-    var page = document.createElement("span");
-    page.className = "skhps-footer-page";
-    page.textContent = pageTitle();
-
-    var sep = document.createElement("span");
-    sep.className = "skhps-footer-separator";
-    sep.textContent = " · ";
-
     var env = document.createElement("button");
     env.className = "skhps-footer-env";
     env.type = "button";
-    env.textContent = hostEnvLabel(state);
-    env.title = "切換正式版 / 測試版";
+    env.textContent = "PAGE " + envSummary.page;
+    env.title = "頁面來源；點擊切換正式版 / 測試版";
     env.addEventListener("click", function () {
       var href = toggleHref(state);
       if (href) window.location.href = href;
     });
 
-    left.appendChild(page);
-    left.appendChild(sep);
-    left.appendChild(env);
+    var runtimeLine = document.createElement("div");
+    runtimeLine.className = "skhps-footer-runtime-line";
+
+    var pageChip = document.createElement("span");
+    pageChip.className = "skhps-footer-env-chip skhps-footer-page-chip";
+    pageChip.appendChild(env);
+
+    var runtimeSep = document.createElement("span");
+    runtimeSep.className = "skhps-footer-separator";
+    runtimeSep.textContent = "｜";
+
+    var runtimeChip = document.createElement("span");
+    runtimeChip.className = "skhps-footer-env-chip skhps-footer-runtime-chip";
+    runtimeChip.textContent = envSummary.runtime;
+
+    var scriptSep = document.createElement("span");
+    scriptSep.className = "skhps-footer-separator";
+    scriptSep.textContent = "｜";
+
+    var scriptChip = document.createElement("span");
+    scriptChip.className = "skhps-footer-env-chip skhps-footer-script-chip";
+    scriptChip.textContent = envSummary.script;
+
+    runtimeLine.appendChild(pageChip);
+    runtimeLine.appendChild(runtimeSep);
+    runtimeLine.appendChild(runtimeChip);
+    runtimeLine.appendChild(scriptSep);
+    runtimeLine.appendChild(scriptChip);
+
+    left.appendChild(runtimeLine);
 
     var center = document.createElement("div");
     center.className = "skhps-footer-center";
@@ -1019,14 +1138,25 @@
   }
 
   function installRuntimeInteractions() {
+    var viewport = window.visualViewport || null;
+    var refreshViewportLayout = function () {
+      updateFooterSafeArea();
+      scheduleMeasureRuntimePanel();
+    };
+
     window.addEventListener("wheel", handleRuntimeWheel, {
       passive: true
     });
     window.addEventListener("scroll", handleRuntimeScroll, {
       passive: true
     });
-    window.addEventListener("resize", scheduleMeasureRuntimePanel);
-    window.addEventListener("orientationchange", scheduleMeasureRuntimePanel);
+    window.addEventListener("resize", refreshViewportLayout);
+    window.addEventListener("orientationchange", refreshViewportLayout);
+
+    if (viewport) {
+      viewport.addEventListener("resize", refreshViewportLayout);
+      viewport.addEventListener("scroll", refreshViewportLayout);
+    }
 
     if (document.fonts && typeof document.fonts.ready === "object") {
       document.fonts.ready.then(scheduleMeasureRuntimePanel).catch(function () {});

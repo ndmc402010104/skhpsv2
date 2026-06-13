@@ -1276,6 +1276,41 @@
     return hostEnv || "UNKNOWN";
   }
 
+  function envLabel(value) {
+    return normalizeRuntime(value) || "UNKNOWN";
+  }
+
+  function pageEnvDisplay() {
+    return envLabel(state.host && state.host.env);
+  }
+
+  function runtimeRequestedDisplay() {
+    var requested = envLabel(state.runtime && state.runtime.requested);
+    return requested === "UNKNOWN" ? "AUTO" : requested;
+  }
+
+  function runtimeEffectiveDisplay() {
+    return envLabel(state.runtime && state.runtime.effective);
+  }
+
+  function runtimeSummaryDisplay() {
+    var requested = runtimeRequestedDisplay();
+    var effective = runtimeEffectiveDisplay();
+
+    if (requested === "AUTO" || requested === effective) {
+      return "Runtime " + effective;
+    }
+
+    return "Runtime " + requested + "→" + effective;
+  }
+
+  function scriptBackendEnvDisplay() {
+    return envLabel(
+      state.backend && state.backend.env ||
+      state.runtime && state.runtime.effective
+    );
+  }
+
   function actionStatusFromLogs() {
     var actions = {};
 
@@ -1773,8 +1808,12 @@
     var env = addSection(panel, "Environment");
     addRow(env, "Host", state.host.hostname || "(file)");
     addRow(env, "Host Env", hostEnvDisplay(), statusClass(state.runtime.effective || state.host.env));
-    addRow(env, "Runtime Requested", state.runtime.requested);
-    addRow(env, "Runtime Effective", state.runtime.effective, statusClass(state.runtime.effective));
+    addRow(env, "Page Env", pageEnvDisplay(), statusClass(pageEnvDisplay()));
+    addRow(env, "Runtime Requested", runtimeRequestedDisplay());
+    addRow(env, "Runtime Effective", runtimeEffectiveDisplay(), statusClass(runtimeEffectiveDisplay()));
+    addRow(env, "Runtime Summary", runtimeSummaryDisplay(), statusClass(runtimeEffectiveDisplay()));
+    addRow(env, "Script / Backend Env", scriptBackendEnvDisplay(), statusClass(scriptBackendEnvDisplay()));
+    addRow(env, "Backend Endpoint", state.backend.endpoint || "not loaded", statusClass(state.backend.loaded ? "ok" : "waiting"));
     addRow(env, "Override Reason", state.runtime.overrideReason || "-");
     addRow(env, "Fallback Reason", state.runtime.fallbackReason || "-");
 

@@ -630,7 +630,7 @@
       var selector = row.selector;
 
       if (selector.indexOf("@media") === 0) {
-        var match = selector.match(/^(@media[^{]+)\{\s*([^}]+)\s*\}$/);
+        var match = selector.match(/^(@media[^{]+)\{\s*([^}]+?)\s*\}?$/);
 
         if (match) {
           var media = match[1].trim();
