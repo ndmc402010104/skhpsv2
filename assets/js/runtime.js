@@ -1,6 +1,6 @@
 /*
 檔案位置：skhpsv2/assets/js/runtime.js
-時間戳記：2026-06-11 UTC+8
+時間戳記：2026-06-13 UTC+8
 用途：SKHPS runtime diagnostics state；集中記錄環境、config/backend/css/loading gate、模組狀態與最近 logs。
 */
 
@@ -620,13 +620,23 @@
     var style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = [
+      "html.runtime-state-closed,html.runtime-state-full{--skhps-footer-dock-bottom:var(--skhps-footer-height,48px);--skhps-runtime-summary-height:0px;--skhps-runtime-full-height:0px;--skhps-runtime-tail-height:0px;--skhps-runtime-visible-height:0px;--skhps-runtime-tail-spacer:0px}",
+      ".skhps-runtime-tail{height:var(--skhps-runtime-tail-height,0px);margin-top:var(--skhps-runtime-tail-spacer,0px);min-height:0;max-height:none;max-width:100%;box-sizing:border-box;overflow:visible;flex:0 0 auto}",
+      "html.runtime-state-closed .skhps-runtime-tail{height:0!important;margin-top:0!important;min-height:0!important;max-height:0!important;overflow:visible!important}",
+      "html.runtime-state-full .skhps-runtime-tail{height:var(--skhps-runtime-full-height,0px);min-height:var(--skhps-runtime-full-height,0px);max-height:none}",
       ".skhps-runtime-panel{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#101820;color:#f5f7fb;border-top:1px solid rgba(255,255,255,.14);padding:16px;line-height:1.5;font-size:13px;max-width:100%;box-sizing:border-box;overflow-x:hidden}",
       ".skhps-runtime-panel *{box-sizing:border-box;min-width:0}",
       ".skhps-runtime-panel a,.skhps-runtime-panel span,.skhps-runtime-panel div,.skhps-runtime-panel p{max-width:100%;overflow-wrap:anywhere;word-break:break-word;white-space:normal}",
       ".skhps-runtime-panel pre,.skhps-runtime-panel code{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}",
       ".skhps-runtime-panel table{width:100%;table-layout:fixed}",
       ".skhps-runtime-panel td,.skhps-runtime-panel th{overflow-wrap:anywhere;word-break:break-word}",
-      ".skhps-runtime-panel.is-hidden{display:none}",
+      ".skhps-runtime-panel.is-hidden{display:block}",
+      "html:not(.runtime-state-full) .skhps-runtime-panel.is-hidden{position:fixed!important;left:0!important;right:0!important;bottom:var(--skhps-footer-dock-bottom,var(--skhps-footer-height,48px))!important;max-height:0!important;opacity:0;visibility:hidden;pointer-events:none;overflow:hidden}",
+      "html.runtime-state-closed .skhps-runtime-panel{position:fixed!important;left:0!important;right:0!important;bottom:var(--skhps-footer-dock-bottom,var(--skhps-footer-height,48px))!important;max-height:0!important;opacity:0;visibility:hidden;pointer-events:none;overflow:hidden}",
+      "html.runtime-state-full[data-skhps-runtime-docked='true'] .skhps-runtime-panel{position:fixed!important;left:0!important;right:0!important;bottom:calc(var(--skhps-footer-dock-bottom,var(--skhps-footer-height,48px)) + var(--skhps-runtime-summary-height,0px) - var(--skhps-runtime-full-height,0px))!important;height:auto!important;max-height:none!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;overflow:visible!important;z-index:2147482980!important;box-shadow:0 -14px 34px rgba(15,23,42,.16)!important}",
+      "html.runtime-state-full:not([data-skhps-runtime-docked='true']) .skhps-runtime-panel{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;height:auto!important;max-height:none!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;overflow:visible!important;z-index:auto!important;box-shadow:none!important;overscroll-behavior:auto!important}",
+      "html.skhps-css-loading .skhps-runtime-panel,html.skhps-loading .skhps-runtime-panel,html:not([data-skhps-loading-released='true']) .skhps-runtime-panel{max-height:0!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;overflow:hidden!important}",
+      "html.skhps-css-loading .skhps-runtime-tail,html.skhps-loading .skhps-runtime-tail,html:not([data-skhps-loading-released='true']) .skhps-runtime-tail{height:0!important;margin-top:0!important;min-height:0!important;max-height:0!important}",
       ".skhps-runtime-section{margin:0 0 14px}",
       ".skhps-runtime-title{font-weight:700;margin:0 0 6px;color:#ffffff}",
       ".skhps-runtime-row{display:grid;grid-template-columns:minmax(120px,auto) minmax(0,1fr);gap:8px;border-bottom:1px solid rgba(255,255,255,.08);padding:3px 0;align-items:start}",

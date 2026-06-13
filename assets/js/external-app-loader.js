@@ -56,6 +56,7 @@ Purpose: include loader for SKHPS external child apps.
     "assets/js/backend-client.js",
     "assets/js/css-sheet-runtime.js",
     "assets/js/header.js",
+    "assets/js/page-map.js",
     "assets/js/footer.js"
   ];
 
