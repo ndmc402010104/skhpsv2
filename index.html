@@ -41,8 +41,33 @@ Loading Gate：
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <link rel="stylesheet" href="assets/css/skhps-loading.css?v=2026061610">
-  <script src="assets/js/skhps-entry.js?v=2026061610"></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var host = String(location.hostname || "").toLowerCase();
+      var isDev =
+        host === "127.0.0.1" ||
+        host === "localhost" ||
+        host.indexOf("dev-skhps") >= 0;
+
+      var version = isDev ? String(Date.now()) : "prod";
+
+      document.write(
+        '<link rel="stylesheet" href="assets/css/skhps-loading.css?v=' +
+        encodeURIComponent(version) +
+        '">'
+      );
+
+      document.write(
+        '<script src="assets/js/skhps-entry.js?v=' +
+        encodeURIComponent(version) +
+        '"><\/script>'
+      );
+    })();
+  </script>
+
   <title>整外資訊系統首頁</title>
 </head>
 
