@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 檔案位置：skhpsv2/admin.html
-時間戳記：2026-06-14 13:25 UTC+8
+時間戳記：2026-06-16 13:45 UTC+8
 用途：系統後台；左側固定 skhpsv2 後台功能，右側顯示 registry 中啟用且「顯示位置」為後台的外部專案。
 水庫理論：
 - 本頁是 skhpsv2 水庫本體頁面。
@@ -11,24 +11,50 @@
 -->
 <html
   lang="zh-Hant"
-  class="skhps-css-loading"
+  class="skhps-loading skhps-css-loading skhps-shell-loading skhps-main-loading"
+  data-skhps-entry-scope="skhps-core"
   data-skhps-page-id="admin"
   data-skhps-page-map-current="系統後台"
   data-loading-title="系統後台"
   data-skhps-loading-tasks="css-runtime,admin-backend-apps"
+  data-skhps-shell-ready="false"
+  data-skhps-page-ready="false"
 >
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <script src="assets/js/loading-cache-probe.js?v=20260611"></script>
-  <link rel="stylesheet" href="uni-CSS.CSS?v=202606141725">
+  <script>
+    (function () {
+      "use strict";
+
+      var host = String(location.hostname || "").toLowerCase();
+      var isDev =
+        host === "127.0.0.1" ||
+        host === "localhost" ||
+        host.indexOf("dev-skhps") >= 0;
+
+      var version = isDev ? String(Date.now()) : "prod";
+
+      document.write(
+        '<link rel="stylesheet" href="assets/css/skhps-loading.css?v=' +
+        encodeURIComponent(version) +
+        '">'
+      );
+
+      document.write(
+        '<script src="assets/js/skhps-entry.js?v=' +
+        encodeURIComponent(version) +
+        '"><\/script>'
+      );
+    })();
+  </script>
   <title>系統後台</title>
 </head>
 
 <body class="skhps-body">
   <header id="header" class="skhps-header" data-skhps-header></header>
 
-  <main class="skhps-page skhps-admin-page">
+  <main class="skhps-page skhps-admin-page" data-skhps-main>
     <div class="skhps-container skhps-admin-shell">
       <section class="skhps-hero skhps-admin-hero" aria-labelledby="adminTitle">
         <div class="skhps-hero-card skhps-admin-card">
@@ -88,15 +114,43 @@
     Footer 載入中...
   </footer>
 
-  <script src="assets/js/runtime.js?v=202606141725"></script>
-  <script src="assets/js/loading-gate.js?v=202606141325"></script>
-  <script src="assets/js/config.js?v=202606131230"></script>
-  <script src="assets/js/route.js?v=202606131230"></script>
-  <script src="assets/js/backend-client.js?v=20260611"></script>
-  <script src="assets/js/css-sheet-runtime.js?v=202606141725"></script>
-  <script src="assets/js/header.js?v=20260611"></script>
-  <script src="assets/js/page-map.js?v=202606131610"></script>
-  <script src="assets/js/footer.js?v=202606142130"></script>
-  <script src="assets/js/admin.js?v=20260613"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      function loadAdminScript() {
+        var script = document.createElement("script");
+        script.src = "assets/js/admin.js?v=20260613";
+        script.async = false;
+        document.body.appendChild(script);
+      }
+
+      function waitForEntryCoreReady() {
+        var startedAt = Date.now();
+
+        function ready() {
+          return Boolean(
+            window.SKHPSLoading ||
+            window.SKHPSBackend ||
+            window.SKHPS_CONFIG ||
+            window.SKHPSCssRuntime ||
+            window.SKHPSCssSheetRuntime
+          );
+        }
+
+        function tick() {
+          if (ready() || Date.now() - startedAt > 6000) {
+            loadAdminScript();
+            return;
+          }
+          window.setTimeout(tick, 50);
+        }
+
+        tick();
+      }
+
+      waitForEntryCoreReady();
+    })();
+  </script>
 </body>
 </html>

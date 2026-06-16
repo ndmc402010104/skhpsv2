@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <!--
 檔案位置：skhpsv2/backend-project-launcher.html
-時間戳記：2026-06-14 13:25 UTC+8
+時間戳記：2026-06-16 13:40 UTC+8
 用途：後台專案啟動器；以四象限拖曳方式管理外部專案 registry 的啟用狀態、顯示位置與卡片順序，並提供入口網址檢視。
+本版調整：
+- 改為目前 skhps-entry.js 入口版本。
+- loading 階段只載 assets/css/skhps-loading.css。
+- 共通 runtime / config / backend-client / CSS runtime / header / footer 由 entry-core.js 載入。
+- 保留原本四象限拖曳功能與頁面專用樣式，不重新設計外觀。
+
 開發階段樣式策略：
-- 本頁暫時允許頁面專用 <style>，方便快速調整 UI。
-- 所有新增 selector 均以 skhps-backend-project-launcher-* 命名，穩定後可搬入 CSS Sheet。
+- 本頁暫時保留頁面專用 <style>，避免改 entry 時同時破壞四象限 UI。
+- 所有頁面專用 selector 均以 skhps-backend-project-launcher-* 命名，穩定後可搬入 CSS Sheet。
 水庫理論：
 - 本頁是 skhpsv2 後台共通管理能力。
 - 不承載 QR / Dressing / HIS 等業務邏輯。
@@ -14,7 +20,8 @@
 -->
 <html
   lang="zh-Hant"
-  class="skhps-css-loading"
+  class="skhps-loading skhps-css-loading skhps-shell-loading skhps-main-loading"
+  data-skhps-entry-scope="skhps-core"
   data-skhps-page-id="backend-project-launcher"
   data-skhps-header-mode="admin"
   data-skhps-page-map-parent-label="系統後台"
@@ -22,12 +29,38 @@
   data-skhps-page-map-current="後台專案啟動器"
   data-loading-title="後台專案啟動器"
   data-skhps-loading-tasks="css-runtime,backend-project-launcher"
+  data-skhps-shell-ready="false"
+  data-skhps-page-ready="false"
 >
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <script src="assets/js/loading-cache-probe.js?v=20260611"></script>
-  <link rel="stylesheet" href="uni-CSS.CSS?v=202606141725">
+  <script>
+    (function () {
+      "use strict";
+
+      var host = String(location.hostname || "").toLowerCase();
+      var isDev =
+        host === "127.0.0.1" ||
+        host === "localhost" ||
+        host.indexOf("dev-skhps") >= 0;
+
+      var version = isDev ? String(Date.now()) : "prod";
+
+      document.write(
+        '<link rel="stylesheet" href="assets/css/skhps-loading.css?v=' +
+        encodeURIComponent(version) +
+        '">'
+      );
+
+      document.write(
+        '<script src="assets/js/skhps-entry.js?v=' +
+        encodeURIComponent(version) +
+        '"><\/script>'
+      );
+    })();
+  </script>
+
   <title>後台專案啟動器</title>
 
   <style>
@@ -640,7 +673,7 @@
 <body class="skhps-body">
   <header id="header" class="skhps-header" data-skhps-header></header>
 
-  <main class="skhps-page skhps-backend-project-launcher-page">
+  <main class="skhps-page skhps-backend-project-launcher-page" data-skhps-main>
     <div class="skhps-container skhps-backend-project-launcher-shell">
       <section class="skhps-hero skhps-backend-project-launcher-hero" aria-labelledby="launcherTitle">
         <div class="skhps-hero-card">
@@ -707,16 +740,6 @@
   <footer data-skhps-footer class="skhps-footer">
     Footer 載入中...
   </footer>
-
-  <script src="assets/js/runtime.js?v=202606141725"></script>
-  <script src="assets/js/loading-gate.js?v=202606141325"></script>
-  <script src="assets/js/config.js?v=202606131230"></script>
-  <script src="assets/js/route.js?v=202606131230"></script>
-  <script src="assets/js/backend-client.js?v=20260611"></script>
-  <script src="assets/js/css-sheet-runtime.js?v=202606141725"></script>
-  <script src="assets/js/header.js?v=20260611"></script>
-  <script src="assets/js/page-map.js?v=202606131610"></script>
-  <script src="assets/js/footer.js?v=202606142130"></script>
 
   <script>
     /*
@@ -1369,11 +1392,63 @@
         });
       }
 
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", boot);
-      } else {
-        boot();
+      function waitForDom() {
+        if (document.readyState !== "loading") {
+          return Promise.resolve();
+        }
+
+        return new Promise(function (resolve) {
+          document.addEventListener("DOMContentLoaded", resolve, { once: true });
+        });
       }
+
+      function waitForBackendReady(timeoutMs) {
+        var startedAt = Date.now();
+        var timeout = Number(timeoutMs) || 10000;
+
+        return new Promise(function (resolve, reject) {
+          function check() {
+            if (
+              window.SKHPSBackend &&
+              typeof window.SKHPSBackend.listExternalProjects === "function" &&
+              typeof window.SKHPSBackend.updateExternalProjectActivation === "function"
+            ) {
+              resolve();
+              return;
+            }
+
+            if (Date.now() - startedAt > timeout) {
+              reject(new Error("等待 SKHPSBackend ready 逾時"));
+              return;
+            }
+
+            window.setTimeout(check, 50);
+          }
+
+          check();
+        });
+      }
+
+      function failReady(error) {
+        try {
+          if (window.SKHPSLoading && typeof window.SKHPSLoading.fail === "function") {
+            window.SKHPSLoading.fail("backend-project-launcher", error);
+            return;
+          }
+        } catch (failError) {}
+
+        markReady();
+      }
+
+      waitForDom()
+        .then(function () {
+          return waitForBackendReady(10000);
+        })
+        .then(boot)
+        .catch(function (error) {
+          showError(error);
+          failReady(error);
+        });
     })();
   </script>
 </body>
