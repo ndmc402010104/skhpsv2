@@ -5,9 +5,13 @@
 
 Loading Gate：
 - 任務名稱：external-apps-runtime
-- 有 cache 時：先 render cache，立刻 done，再背景刷新 Sheet。
-- 無 cache 時：維持等 listExternalProjects，成功 render 後 done。
-- 讀取失敗但錯誤訊息已 render：fail。
+- 成功讀取 listExternalProjects 並 render 完成：done
+- 讀取失敗但錯誤訊息已 render：fail
+
+規則：
+- 功能資料 / backend 資料不使用 localStorage cache。
+- 首頁系統入口是可操作功能，必須等 backend 回來並完成 render 後才放行。
+- CSS 可以 cache；功能資料不要 cache。
 */
 
 (function () {
@@ -16,10 +20,9 @@ Loading Gate：
   var TASK_NAME = "external-apps-runtime";
   var CONTAINER_SELECTOR = "[data-skhps-external-apps]";
   var STATUS_SELECTOR = "[data-skhps-external-apps-status]";
+  var COUNT_SELECTOR = "[data-skhps-external-apps-count]";
   var WAIT_BACKEND_TIMEOUT_MS = 8000;
   var WAIT_BACKEND_INTERVAL_MS = 100;
-  var CACHE_KEY = "skhpsv2.externalAppsRuntime.cache.v1";
-  var CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
   var loadStartedAt = Date.now();
   var readyMarked = false;
@@ -53,7 +56,7 @@ Loading Gate：
     return document.querySelector(selector);
   }
 
-  function markReady(reason) {
+  function markReady() {
     if (readyMarked) {
       return;
     }
@@ -61,15 +64,9 @@ Loading Gate：
     readyMarked = true;
 
     document.documentElement.setAttribute("data-skhps-external-apps-runtime-ready", "true");
-    document.documentElement.setAttribute(
-      "data-skhps-external-apps-runtime-ready-reason",
-      reason || "ready"
-    );
+    document.documentElement.setAttribute("data-skhps-external-apps-runtime-ready-reason", "backend");
 
-    rlog("OK", "moduleReady", {
-      file: "external-apps-runtime.js",
-      reason: reason || "ready"
-    }, Date.now() - loadStartedAt);
+    rlog("OK", "moduleReady", "external-apps-runtime.js", Date.now() - loadStartedAt);
 
     if (window.SKHPSLoading && typeof window.SKHPSLoading.done === "function") {
       window.SKHPSLoading.done(TASK_NAME);
@@ -83,19 +80,19 @@ Loading Gate：
 
     readyMarked = true;
 
+    var message = error && error.message ? error.message : String(error || "unknown");
+
     document.documentElement.setAttribute("data-skhps-external-apps-runtime-ready", "false");
-    document.documentElement.setAttribute(
-      "data-skhps-external-apps-runtime-error",
-      error && error.message ? error.message : String(error || "unknown")
-    );
+    document.documentElement.setAttribute("data-skhps-external-apps-runtime-error", message);
 
     rlog("FAIL", "moduleReady", {
-      error: error && error.message ? error.message : String(error || "unknown")
+      error: message
     }, Date.now() - loadStartedAt);
 
     setRuntimeExternalApps({
       loaded: false,
-      error: error && error.message ? error.message : String(error || "unknown"),
+      source: "backend",
+      error: message,
       durationMs: Date.now() - loadStartedAt
     });
 
@@ -123,7 +120,9 @@ Loading Gate：
     }
 
     var fromHtml = document.documentElement.getAttribute("data-skhps-runtime");
-    if (fromHtml) return normalizeRegistryEnv(fromHtml);
+    if (fromHtml) {
+      return normalizeRegistryEnv(fromHtml);
+    }
 
     if (window.SKHPSConfig && typeof window.SKHPSConfig.getEnv === "function") {
       return normalizeRegistryEnv(window.SKHPSConfig.getEnv(window.SKHPS_CONFIG));
@@ -143,11 +142,20 @@ Loading Gate：
     }
   }
 
+  function setCount(value) {
+    var el = $(COUNT_SELECTOR);
+    if (el) {
+      el.textContent = String(value);
+    }
+  }
+
   function clearContainer() {
     var container = $(CONTAINER_SELECTOR);
+
     if (container) {
       container.innerHTML = "";
     }
+
     return container;
   }
 
@@ -202,37 +210,54 @@ Loading Gate：
     return isActive(app) && normalizeDisplayLocation(app) === "front";
   }
 
+  function getOrder(app) {
+    var value = app && (
+      app.order ||
+      app.sort ||
+      app["排序"] ||
+      9999
+    );
+
+    var number = Number(value);
+
+    if (Number.isFinite(number)) {
+      return number;
+    }
+
+    return 9999;
+  }
+
   function sortApps(apps) {
     return (apps || []).slice().sort(function (a, b) {
-      var orderA = Number(a.order || a["排序"] || 9999);
-      var orderB = Number(b.order || b["排序"] || 9999);
+      var orderA = getOrder(a);
+      var orderB = getOrder(b);
 
       if (orderA !== orderB) {
         return orderA - orderB;
       }
 
-      return String(a.title || a.appId || "").localeCompare(String(b.title || b.appId || ""), "zh-Hant");
+      return String(a.title || a.appId || "").localeCompare(
+        String(b.title || b.appId || ""),
+        "zh-Hant"
+      );
     });
   }
 
-  function filterAppsForHome(apps) {
+  function filterHomeApps(apps) {
     return sortApps((apps || []).filter(isFrontendApp));
   }
 
-  function renderApps(apps, runtime, options) {
+  function renderApps(apps, runtime) {
     var container = clearContainer();
-    var sourceLabel = options && options.sourceLabel ? options.sourceLabel : "";
 
     if (!container) {
       throw new Error("missing external apps container: " + CONTAINER_SELECTOR);
     }
 
+    setCount(apps.length);
+
     if (!apps.length) {
-      if (sourceLabel) {
-        setStatus("目前沒有啟用中的外部專案（" + runtime + "，" + sourceLabel + "）");
-      } else {
-        setStatus("目前沒有啟用中的外部專案（" + runtime + "）");
-      }
+      setStatus("目前沒有啟用中的外部專案（" + runtime + "）");
       return;
     }
 
@@ -240,70 +265,17 @@ Loading Gate：
       container.appendChild(createAppButton(app));
     });
 
-    if (sourceLabel) {
-      setStatus("已載入 " + apps.length + " 個外部專案（" + runtime + "，" + sourceLabel + "）");
-    } else {
-      setStatus("已載入 " + apps.length + " 個外部專案（" + runtime + "）");
-    }
+    setStatus("已載入 " + apps.length + " 個外部專案（" + runtime + "）");
   }
 
   function renderError(error) {
+    var message = error && error.message ? error.message : String(error || "未知錯誤");
+
     console.error("[SKHPSExternalAppsRuntime]", error);
 
     clearContainer();
-
-    setStatus(
-      "外部專案清單讀取失敗：" +
-      (error && error.message ? error.message : String(error || "未知錯誤"))
-    );
-  }
-
-  function readCache(runtime) {
-    try {
-      var raw = window.localStorage.getItem(CACHE_KEY);
-      var cache = raw ? JSON.parse(raw) : null;
-
-      if (!cache || !Array.isArray(cache.apps)) {
-        return null;
-      }
-
-      if (normalizeRegistryEnv(cache.env) !== normalizeRegistryEnv(runtime)) {
-        return null;
-      }
-
-      if (cache.updatedAtMs && Date.now() - Number(cache.updatedAtMs) > CACHE_MAX_AGE_MS) {
-        return null;
-      }
-
-      return cache;
-    } catch (error) {
-      rlog("WARN", "cacheReadFailed", error && error.message ? error.message : String(error));
-      return null;
-    }
-  }
-
-  function writeCache(runtime, apps) {
-    try {
-      var cache = {
-        env: normalizeRegistryEnv(runtime),
-        apps: apps || [],
-        updatedAt: new Date().toISOString(),
-        updatedAtMs: Date.now(),
-        source: "listExternalProjects"
-      };
-
-      window.localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-
-      rlog("OK", "cacheWrite", {
-        env: runtime,
-        count: cache.apps.length
-      });
-
-      return cache;
-    } catch (error) {
-      rlog("WARN", "cacheWriteFailed", error && error.message ? error.message : String(error));
-      return null;
-    }
+    setCount("讀取失敗");
+    setStatus("外部專案清單讀取失敗：" + message);
   }
 
   function waitForBackend() {
@@ -334,7 +306,7 @@ Loading Gate：
     });
   }
 
-  function fetchExternalApps(runtime) {
+  function listExternalApps(runtime) {
     rlog("RUN", "listExternalApps", {
       env: runtime
     });
@@ -345,18 +317,7 @@ Loading Gate：
     }).then(function (response) {
       console.info("[SKHPSExternalAppsRuntime] listExternalApps response:", response);
 
-      var apps = filterAppsForHome(normalizeApps(response));
-
-      writeCache(runtime, apps);
-
-      setRuntimeExternalApps({
-        loaded: true,
-        count: apps.length,
-        env: runtime,
-        source: "backend",
-        error: "",
-        durationMs: Date.now() - loadStartedAt
-      });
+      var apps = filterHomeApps(normalizeApps(response));
 
       rlog("OK", "listExternalApps", {
         env: runtime,
@@ -367,42 +328,36 @@ Loading Gate：
     });
   }
 
-  function refreshFromBackend(runtime, options) {
-    options = options || {};
+  function init() {
+    var container = $(CONTAINER_SELECTOR);
+    var runtime = getRuntime();
 
-    return fetchExternalApps(runtime)
+    if (!container) {
+      markReady();
+      return;
+    }
+
+    document.documentElement.setAttribute("data-skhps-runtime", runtime);
+
+    setCount("載入中");
+    setStatus("外部專案清單載入中...");
+
+    listExternalApps(runtime)
       .then(function (apps) {
-        renderApps(apps, runtime, {
-          sourceLabel: options.background ? "已更新" : ""
+        renderApps(apps, runtime);
+
+        setRuntimeExternalApps({
+          loaded: true,
+          source: "backend",
+          count: apps.length,
+          env: runtime,
+          error: "",
+          durationMs: Date.now() - loadStartedAt
         });
 
-        if (!options.background) {
-          markReady("backend");
-        }
-
-        return apps;
+        markReady();
       })
       .catch(function (error) {
-        if (options.background) {
-          console.warn("[SKHPSExternalAppsRuntime] background refresh failed:", error);
-
-          rlog("WARN", "backgroundRefreshFailed", {
-            env: runtime,
-            error: error && error.message ? error.message : String(error)
-          }, Date.now() - loadStartedAt);
-
-          setRuntimeExternalApps({
-            loaded: true,
-            env: runtime,
-            source: "cache",
-            refreshError: error && error.message ? error.message : String(error),
-            durationMs: Date.now() - loadStartedAt
-          });
-
-          setStatus("外部專案清單已使用快取（背景更新失敗）");
-          return null;
-        }
-
         renderError(error);
 
         rlog("FAIL", "listExternalApps", {
@@ -411,76 +366,13 @@ Loading Gate：
         }, Date.now() - loadStartedAt);
 
         markFailed(error);
-        return null;
       });
-  }
-
-  function renderCacheAndRefresh(runtime, cache) {
-    renderApps(cache.apps || [], runtime, {
-      sourceLabel: "快取"
-    });
-
-    setRuntimeExternalApps({
-      loaded: true,
-      count: (cache.apps || []).length,
-      env: runtime,
-      source: "cache",
-      cacheUpdatedAt: cache.updatedAt || "",
-      error: "",
-      durationMs: Date.now() - loadStartedAt
-    });
-
-    rlog("OK", "cacheHit", {
-      env: runtime,
-      count: (cache.apps || []).length,
-      updatedAt: cache.updatedAt || ""
-    }, Date.now() - loadStartedAt);
-
-    markReady("cache");
-
-    window.setTimeout(function () {
-      refreshFromBackend(runtime, {
-        background: true
-      });
-    }, 0);
-  }
-
-  function init() {
-    var container = $(CONTAINER_SELECTOR);
-
-    if (!container) {
-      markReady("no-container");
-      return;
-    }
-
-    var runtime = getRuntime();
-    var cache = null;
-
-    document.documentElement.setAttribute("data-skhps-runtime", runtime);
-
-    cache = readCache(runtime);
-
-    if (cache) {
-      renderCacheAndRefresh(runtime, cache);
-      return;
-    }
-
-    setStatus("外部專案清單載入中...");
-    rlog("INFO", "cacheMiss", {
-      env: runtime
-    });
-
-    refreshFromBackend(runtime, {
-      background: false
-    });
   }
 
   window.SKHPSExternalAppsRuntime = {
     init: init,
     getRuntime: getRuntime,
-    readCache: readCache,
-    writeCache: writeCache,
-    refreshFromBackend: refreshFromBackend
+    listExternalApps: listExternalApps
   };
 
   if (document.readyState === "loading") {
