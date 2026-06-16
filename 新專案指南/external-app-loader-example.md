@@ -1,7 +1,7 @@
 # SKHPS 外部 App 水庫接入標準
 
-時間戳記：2026-06-16 UTC+8
-用途：說明外部 App 如何接入 skhpsv2 水庫。
+時間戳記：2026-06-16 UTC+8  
+用途：說明外部 App 如何接入 skhpsv2 水庫。  
 狀態：規格文件，不是可直接部署的外部專案。真正 smoke test 專案之後另外建立。
 
 ---
@@ -12,28 +12,28 @@
 
 外部 App 是下游專案，只保留自己的：
 
-* `index.html`
-* `app-card.json`
-* `version.js`
-* `assets/js/app.js`
-* `assets/js/ajax/*.js`，如有需要
-* 自己的業務 UI
-* 自己的業務流程
-* 自己的 Apps Script action / Sheet / database，如有需要
+- `index.html`
+- `app-card.json`
+- `version.js`
+- `assets/js/app.js`
+- `assets/js/ajax/*.js`，如有需要
+- 自己的業務 UI
+- 自己的業務流程
+- 自己的 Apps Script action / Sheet / database，如有需要
 
 共通能力由 skhpsv2 水庫提供：
 
-* entry-core
-* config loader
-* route helper
-* backend-client
-* loading gate
-* CSS Sheet runtime
-* header
-* footer
-* diagnostics / runtime panel
-* external app registry / registerExternalApp
-* footer CSS cache 清除 + reload 工具
+- entry-core
+- config loader
+- route helper
+- backend-client
+- loading gate
+- CSS Sheet runtime
+- header
+- footer
+- diagnostics / runtime panel
+- external app registry / registerExternalApp
+- footer CSS cache 清除 + reload 工具
 
 外部 App 不應把這些共通模組複製到自己的 repo。
 
@@ -90,7 +90,91 @@ entry-core.js
 
 ---
 
-## 3. Loading 狀態分工
+## 3. Asset Version / Cache Bust 原則
+
+目前接入程式裡會看到：
+
+```txt
+SKHPS_ENTRY_VERSION
+```
+
+注意：  
+`SKHPS_ENTRY_VERSION` 不是業務版本，也不是 App 版本。  
+它只是前端資源 cache buster / asset version，用途是避免瀏覽器或 CDN 吃到舊的 JS / CSS。
+
+正確分工：
+
+```txt
+version.js
+  業務版本
+  顯示在 footer / runtime panel
+  代表 App 或水庫目前版本
+
+SKHPS_ENTRY_VERSION
+  前端資源 cache buster
+  只用在 script/link 的 ?v=
+  不代表業務版本
+```
+
+水庫理論下，不應該每次改水庫 JS / CSS，就人工到處修改：
+
+```txt
+?v=2026061611
+```
+
+正確策略：
+
+```txt
+local-dev
+  使用 Date.now()
+  每次重新整理都抓最新水庫資源
+
+dev
+  使用 Date.now()
+  避免 dev 測試時吃到舊 JS / CSS
+
+prod
+  長期應由 push.ps1 / version manifest / buildTime 自動產生
+  不應人工到處改
+```
+
+目前外部 App 範本先使用：
+
+```js
+function assetVersion(runtime) {
+  if (runtime === "local-dev" || runtime === "dev") {
+    return String(Date.now());
+  }
+
+  return window.SKHPS_ASSET_VERSION || "prod";
+}
+```
+
+說明：
+
+```txt
+dev / local：
+  正確性優先，不要被 cache 卡住
+
+prod：
+  穩定性優先，之後由自動化 build version 接手
+```
+
+未來可以把名稱逐步整理為：
+
+```txt
+SKHPS_ASSET_VERSION
+```
+
+但目前為了相容既有 `app-entry.js`，HTML 仍設定：
+
+```js
+window.SKHPS_ENTRY_VERSION = assetVersion(resolvedRuntime);
+```
+
+---
+
+## 4. Loading 狀態分工
 
 目前 loading class 定義如下：
 
@@ -148,7 +232,7 @@ Loading 畫面要等整頁 ready 才關。
 
 ---
 
-## 4. 最小檔案結構
+## 5. 最小檔案結構
 
 真正外部專案最小結構：
 
@@ -175,7 +259,7 @@ your-app/
 
 ---
 
-## 5. index.html 最小範本
+## 6. index.html 最小範本
 
 注意：
 
@@ -198,6 +282,7 @@ your-app/
 - 本頁不直接載入 runtime/config/backend/css/header/footer。
 - 正式 CSS 由 CSS Sheet runtime / cache 負責。
 - loading 階段由唯一 skhps-loading.css 負責。
+- SKHPS_ENTRY_VERSION 只是前端資源 cache buster，不是業務版本。
 -->
 <html
   lang="zh-Hant"
@@ -219,7 +304,6 @@ your-app/
     (function () {
       "use strict";
 
-      var ENTRY_VERSION = "2026061611";
       var APP_CARD_URL = "app-card.json";
 
       var host = String(location.hostname || "").toLowerCase();
@@ -264,9 +348,29 @@ your-app/
         return "prod";
       }
 
+      function assetVersion(value) {
+        /*
+          注意：
+          這不是 app version。
+          這只是前端資源 cache buster。
+
+          local-dev / dev：
+            使用 Date.now()，避免測試時吃舊水庫 JS / CSS。
+
+          prod：
+            長期應由 push.ps1 / version manifest / buildTime 自動產生。
+            目前先保留穩定字串，等自動化補上。
+        */
+        if (value === "local-dev" || value === "dev") {
+          return String(Date.now());
+        }
+
+        return window.SKHPS_ASSET_VERSION || "prod";
+      }
+
       var resolvedRuntime = currentRuntime();
 
-      window.SKHPS_ENTRY_VERSION = ENTRY_VERSION;
+      window.SKHPS_ENTRY_VERSION = assetVersion(resolvedRuntime);
       window.SKHPS_ENTRY_BASE_URL = runtimeBaseUrl(resolvedRuntime);
       window.SKHPS_APP_CARD_URL = APP_CARD_URL;
 
@@ -337,7 +441,7 @@ your-app/
 
 ---
 
-## 6. app-card.json 範本
+## 7. app-card.json 範本
 
 ```json
 {
@@ -391,7 +495,9 @@ href
 
 ---
 
-## 7. version.js 範本
+## 8. version.js 範本
+
+`version.js` 是業務版本，不是 asset cache buster。
 
 ```js
 window.SKHPS_VERSION = {
@@ -408,7 +514,7 @@ window.SKHPS_VERSION = {
 
 ---
 
-## 8. assets/js/app.js 最小範本
+## 9. assets/js/app.js 最小範本
 
 ```js
 /*
@@ -492,7 +598,7 @@ window.SKHPS_VERSION = {
 
 ---
 
-## 9. Loading Gate 規則
+## 10. Loading Gate 規則
 
 外部 App 的 `<html>` 必須宣告：
 
@@ -531,7 +637,7 @@ fail 會讓 gate 以 WARN 狀態放行。
 
 ---
 
-## 10. CSS 原則
+## 11. CSS 原則
 
 正式畫面樣式：
 
@@ -573,7 +679,42 @@ skhpsv2/assets/css/skhps-loading.css
 
 ---
 
-## 11. 後端原則
+## 12. Cache 原則
+
+目前定案：
+
+```txt
+CSS 可以 cache。
+功能資料 / backend 資料預設不要 cache。
+```
+
+CSS cache：
+
+```txt
+由 css-sheet-runtime.js 管理。
+footer 的 CSS 按鈕只清 CSS cache。
+```
+
+功能資料：
+
+```txt
+不要偷用 localStorage cache。
+例如首頁 external apps registry 必須等 listExternalProjects 回來並 render 完，才 done external-apps-runtime。
+```
+
+未來如果真的需要 backend cache，必須獨立設計：
+
+```txt
+CSS cache 清除
+Backend cache 清除
+All cache 清除
+```
+
+不能讓 CSS 按鈕順手清 backend cache，也不能讓 backend cache 混在 CSS cache 裡。
+
+---
+
+## 13. 後端原則
 
 外部 App 需要後端時，前端統一呼叫：
 
@@ -590,12 +731,12 @@ Apps Script router
 共通 action wrapper
 ```
 
-外部 App 可以有自己的後端 action / Sheet / database。
+外部 App 可以有自己的後端 action / Sheet / database。  
 但前端呼叫入口仍然走水庫提供的 `SKHPSBackend.call()`。
 
 ---
 
-## 12. Registry / 啟用 / 顯示位置
+## 14. Registry / 啟用 / 顯示位置
 
 外部 App 不自己決定：
 
@@ -625,7 +766,7 @@ registerExternalApp
 
 ---
 
-## 13. Smoke test 待辦
+## 15. Smoke test 待辦
 
 真正外部 smoke test 專案之後再建立。
 
@@ -639,22 +780,24 @@ skhps-external-smoke
 
 ```txt
 1. 外部 index.html 只直接載入 skhps-loading.css + app-entry.js
-2. app-entry.js 成功讀 app-card.json
-3. app-entry.js 成功讀 version.js
-4. entry-core.js 成功載入共通 runtime
-5. css-sheet-runtime.js 成功回報 css-runtime
-6. header/footer 成功掛載
-7. entry-core.js 成功 done("skhps-shell")
-8. assets/js/app.js 成功 done("app-ready")
-9. loading 畫面等 all-ready 後才關
-10. header/footer/main 一起出現
-11. registerExternalApp 背景報到失敗時不阻塞頁面
-12. footer CSS 按鈕可清 cache + reload
+2. dev / local 不需要人工修改 ?v= 也能抓到最新水庫 JS
+3. app-entry.js 成功讀 app-card.json
+4. app-entry.js 成功讀 version.js
+5. entry-core.js 成功載入共通 runtime
+6. css-sheet-runtime.js 成功回報 css-runtime
+7. header/footer 成功掛載
+8. entry-core.js 成功 done("skhps-shell")
+9. assets/js/app.js 成功 done("app-ready")
+10. loading 畫面等 all-ready 後才關
+11. header/footer/main 一起出現
+12. registerExternalApp 背景報到失敗時不阻塞頁面
+13. footer CSS 按鈕只清 CSS cache + reload
+14. 功能資料 / backend 資料不使用 localStorage cache
 ```
 
 ---
 
-## 14. 常見錯誤
+## 16. 常見錯誤
 
 ### 錯誤：外部 App 自己直接載入共通 JS
 
@@ -673,6 +816,27 @@ skhps-external-smoke
 
 ```html
 <script src="skhpsv2/assets/js/app-entry.js"></script>
+```
+
+---
+
+### 錯誤：把 SKHPS_ENTRY_VERSION 當成業務版本
+
+不要：
+
+```txt
+每次改 App 版本就手動改 SKHPS_ENTRY_VERSION。
+每次改水庫 JS 就人工到處改 ?v=。
+```
+
+正確：
+
+```txt
+version.js 才是業務版本。
+SKHPS_ENTRY_VERSION 只是前端資源 cache buster。
+
+dev / local 使用 Date.now()。
+prod 長期由 push.ps1 / version manifest / buildTime 自動產生。
 ```
 
 ---
@@ -735,7 +899,20 @@ SKHPSLoading.done("app-ready");
 
 ---
 
-## 15. 本文件結論
+### 錯誤：功能資料偷用 localStorage cache
+
+目前定案：
+
+```txt
+CSS 可以 cache。
+功能資料 / backend 資料不要 cache。
+```
+
+如果功能資料需要快取，必須另外設計 backend cache scope，不可以混在 CSS cache 裡。
+
+---
+
+## 17. 本文件結論
 
 外部 App 接入只記一句話：
 
@@ -750,12 +927,13 @@ index.html
   設定 runtime
   載唯一 loading CSS
   載 app-entry.js
+  dev / local 自動 cache bust，不人工改 ?v=
 
 app-card.json
   宣告 appId / title / href / afterScripts
 
 version.js
-  宣告版本
+  宣告業務版本
 
 assets/js/app.js
   做業務
