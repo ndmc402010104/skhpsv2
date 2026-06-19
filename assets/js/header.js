@@ -134,13 +134,28 @@
     var manifest = window.SKHPS_APP_ROOT_MANIFEST || window.SKHPS_APP_MANIFEST || {};
     var effective = window.SKHPS_APP_EFFECTIVE_MANIFEST || {};
 
+    /*
+      多頁外部 App 必須先用「目前 page/project」找 registry。
+      rootAppId 只代表檔案家族，不代表目前頁面所在的前台/後台位置。
+    */
     return normalizeText(
-      appEnv.rootAppId ||
-      appEnv.appId ||
-      manifest.appId ||
-      effective.rootAppId ||
+      html.getAttribute("data-skhps-registry-project-id") ||
+      html.getAttribute("data-skhps-project-id") ||
+      appEnv.projectId ||
+      appEnv.currentAppId ||
+      window.SKHPS_CURRENT_PROJECT_ID ||
+      effective.projectId ||
       effective.appId ||
+      appEnv.pageId ||
+      html.getAttribute("data-skhps-page-id") ||
+      appEnv.appId ||
       html.getAttribute("data-skhps-app-id") ||
+      window.SKHPS_CURRENT_APP_ID ||
+      manifest.projectId ||
+      manifest.appId ||
+      appEnv.rootAppId ||
+      effective.rootAppId ||
+      html.getAttribute("data-skhps-root-app-id") ||
       window.SKHPS_APP_ID ||
       ""
     );
@@ -178,12 +193,16 @@
     if (!item || typeof item !== "object" || !appId) return false;
 
     ids = [
+      item.projectId,
+      item.project_id,
+      item.pageId,
+      item.page_id,
       item.appId,
       item.app_id,
       item.id,
       item.key,
-      item.rootAppId,
-      item.root_app_id,
+      item.registryKey,
+      item.registry_key,
       item["appId"],
       item["專案ID"],
       item["專案Id"],

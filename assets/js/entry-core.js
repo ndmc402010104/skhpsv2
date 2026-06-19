@@ -207,10 +207,14 @@
       return manifest;
     }
 
+    var rootAppId = String(manifest.appId || page.rootAppId || "").trim();
+    var currentAppId = String(page.appId || page.projectId || page.pageId || pageId || rootAppId).trim();
+
     effective = Object.assign({}, manifest, page, {
-      appId: manifest.appId,
-      rootAppId: manifest.appId,
-      pageId: page.pageId || pageId,
+      appId: currentAppId,
+      projectId: currentAppId,
+      rootAppId: rootAppId,
+      pageId: page.pageId || pageId || currentAppId,
       title: page.title || manifest.title || "",
       description: page.description || manifest.description || "",
       group: page.group || manifest.group || "",
@@ -436,9 +440,10 @@
       options.rootManifest = window.SKHPS_APP_ROOT_MANIFEST || rawManifest;
       options.manifest = effectiveManifest;
       options.effectiveManifest = effectiveManifest;
-      options.rootAppId = options.rootAppId || options.rootManifest.appId || effectiveManifest.rootAppId || effectiveManifest.appId || "";
-      options.appId = options.appId || options.rootAppId || effectiveManifest.appId || "";
-      options.pageId = options.pageId || effectiveManifest.pageId || getCurrentPageId() || "";
+      options.rootAppId = options.rootAppId || effectiveManifest.rootAppId || options.rootManifest.appId || "";
+      options.projectId = options.projectId || effectiveManifest.projectId || effectiveManifest.appId || effectiveManifest.pageId || options.rootAppId || "";
+      options.appId = options.appId || options.projectId || options.rootAppId || "";
+      options.pageId = options.pageId || effectiveManifest.pageId || getCurrentPageId() || options.projectId || "";
       options.title = options.title || effectiveManifest.title || options.rootManifest.title || "";
       options.href = options.href || effectiveManifest.href || options.rootManifest.href || "";
       options.group = options.group || effectiveManifest.group || options.rootManifest.group || "";

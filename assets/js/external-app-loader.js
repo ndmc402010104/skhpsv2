@@ -160,10 +160,14 @@
       return manifest;
     }
 
+    var rootAppId = String(manifest.appId || page.rootAppId || "").trim();
+    var currentAppId = String(page.appId || page.projectId || page.pageId || pageId || rootAppId).trim();
+
     effective = Object.assign({}, manifest, page, {
-      appId: manifest.appId,
-      rootAppId: manifest.appId,
-      pageId: page.pageId || pageId,
+      appId: currentAppId,
+      projectId: currentAppId,
+      rootAppId: rootAppId,
+      pageId: page.pageId || pageId || currentAppId,
       title: page.title || manifest.title || "",
       description: page.description || manifest.description || "",
       group: page.group || manifest.group || "",

@@ -396,10 +396,14 @@
 
     entry = page.entry || rootManifest.entry || {};
 
+    var rootAppId = String(rootManifest.appId || "").trim();
+    var currentAppId = String(page.appId || page.projectId || page.pageId || pageId || rootAppId).trim();
+
     effective = Object.assign({}, rootManifest, page, {
-      appId: rootManifest.appId,
-      rootAppId: rootManifest.appId,
-      pageId: page.pageId || pageId,
+      appId: currentAppId,
+      projectId: currentAppId,
+      rootAppId: rootAppId,
+      pageId: page.pageId || pageId || currentAppId,
       title: page.title || rootManifest.title || "",
       description: page.description || rootManifest.description || "",
       group: page.group || rootManifest.group || "",
@@ -782,16 +786,27 @@
       .then(function (loaded) {
         var rootManifest = loaded.rootManifest || loaded.manifest;
         var manifest = loaded.manifest;
-        var appId = getAppId(rootManifest);
+        var rootAppId = getAppId(rootManifest);
+        var currentAppId = String(
+          manifest.appId ||
+          manifest.projectId ||
+          manifest.pageId ||
+          getCurrentPageId() ||
+          rootAppId ||
+          ""
+        ).trim();
+        var currentPageId = String(manifest.pageId || getCurrentPageId() || currentAppId || "").trim();
         var appVersion = buildAppVersion(rootManifest, loaded.versionInfo);
 
-        if (!appId) {
+        if (!rootAppId) {
           throw new Error("SKHPS appId missing in app.json");
         }
 
-        rootManifest.appId = appId;
-        manifest.appId = appId;
-        manifest.rootAppId = appId;
+        rootManifest.appId = rootAppId;
+        manifest.appId = currentAppId || rootAppId;
+        manifest.projectId = manifest.projectId || manifest.appId;
+        manifest.rootAppId = rootAppId;
+        manifest.pageId = currentPageId;
 
         if (!rootManifest.title && document.title) {
           rootManifest.title = document.title;
@@ -801,13 +816,22 @@
           manifest.title = document.title;
         }
 
-        window.SKHPS_APP_ID = appId;
+        /*
+          SKHPS_APP_ID 保留 root app id 作 legacy identity。
+          目前頁面 / registry project identity 另外使用 currentAppId / projectId / pageId。
+        */
+        window.SKHPS_APP_ID = rootAppId;
+        window.SKHPS_ROOT_APP_ID = rootAppId;
+        window.SKHPS_CURRENT_APP_ID = manifest.appId;
+        window.SKHPS_CURRENT_PROJECT_ID = manifest.projectId || manifest.appId;
         window.SKHPS_APP_MANIFEST = rootManifest;
         window.SKHPS_APP_ROOT_MANIFEST = rootManifest;
         window.SKHPS_APP_EFFECTIVE_MANIFEST = manifest;
 
         window.SKHPS_APP_ENV = {
-          appId: appId,
+          appId: manifest.appId,
+          projectId: manifest.projectId || manifest.appId,
+          rootAppId: rootAppId,
           env: env,
           requestedRuntime: getRuntimeParam() || "",
           sharedBaseUrl: sharedBaseUrl,
@@ -831,14 +855,20 @@
         window.SKHPS_ENTRY_BASE_URL = sharedBaseUrl;
         window.SKHPS_CONFIG_BASE_URL = sharedBaseUrl;
 
-        document.documentElement.setAttribute("data-skhps-app-id", appId);
+        document.documentElement.setAttribute("data-skhps-app-id", manifest.appId);
+        document.documentElement.setAttribute("data-skhps-project-id", manifest.projectId || manifest.appId);
+        document.documentElement.setAttribute("data-skhps-root-app-id", rootAppId);
+        document.documentElement.setAttribute("data-skhps-page-id", manifest.pageId || getCurrentPageId() || manifest.appId);
         document.documentElement.setAttribute("data-skhps-runtime", env);
         document.documentElement.setAttribute("data-skhps-entry-scope", "external-app");
 
         window.SKHPS_APP_ENTRY_LOADED = true;
 
         earlyRuntimeLog("RUN", "init", {
-          appId: appId,
+          appId: manifest.appId,
+          rootAppId: rootAppId,
+          projectId: manifest.projectId || manifest.appId,
+          pageId: manifest.pageId || "",
           env: env,
           sharedBaseUrl: sharedBaseUrl,
           appBaseUrl: appBaseUrl,
@@ -851,7 +881,10 @@
           .then(function () {
             return window.SKHPSEntryCore.load({
               scope: "external-app",
-              appId: appId,
+              appId: manifest.appId,
+              rootAppId: rootAppId,
+              projectId: manifest.projectId || manifest.appId,
+              pageId: manifest.pageId || "",
               env: env,
               requestedRuntime: getRuntimeParam() || "",
               sharedBaseUrl: sharedBaseUrl,
@@ -860,7 +893,7 @@
               specificVersion: appVersion || coreVersion,
               specificScripts: manifest.entry.afterScripts || [],
               coreScripts: null,
-              failureTask: appId || "external-app"
+              failureTask: manifest.appId || rootAppId || "external-app"
             });
           })
           .then(function (options) {
