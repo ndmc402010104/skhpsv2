@@ -693,3 +693,43 @@ html.skhps-loading body::after {
     transform: translate(-50%, -50%) scale(1);
   }
 }
+
+/* =========================================================
+   SKHPS Loading v11 first-frame warm start
+   - 第一幀就有 8% 讀條，不從 0 出現
+   ========================================================= */
+
+html.skhps-loading {
+  --skhps-loading-progress: 8;
+}
+
+html.skhps-loading body::after {
+  transform:
+    translateX(-50%)
+    scaleX(calc(max(0, min(100, var(--skhps-loading-progress, 8))) / 100));
+}
+
+/* =========================================================
+   SKHPS Loading Background Stable Patch v1
+   目的：
+   - 只修正 loading 開場背景跳一下
+   - 不改讀條位置
+   - 不改讀條速度
+   - 不改 loading-gate.js
+   - 關掉舊的背景動畫殘留
+   ========================================================= */
+
+html.skhps-loading,
+html.skhps-css-loading:not(.skhps-loading) {
+  background:
+    linear-gradient(135deg, #eef3f6 0%, #f1f4f6 48%, #edf3f6 100%) !important;
+  background-size: auto !important;
+  background-position: 0 0 !important;
+  animation: none !important;
+}
+
+html.skhps-loading body,
+html.skhps-css-loading:not(.skhps-loading) body {
+  background: transparent !important;
+}
+
