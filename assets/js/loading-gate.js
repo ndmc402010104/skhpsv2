@@ -39,18 +39,19 @@
 
 
   var progressState = {
-    current: 8,
-    target: 20,
+    current: 0,
+    target: 25,
     timer: null,
     settleTimer: null,
-    softCap: 99.2,
     visualBudgetMs: 8000,
-    cruiseBuffer: 11.8,
-    cruiseMaxBeforeRelease: 99.2,
+    finishBudgetMs: 260,
     startedAt: Date.now(),
     lastTickAt: Date.now(),
     finishRequested: false,
-    releasedAfterFill: false
+    finishStartedAt: 0,
+    finishSuccess: false,
+    finishHoldStarted: false,
+    warnHoldMs: 1000
   };
 
   function setProgressValue(value, reason) {
@@ -72,64 +73,79 @@
   }
 
   function setProgressTarget(value, reason) {
-    var next = Math.max(6, Math.min(100, Number(value) || 6));
+    /*
+      Runway Chase Model:
+      checkpoint 可以跳，visual current 不可以跳。
+      task 只能改 target，不直接改 current。
+    */
+    var next = Math.max(0, Math.min(100, Number(value) || 0));
 
-    if (next > progressState.target || reason === "finish" || reason === "reset") {
+    if (next > progressState.target || reason === "reset" || reason === "finish") {
       progressState.target = next;
       html.setAttribute("data-skhps-loading-progress-target", String(Math.round(next)));
+      html.setAttribute("data-skhps-loading-progress-target-reason", reason || "");
     }
 
     startProgressTicker();
   }
 
-  function getTaskProgressTarget() {
-    var tasks = blockingTasks();
-    var total = Math.max(1, tasks.length);
-    var complete = tasks.filter(function (task) {
-      return isTaskComplete(task);
-    }).length;
-
+  function getCheckpointTarget() {
     /*
-      v10：
-      task target 是「下一段前方目標」。
-      例如只剩最後一個 task，target 會在接近終點的位置，
-      但畫面讀條仍保留 buffer，不會貼上去。
+      真實 checkpoint：
+      css-runtime = 25
+      shell-ready = 50
+      page-data = 75
+      all-ready = 100
     */
-    if (complete >= total) {
-      return progressState.cruiseMaxBeforeRelease || 99.2;
+    var target = 25;
+    var tasks = blockingTasks();
+
+    if (isTaskComplete("css-runtime")) {
+      target = Math.max(target, 25);
     }
 
-    return Math.min(
-      progressState.cruiseMaxBeforeRelease || 99.2,
-      8 + ((complete + 1) / total) * ((progressState.cruiseMaxBeforeRelease || 99.2) - 8)
-    );
+    if (isTaskComplete("skhps-shell")) {
+      target = Math.max(target, 50);
+    }
+
+    var pageTasks = tasks.filter(function (task) {
+      return task !== "css-runtime" && task !== "skhps-shell";
+    });
+
+    if (pageTasks.length && pageTasks.every(function (task) {
+      return isTaskComplete(task);
+    })) {
+      target = Math.max(target, 75);
+    }
+
+    return target;
   }
 
   function updateProgressTarget(reason) {
-    if (state.released || progressState.finishRequested) {
+    if (progressState.finishRequested) {
       return;
     }
 
-    setProgressTarget(getTaskProgressTarget(), reason || "tasks");
+    setProgressTarget(getCheckpointTarget(), reason || "checkpoint");
   }
 
-  function getSoftCreepTarget(now) {
-    var elapsed = Math.max(0, now - progressState.startedAt);
-    var budget = progressState.visualBudgetMs || 8000;
+  function chaseTowardTarget(target, now, dt, budgetEndAt, reason) {
+    var distance = target - progressState.current;
 
-    /*
-      v10：
-      target 是前方參考點，不是讀條要貼上去的位置。
-      8 秒內讓 target 線性前進到 99.2%，
-      讀條本身會由 tickProgress 保留安全距離。
-    */
-    var start = 8;
-    var cap = progressState.cruiseMaxBeforeRelease || 99.2;
+    if (distance <= 0) {
+      return;
+    }
 
-    return Math.min(
-      cap,
-      start + (elapsed / budget) * (cap - start)
-    );
+    var remainingMs = Math.max(16, budgetEndAt - now);
+    var speed = distance / (remainingMs / 1000);
+    var step = speed * (dt / 1000);
+    var next = progressState.current + step;
+
+    if (next > target) {
+      next = target;
+    }
+
+    setProgressValue(next, reason || "runway-chase");
   }
 
   function tickProgress() {
@@ -143,76 +159,43 @@
     var dt = Math.max(16, now - progressState.lastTickAt);
     progressState.lastTickAt = now;
 
-    if (!progressState.finishRequested) {
-      /*
-        v10：
-        target 會同時受時間與 task 推進。
-        但讀條不直接貼 target，而是用距離決定速度。
-      */
-      var timeTarget = getSoftCreepTarget(now);
-      var taskTarget = getTaskProgressTarget();
-      var rawTarget = Math.max(timeTarget, taskTarget);
-
-      if (rawTarget > progressState.target) {
-        progressState.target = rawTarget;
-        html.setAttribute("data-skhps-loading-progress-target", String(Math.round(progressState.target)));
-      }
-    }
-
     if (progressState.finishRequested) {
-      var finishDiff = 100 - progressState.current;
-
-      if (finishDiff <= 0.12) {
-        setProgressValue(100, "finish");
-        releaseAfterProgressFill();
+      if (!progressState.finishSuccess) {
+        removeLoadingClassesNow();
+        stopProgressTicker();
         return;
       }
 
-      /*
-        Gate 已通過才允許快速補滿。
-      */
-      var finishStep = Math.min(16, Math.max(2.2, finishDiff * 0.36));
-      setProgressValue(progressState.current + Math.min(finishDiff, finishStep), "finish-chase");
+      chaseTowardTarget(
+        100,
+        now,
+        dt,
+        progressState.finishStartedAt + progressState.finishBudgetMs,
+        "runway-finish"
+      );
+
+      if (progressState.current >= 99.7) {
+        /*
+          OK / all-ready：
+          到 100 後快速進畫面，不停 1 秒。
+        */
+        setProgressValue(100, "runway-pass-100-fast-enter");
+        removeLoadingClassesNow();
+        stopProgressTicker();
+      }
+
       return;
     }
 
-    var buffer = Number(progressState.cruiseBuffer) || 11.8;
-    var target = Math.min(Number(progressState.cruiseMaxBeforeRelease) || 99.2, progressState.target);
-    var distance = target - progressState.current;
+    updateProgressTarget("tick");
 
-    if (distance <= buffer) {
-      /*
-        進入安全距離內就不追撞 target。
-        但 target 會隨時間繼續前進，所以不會長期卡死在同一點。
-      */
-      return;
-    }
-
-    /*
-      v10 速度公式：
-      - 距離 buffer 越遠，速度平滑增加
-      - 距離約 11.8% 時最慢
-      - 不用 chaseFactor 暴衝
-      - 每幀 step 有上限，避免跳躍感
-    */
-    var extra = Math.max(0, distance - buffer);
-    var minSpeed = 5.2;          // percentage points / second
-    var distanceGain = 0.62;     // extra distance -> speed
-    var maxSpeed = 18.5;         // 不暴衝
-    var speed = Math.min(maxSpeed, minSpeed + extra * distanceGain);
-    var step = speed * (dt / 1000);
-
-    /*
-      不要衝進 buffer 內。
-    */
-    var maxAllowedStep = Math.max(0, distance - buffer);
-    step = Math.min(step, maxAllowedStep);
-
-    if (step <= 0.02) {
-      return;
-    }
-
-    setProgressValue(progressState.current + step, "elastic-cruise");
+    chaseTowardTarget(
+      progressState.target,
+      now,
+      dt,
+      progressState.startedAt + progressState.visualBudgetMs,
+      "runway-chase"
+    );
   }
 
   function startProgressTicker() {
@@ -222,10 +205,6 @@
 
     progressState.lastTickAt = Date.now();
 
-    /*
-      v11：不要等 setInterval 第一拍。
-      下一個 animation frame 先跑一次，避免開場停一下。
-    */
     window.requestAnimationFrame(function () {
       tickProgress();
     });
@@ -242,8 +221,43 @@
     progressState.timer = null;
   }
 
-  function requestProgressFinish() {
+  function requestProgressFinish(reason, status) {
+    var releaseReason = String(reason || state.releaseReason || "");
+    var releaseStatus = String(status || "").toUpperCase();
+    var success = (
+      releaseStatus !== "WARN" &&
+      releaseReason === "all-ready" &&
+      allRequiredTasksComplete() &&
+      !hasAnyFailure()
+    );
+
     progressState.finishRequested = true;
+    progressState.finishSuccess = success;
+    progressState.finishStartedAt = Date.now();
+
+    html.setAttribute(
+      "data-skhps-loading-progress-final",
+      success ? "runway-success-pass" : "runway-warn-current-exit"
+    );
+    html.setAttribute("data-skhps-loading-progress-final-reason", releaseReason || "");
+
+    if (!success) {
+      /*
+        WARN / timeout：
+        不補 100。
+        停在目前 progress 1 秒，讓使用者知道這不是正常 all-ready，
+        再放行進畫面。
+      */
+      html.setAttribute("data-skhps-loading-warn-hold", "true");
+      html.setAttribute("data-skhps-loading-warn-hold-ms", String(progressState.warnHoldMs || 1000));
+
+      window.setTimeout(function () {
+        removeLoadingClassesNow();
+        stopProgressTicker();
+      }, progressState.warnHoldMs || 1000);
+      return;
+    }
+
     setProgressTarget(100, "finish");
     startProgressTicker();
 
@@ -252,75 +266,42 @@
     }
 
     /*
-      讀條只是視覺，不能卡住進畫面。
-      Gate 已通過後，最多 280ms 補滿，最多 420ms 強制移除 class。
+      OK / all-ready 保底：
+      正常會由 tickProgress 到 100 後快速進畫面。
+      這裡只防動畫異常。
     */
     progressState.settleTimer = window.setTimeout(function () {
-      setProgressValue(100, "finish-force");
-      releaseAfterProgressFill();
-    }, 280);
-
-    window.setTimeout(function () {
-      if (html.classList.contains(GLOBAL_LOADING_CLASS) ||
-          html.classList.contains(CSS_LOADING_CLASS) ||
-          html.classList.contains(SHELL_LOADING_CLASS) ||
-          html.classList.contains(MAIN_LOADING_CLASS)) {
-        setProgressValue(100, "force-remove-classes");
-        removeLoadingClassesNow();
-        stopProgressTicker();
-      }
-    }, 420);
+      removeLoadingClassesNow();
+      stopProgressTicker();
+    }, 520);
   }
 
   function releaseAfterProgressFill() {
-    if (progressState.releasedAfterFill) {
-      return;
-    }
-
-    progressState.releasedAfterFill = true;
-
-    if (progressState.settleTimer) {
-      window.clearTimeout(progressState.settleTimer);
-      progressState.settleTimer = null;
-    }
-
-    /*
-      100% 後只留一個很短的視覺尾巴，然後直接移除 loading class。
-      這裡絕對不能再呼叫 requestProgressFinish，避免遞迴卡住。
-    */
-    window.setTimeout(function () {
-      setProgressValue(100, "classes-remove");
-      removeLoadingClassesNow();
-      stopProgressTicker();
-    }, 70);
+    removeLoadingClassesNow();
+    stopProgressTicker();
   }
 
   function resetProgress() {
-    /*
-      v11：first-frame warm start。
-      不從 0 或極短一截開始，避免第一幀看起來卡住。
-      startedAt 往前補 180ms，讓第一個視覺 tick 有動感。
-    */
-    progressState.current = 8;
-    progressState.target = 20;
-    progressState.startedAt = Date.now() - 180;
+    progressState.current = 0;
+    progressState.target = 25;
+    progressState.startedAt = Date.now();
     progressState.lastTickAt = Date.now();
     progressState.finishRequested = false;
-    progressState.releasedAfterFill = false;
+    progressState.finishStartedAt = 0;
+    progressState.finishSuccess = false;
+    progressState.finishHoldStarted = false;
 
     if (progressState.settleTimer) {
       window.clearTimeout(progressState.settleTimer);
       progressState.settleTimer = null;
     }
 
-    setProgressValue(8, "reset-warm");
-    setProgressTarget(20, "reset-warm");
+    setProgressValue(0, "reset-zero");
+    setProgressTarget(25, "reset-next-checkpoint");
     startProgressTicker();
   }
 
   function removeLoadingClassesNow() {
-    html.setAttribute("data-skhps-loading-progress", "100");
-
     html.classList.remove(GLOBAL_LOADING_CLASS);
     html.classList.remove(CSS_LOADING_CLASS);
     html.classList.remove(SHELL_LOADING_CLASS);
@@ -800,7 +781,7 @@
       先讓 progress 補滿，再移除 loading class。
       保底 timer 會避免動畫卡住畫面。
     */
-    requestProgressFinish();
+    requestProgressFinish(state.releaseReason, status || "OK");
 
     html.setAttribute("data-skhps-loading-released", "true");
     html.setAttribute("data-skhps-loading-release-reason", state.releaseReason);
@@ -851,11 +832,6 @@
 
   function requireBackgroundTask(task) {
     task = normalizeTask(task);
-
-    if (options && (options.blocking === false || options.affectsGate === false || options.background === true || options.nonBlocking === true)) {
-      requireBackgroundTask(task);
-      return;
-    }
 
     if (!task) {
       return;
@@ -1298,43 +1274,7 @@
   rlog("OK", "moduleReady", "loading-gate.js");
 })();
 
-/* SKHPS Loading v5 safety marker */
+/* SKHPS Loading Runway Chase Round Fill v5 marker */
 try {
-  document.documentElement.setAttribute("data-skhps-loading-gate-version", "v5-real-release");
-} catch (error) {}
-
-
-/* SKHPS Loading v6 marker: near-complete creep, blocking/background */
-try {
-  document.documentElement.setAttribute("data-skhps-loading-gate-version", "v6-near-complete-creep");
-} catch (error) {}
-
-
-/* SKHPS Loading v7 marker: never-stop creep */
-try {
-  document.documentElement.setAttribute("data-skhps-loading-gate-version", "v7-never-stop-creep");
-} catch (error) {}
-
-
-/* SKHPS Loading v8 marker: linear floor progress */
-try {
-  document.documentElement.setAttribute("data-skhps-loading-gate-version", "v8-linear-floor");
-} catch (error) {}
-
-
-/* SKHPS Loading v9 marker: cruise with buffer */
-try {
-  document.documentElement.setAttribute("data-skhps-loading-gate-version", "v9-cruise-buffer");
-} catch (error) {}
-
-
-/* SKHPS Loading v10 marker: elastic cruise */
-try {
-  document.documentElement.setAttribute("data-skhps-loading-gate-version", "v10-elastic-cruise");
-} catch (error) {}
-
-
-/* SKHPS Loading v11 marker: first-frame warm start */
-try {
-  document.documentElement.setAttribute("data-skhps-loading-gate-version", "v11-first-frame-warm");
+  document.documentElement.setAttribute("data-skhps-loading-gate-version", "runway-chase-round-fill-v5");
 } catch (error) {}

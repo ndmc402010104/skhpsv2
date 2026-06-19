@@ -695,28 +695,95 @@ html.skhps-loading body::after {
 }
 
 /* =========================================================
-   SKHPS Loading v11 first-frame warm start
-   - 第一幀就有 8% 讀條，不從 0 出現
+   SKHPS Loading Runway Chase zero-start
+   - 第一幀從 0 開始，target 由 JS 控制
    ========================================================= */
 
 html.skhps-loading {
-  --skhps-loading-progress: 8;
+  --skhps-loading-progress: 0;
 }
 
 html.skhps-loading body::after {
   transform:
     translateX(-50%)
-    scaleX(calc(max(0, min(100, var(--skhps-loading-progress, 8))) / 100));
+    scaleX(calc(max(0, min(100, var(--skhps-loading-progress, 0))) / 100));
 }
 
 /* =========================================================
-   SKHPS Loading Background Stable Patch v1
-   目的：
-   - 只修正 loading 開場背景跳一下
+   SKHPS Loading Runway Chase v1 CSS guard
+   - 只保證從 0 開始與背景穩定
    - 不改讀條位置
-   - 不改讀條速度
-   - 不改 loading-gate.js
-   - 關掉舊的背景動畫殘留
+   - 不改讀條尺寸
+   - 不改 gate release
+   ========================================================= */
+
+html.skhps-loading {
+  --skhps-loading-progress: 0;
+}
+
+html.skhps-loading,
+html.skhps-css-loading:not(.skhps-loading) {
+  background:
+    linear-gradient(135deg, #eef3f6 0%, #f1f4f6 48%, #edf3f6 100%) !important;
+  background-size: auto !important;
+  background-position: 0 0 !important;
+  animation: none !important;
+}
+
+/* =========================================================
+   SKHPS Loading No-glow Patch v1
+   目的：
+   - 只拿掉開場奇怪光暈 / halo
+   - 不動 loading-gate.js
+   - 不改讀條位置
+   - 不改讀條尺寸
+   - 不改 progress 速度
+   ========================================================= */
+
+html.skhps-loading {
+  background:
+    linear-gradient(135deg, #eef3f6 0%, #f1f4f6 48%, #edf3f6 100%) !important;
+  background-size: auto !important;
+  background-position: 0 0 !important;
+  animation: none !important;
+}
+
+html.skhps-loading::before {
+  text-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+html.skhps-loading::after {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html.skhps-loading body::before,
+html.skhps-loading body::after {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html.skhps-loading body::after {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(91, 118, 142, 0.58) 0%,
+      #5b768e 42%,
+      #41586d 74%,
+      #516d87 100%
+    ) !important;
+}
+
+/* =========================================================
+   SKHPS Loading Solid Fill Patch v3
+   修正：
+   - 開頭 0~3% 不再出現漸層被壓縮的光暈
+   - fill 改純色
+   - track 改純淡色
+   - 無 text-shadow / box-shadow / filter
+   - 不改讀條位置、不改尺寸、不改速度
    ========================================================= */
 
 html.skhps-loading,
@@ -728,8 +795,53 @@ html.skhps-css-loading:not(.skhps-loading) {
   animation: none !important;
 }
 
-html.skhps-loading body,
-html.skhps-css-loading:not(.skhps-loading) body {
-  background: transparent !important;
+html.skhps-loading::before {
+  text-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+html.skhps-loading::after {
+  background: rgba(81, 109, 135, 0.105) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html.skhps-loading body::after {
+  background: #516d87 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transition: none !important;
+  will-change: transform;
+  transform:
+    translateX(-50%)
+    scaleX(calc(max(0, min(100, var(--skhps-loading-progress, 0))) / 100)) !important;
+}
+
+/* =========================================================
+   SKHPS Loading Round Fill Patch v5
+   修正：
+   - 讀條 fill 不再用 scaleX 壓縮整條元素
+   - 避免左右圓角因 transform scaleX 視覺弧度不一致
+   - 改用 clip-path 裁切可見範圍，並用 round 999px 保持右端圓角
+   - 不改 JS、不改速度、不改 WARN hold、不改位置與尺寸
+   ========================================================= */
+
+html.skhps-loading body::after {
+  transform: translateX(-50%) !important;
+  transform-origin: left center !important;
+  clip-path: inset(
+    0
+    calc(100% - (max(0, min(100, var(--skhps-loading-progress, 0))) * 1%))
+    0
+    0
+    round 999px
+  ) !important;
+  border-radius: 999px !important;
+  background: #516d87 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transition: none !important;
+  will-change: clip-path;
 }
 
