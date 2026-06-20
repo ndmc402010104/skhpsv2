@@ -24,6 +24,38 @@
   - loading 文案由 <html data-loading-title="..."> 控制
 */
 
+
+/* =========================================================
+   -1. First paint background guard
+   目的：避免瀏覽器第一幀先畫白底，之後才變成 loading 淡藍底。
+   原則：只保底 html/body 背景，不碰讀條、不碰 gate、不碰正式 CSS runtime。
+   ========================================================= */
+
+:root {
+  --skhps-loading-page-bg: #eef3f6;
+  --skhps-loading-page-bg-soft: #f1f4f6;
+  color-scheme: light;
+}
+
+html {
+  min-height: 100%;
+  background-color: var(--skhps-loading-page-bg, #eef3f6);
+  background-image: linear-gradient(135deg, #eef3f6 0%, #f1f4f6 48%, #edf3f6 100%);
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: transparent;
+}
+
+html.skhps-loading body,
+html.skhps-css-loading body,
+html.skhps-shell-loading body,
+html.skhps-main-loading body {
+  background: transparent;
+}
+
 /* =========================================================
    0. Loading 畫面總開關
    ========================================================= */
