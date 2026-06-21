@@ -204,7 +204,7 @@
 
   function pageEnvLabel(state) {
     state = state || {};
-    return normalizeEnvLabel(state.host && state.host.env || hostEnvFromLocation()) || "UNKNOWN";
+    return normalizeEnvLabel(currentPageEnvFromLocation()) || "UNKNOWN";
   }
 
   function scriptEnvLabel(state) {
@@ -260,25 +260,9 @@
     return String(url || "").replace(/\/+$/, "") + "/";
   }
 
-  function currentPageEnvFromLocation() {
+  function currentHostPageEnvFromLocation() {
     var host = String(window.location.hostname || "").toLowerCase();
     var protocol = String(window.location.protocol || "").toLowerCase();
-    var runtimeValue = "";
-
-    try {
-      runtimeValue = String(
-        new URLSearchParams(window.location.search || "").get("skhpsRuntime") ||
-        new URLSearchParams(window.location.search || "").get("runtime") ||
-        new URLSearchParams(window.location.search || "").get("skhps-runtime") ||
-        ""
-      ).trim().toLowerCase();
-    } catch (error) {
-      runtimeValue = "";
-    }
-
-    if (runtimeValue === "local-dev" || runtimeValue === "local" || runtimeValue === "localdev") return "local";
-    if (runtimeValue === "dev") return "dev";
-    if (runtimeValue === "prod" || runtimeValue === "production") return "prod";
 
     if (protocol === "file:" || host === "127.0.0.1" || host === "localhost" || host === "") return "local";
     if (host === "dev-skhps.jonaminz.com" || /^dev-[^.]+\.skhps\.jonaminz\.com$/.test(host)) return "dev";
@@ -286,6 +270,33 @@
     if (/\.github\.io$/.test(host) && /^\/dev(?:\/|$)/i.test(window.location.pathname || "")) return "dev";
     if (/\.github\.io$/.test(host)) return "prod";
     return "unknown";
+  }
+
+  function currentPageEnvFromLocation() {
+    var hrefMap = null;
+    var currentHref = String(window.location.href || "");
+    var currentOriginPath = String(window.location.origin || "") + String(window.location.pathname || "");
+    var localHref = "";
+    var devHref = "";
+    var prodHref = "";
+
+    try {
+      hrefMap = (window.SKHPS_APP_CONFIG && window.SKHPS_APP_CONFIG.href) || null;
+    } catch (error) {
+      hrefMap = null;
+    }
+
+    if (hrefMap && typeof hrefMap === "object") {
+      localHref = String(hrefMap["local-dev"] || hrefMap.local || "").trim();
+      devHref = String(hrefMap.dev || "").trim();
+      prodHref = String(hrefMap.prod || hrefMap.production || "").trim();
+
+      if (devHref && currentHref.indexOf(devHref) === 0) return "dev";
+      if (prodHref && currentHref.indexOf(prodHref) === 0) return "prod";
+      if (localHref && (currentHref.indexOf(localHref) >= 0 || currentOriginPath.indexOf(localHref) >= 0)) return "local";
+    }
+
+    return currentHostPageEnvFromLocation();
   }
 
   function currentLocalProjectSegment() {
@@ -714,6 +725,15 @@
 
   function targetEnvFromCurrentPage() {
     var current = currentPageEnvFromLocation();
+    var hasAppHref = Boolean(window.SKHPS_APP_CONFIG && window.SKHPS_APP_CONFIG.href);
+
+    if (hasAppHref) {
+      if (current === "local") return "dev";
+      if (current === "dev") return "prod";
+      if (current === "prod") return "dev";
+      return "prod";
+    }
+
     if (current === "local") return "dev";
     if (current === "dev") return "prod";
     if (current === "prod") return "dev";
@@ -748,6 +768,13 @@
 
   function resolveToggleHref() {
     var targetEnv = targetEnvFromCurrentPage();
+    var hasAppHref = Boolean(window.SKHPS_APP_CONFIG && window.SKHPS_APP_CONFIG.href);
+
+    if (hasAppHref) {
+      return explicitHrefForEnvAsync(targetEnv).then(function (href) {
+        return href || "";
+      });
+    }
 
     if (targetEnv === "prod") {
       return prodBaseForFallbackAsync().then(function (targetBase) {
@@ -763,11 +790,6 @@
         return prodFallbackHrefForDevIntentAsync();
       }
 
-      /*
-       * local/prod 要進 dev 時：先用 app.json / SKHPS_APP_CONFIG 明確設定的 dev href。
-       * 如果該 dev page 明確回 404/410，就回正式頁並帶 skhpsRuntime=dev。
-       * 若瀏覽器因 CORS 不能確認，但 devHref 是明確設定，先相信設定。
-       */
       return probePageExists(targetHref).then(function (exists) {
         if (exists === false) return prodFallbackHrefForDevIntentAsync();
         return targetHref;
