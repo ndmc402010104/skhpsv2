@@ -1,6 +1,6 @@
 /*
 檔案位置：skhpsv2/assets/js/css-sheet-runtime.js
-時間戳記：2026-06-14 17:25 UTC+8
+時間戳記：2026-06-22 09:40 UTC+8
 用途：統一 CSS runtime；先套用 skhpsv2/uni-CSS.CSS 快取，失敗才退回 localStorage / Sheet / DEFAULT CSS，並由 CSS-fetch.js 背景刷新 Sheet cache。
 */
 
@@ -878,10 +878,58 @@
       css.push("}");
     });
 
+    css.push(sharedSwipeTableScaleCss());
+
     return {
       cssText: css.join("\n"),
       latestRows: latest
     };
+  }
+
+  function sharedSwipeTableScaleCss() {
+    return [
+      "",
+      "/* shared swipe table scale settings */",
+      ".sk-swipe-table {",
+      "  font-size: var(--sk-swipe-table-font-size, calc(17px * var(--sk-swipe-table-scale, 1))) !important;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-project-main {",
+      "  min-height: var(--sk-swipe-table-row-min-height, calc(64px * var(--sk-swipe-table-scale, 1))) !important;",
+      "  padding: var(--sk-swipe-table-main-padding, calc(10px * var(--sk-swipe-table-scale, 1)) calc(16px * var(--sk-swipe-table-scale, 1))) !important;",
+      "  gap: var(--sk-swipe-table-main-gap, calc(8px * var(--sk-swipe-table-scale, 1))) !important;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-row-action-rail {",
+      "  width: var(--sk-swipe-action-rail-width, calc(124px * var(--sk-swipe-table-scale, 1))) !important;",
+      "  min-width: var(--sk-swipe-action-rail-width, calc(124px * var(--sk-swipe-table-scale, 1))) !important;",
+      "  transform: translateX(calc(-1 * var(--sk-swipe-action-rail-width, calc(124px * var(--sk-swipe-table-scale, 1))))) !important;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-row-action {",
+      "  min-height: var(--sk-swipe-table-row-min-height, calc(64px * var(--sk-swipe-table-scale, 1))) !important;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-data-row.is-action-open .sk-row-action-rail {",
+      "  transform: none !important;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-data-row.is-action-open .sk-project-main {",
+      "  padding-left: calc(var(--sk-swipe-action-rail-width, calc(124px * var(--sk-swipe-table-scale, 1))) + var(--sk-swipe-primary-text-gap, calc(6px * var(--sk-swipe-table-scale, 1)))) !important;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-data-row.is-action-open .sk-mobile-meta {",
+      "  margin-left: calc(var(--sk-swipe-action-rail-width, calc(124px * var(--sk-swipe-table-scale, 1))) + var(--sk-swipe-primary-text-gap, calc(6px * var(--sk-swipe-table-scale, 1)))) !important;",
+      "}",
+      "",
+      ".sk-swipe-table.is-reorder-mode .sk-project-main {",
+      "  padding-left: var(--sk-swipe-table-reorder-main-padding-left, calc(16px * var(--sk-swipe-table-scale, 1))) !important;",
+      "}",
+      "",
+      ".sk-swipe-global-overflow-menu .sk-row-action-menu-item {",
+      "  font-size: var(--sk-swipe-menu-font-size, calc(16px * var(--sk-swipe-table-scale, 1))) !important;",
+      "}"
+    ].join("\n");
   }
 
   function rowsFromStyles(styles) {

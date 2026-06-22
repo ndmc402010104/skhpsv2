@@ -1,6 +1,6 @@
 /*
 檔案位置：skhpsv2/assets/js/css-setting-style-editor.js
-時間戳記：2026-06-11 UTC+8
+時間戳記：2026-06-22 09:40 UTC+8
 用途：CSS Setting Style Editor；固定讀取 Google Sheet gid 0 / CSS總表，使用 component 作為分類，支援即時預覽、realtime 色票、本機暫存。
 */
 
@@ -86,6 +86,24 @@
       ]
     },
     {
+      title: "05A. Swipe Table / 滑動表格",
+      component: "swipe-table",
+      className: ":root",
+      label: "Swipe Table 縮放",
+      desc: "所有 .sk-swipe-table 共用的縮放與密度 token；簽到後台改成 swipe table 後也會直接吃這組。",
+      selector: ":root swipe table tokens",
+      props: [
+        ["--sk-swipe-table-scale", "整體縮放", "text"],
+        ["--sk-swipe-table-font-size", "表格字級", "text"],
+        ["--sk-swipe-table-row-min-height", "列高下限", "text"],
+        ["--sk-swipe-table-main-padding", "主欄內距", "text"],
+        ["--sk-swipe-table-main-gap", "主欄間距", "text"],
+        ["--sk-swipe-action-rail-width", "左滑按鈕寬度", "text"],
+        ["--sk-swipe-primary-text-gap", "左滑讓位間距", "text"],
+        ["--sk-swipe-menu-font-size", "更多選單字級", "text"]
+      ]
+    },
+    {
       title: "F. Font / 字體",
       className: "font",
       label: "全站字體",
@@ -142,7 +160,17 @@
       lineHeight: "1.6"
     },
     motion: { duration: ".18s", easing: "ease" },
-    layout: { containerMaxWidth: "1200px", containerPadding: "24px", sectionGap: "24px" }
+    layout: { containerMaxWidth: "1200px", containerPadding: "24px", sectionGap: "24px" },
+    ":root": {
+      "--sk-swipe-table-scale": "1",
+      "--sk-swipe-table-font-size": "calc(17px * var(--sk-swipe-table-scale, 1))",
+      "--sk-swipe-table-row-min-height": "calc(64px * var(--sk-swipe-table-scale, 1))",
+      "--sk-swipe-table-main-padding": "calc(10px * var(--sk-swipe-table-scale, 1)) calc(16px * var(--sk-swipe-table-scale, 1))",
+      "--sk-swipe-table-main-gap": "calc(8px * var(--sk-swipe-table-scale, 1))",
+      "--sk-swipe-action-rail-width": "calc(124px * var(--sk-swipe-table-scale, 1))",
+      "--sk-swipe-primary-text-gap": "calc(6px * var(--sk-swipe-table-scale, 1))",
+      "--sk-swipe-menu-font-size": "calc(16px * var(--sk-swipe-table-scale, 1))"
+    }
   };
 
   var currentMap = null;
@@ -169,6 +197,7 @@
   }
 
   function cssVarName(className, property) {
+    if (String(property || "").indexOf("--") === 0) return property;
     return "--skhps-" + className + "-" + property;
   }
 
@@ -395,6 +424,17 @@
   }
 
   function renderDemo(group) {
+    if (group.component === "swipe-table") {
+      return [
+        "<div style='font-size:var(--sk-swipe-table-font-size,calc(17px * var(--sk-swipe-table-scale,1)));border:1px solid var(--skhps-surface-border,#cbd5e1);border-radius:12px;overflow:hidden;background:#fff;'>",
+        "<div style='min-height:var(--sk-swipe-table-row-min-height,calc(64px * var(--sk-swipe-table-scale,1)));padding:var(--sk-swipe-table-main-padding,calc(10px * var(--sk-swipe-table-scale,1)) calc(16px * var(--sk-swipe-table-scale,1)));display:flex;align-items:center;gap:var(--sk-swipe-table-main-gap,calc(8px * var(--sk-swipe-table-scale,1)));'>",
+        "<strong style='display:block;'>Swipe Table</strong>",
+        "<span style='color:var(--skhps-page-muted,#64748b);'>scale preview</span>",
+        "</div>",
+        "</div>"
+      ].join("");
+    }
+
     if (group.className === "brand") {
       return "<div style='display:grid;gap:8px;'><strong style='color:var(--skhps-brand-primary,#344f9f);'>Primary</strong><strong style='color:var(--skhps-brand-danger,#b42318);'>Danger</strong><strong style='color:var(--skhps-brand-success,#15803d);'>Success</strong><strong style='color:var(--skhps-brand-warning,#b45309);'>Warning</strong></div>";
     }
@@ -476,7 +516,7 @@
         : "<span></span>";
 
       return [
-        "<section class='base-control-item' data-css-setting-editor data-css-setting-core='on' data-css-setting-sheet-save='on' data-css-setting-component='" + escapeHtml(group.className) + "' data-css-setting-tab-key='" + CSS_MAIN_TAB_KEY + "'>",
+        "<section class='base-control-item' data-css-setting-editor data-css-setting-core='on' data-css-setting-sheet-save='on' data-css-setting-component='" + escapeHtml(group.component || group.className) + "' data-css-setting-tab-key='" + CSS_MAIN_TAB_KEY + "'>",
         "<strong title='" + escapeHtml(desc) + "'>" + escapeHtml(label) + "</strong>",
         "<input type='" + type + "' readonly data-css-var='" + cssName + "' data-class-name='" + escapeHtml(group.className) + "' data-property='" + escapeHtml(key) + "' data-default='" + escapeHtml(def) + "' value='" + escapeHtml(value) + "'>",
         swatch,
