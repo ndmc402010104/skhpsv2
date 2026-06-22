@@ -1,6 +1,6 @@
 /*
 檔案位置：skhpsv2/assets/js/skhps-entry.js
-時間戳記：2026-06-16 UTC+8
+時間戳記：2026-06-22 15:06 UTC+8
 用途：skhpsv2 本體頁唯一入口；只負責辨識 skhpsv2 本體頁身分，然後交給 entry-core.js。
 
 責任切分：
@@ -29,13 +29,6 @@
     ],
     admin: [
       "assets/js/admin.js"
-    ],
-    "css-setting": [
-      "assets/js/css-setting-sheet-apply.js",
-      "assets/js/css-setting-style-editor.js",
-      "assets/js/css-setting-editor-core.js",
-      "assets/js/css-setting-sheet-save.js",
-      "assets/js/footer-style-editor.js"
     ],
     "backend-project-launcher": []
   };
