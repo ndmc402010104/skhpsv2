@@ -580,6 +580,11 @@
 
     var baseUrl = window.SKHPS_APP_MANIFEST_URL_RESOLVED || window.location.href;
     var resolvedVersionUrl = resolveRelativeUrl(baseUrl, versionUrl);
+    var versionCacheBuster = Date.now();
+
+    resolvedVersionUrl = resolvedVersionUrl +
+      (resolvedVersionUrl.indexOf("?") >= 0 ? "&" : "?") +
+      "v=" + encodeURIComponent(String(versionCacheBuster));
 
     return loadScript(resolvedVersionUrl)
       .then(function () {
