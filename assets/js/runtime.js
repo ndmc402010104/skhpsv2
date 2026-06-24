@@ -2230,6 +2230,153 @@
     });
   }
 
+  function roundedRectInfo(element) {
+    var rect;
+
+    if (!element || !element.getBoundingClientRect) {
+      return {
+        exists: false,
+        top: null,
+        bottom: null,
+        left: null,
+        right: null,
+        width: 0,
+        height: 0
+      };
+    }
+
+    rect = element.getBoundingClientRect();
+
+    return {
+      exists: true,
+      top: Math.round(rect.top),
+      bottom: Math.round(rect.bottom),
+      left: Math.round(rect.left),
+      right: Math.round(rect.right),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height)
+    };
+  }
+
+  function findRuntimeHeader() {
+    return document.querySelector("[data-skhps-header]") ||
+      document.querySelector(".skhps-header") ||
+      document.getElementById("header");
+  }
+
+  function findRuntimeFooter() {
+    return document.querySelector("[data-skhps-footer]") ||
+      document.querySelector(".skhps-footer") ||
+      document.querySelector("footer");
+  }
+
+  function rwdModeForWidth(width) {
+    width = Math.round(Number(width || 0));
+
+    if (width <= 480) {
+      return {
+        mode: "phone-compact",
+        label: "手機窄版 phone-compact",
+        reason: "layoutWidth <= 480"
+      };
+    }
+
+    if (width <= 720) {
+      return {
+        mode: "phone",
+        label: "手機版 phone",
+        reason: "481 <= layoutWidth <= 720"
+      };
+    }
+
+    if (width <= 960) {
+      return {
+        mode: "tablet",
+        label: "平板 / 窄版 tablet",
+        reason: "721 <= layoutWidth <= 960"
+      };
+    }
+
+    if (width <= 1200) {
+      return {
+        mode: "desktop",
+        label: "桌機版 desktop",
+        reason: "961 <= layoutWidth <= 1200"
+      };
+    }
+
+    return {
+      mode: "wide",
+      label: "寬版 wide",
+      reason: "layoutWidth > 1200"
+    };
+  }
+
+  function mediaQueryMatches() {
+    function match(query) {
+      try {
+        return Boolean(window.matchMedia && window.matchMedia(query).matches);
+      } catch (error) {
+        return false;
+      }
+    }
+
+    return [
+      "(max-width:480px)=" + (match("(max-width:480px)") ? "true" : "false"),
+      "(max-width:720px)=" + (match("(max-width:720px)") ? "true" : "false"),
+      "(max-width:960px)=" + (match("(max-width:960px)") ? "true" : "false"),
+      "(min-width:961px)=" + (match("(min-width:961px)") ? "true" : "false")
+    ].join(" / ");
+  }
+
+  function currentLayoutMetrics() {
+    var viewport = window.visualViewport || null;
+    var layoutWidth = Math.round(window.innerWidth || document.documentElement.clientWidth || 0);
+    var layoutHeight = Math.round(window.innerHeight || document.documentElement.clientHeight || 0);
+    var visualWidth = Math.round(viewport && viewport.width ? viewport.width : layoutWidth);
+    var visualHeight = Math.round(viewport && viewport.height ? viewport.height : layoutHeight);
+    var offsetLeft = Math.round(viewport && viewport.offsetLeft ? viewport.offsetLeft : 0);
+    var offsetTop = Math.round(viewport && viewport.offsetTop ? viewport.offsetTop : 0);
+    var header = roundedRectInfo(findRuntimeHeader());
+    var footer = roundedRectInfo(findRuntimeFooter());
+    var orientation = layoutHeight >= layoutWidth ? "portrait" : "landscape";
+    var rwd = rwdModeForWidth(layoutWidth);
+    var safeTop = header.exists ? Math.max(0, header.bottom) : 0;
+    var usableBottom = footer.exists ? Math.max(0, Math.min(layoutHeight, footer.top)) : layoutHeight;
+    var usableHeight = Math.max(0, usableBottom - safeTop);
+    var keyboardGap = Math.max(0, Math.round(layoutHeight - visualHeight - offsetTop));
+
+    return {
+      orientation: orientation,
+      rwdMode: rwd.mode,
+      rwdLabel: rwd.label,
+      rwdReason: rwd.reason,
+      mediaMatches: mediaQueryMatches(),
+      layoutWidth: layoutWidth,
+      layoutHeight: layoutHeight,
+      visualWidth: visualWidth,
+      visualHeight: visualHeight,
+      visualOffsetLeft: offsetLeft,
+      visualOffsetTop: offsetTop,
+      keyboardGap: keyboardGap,
+      header: header,
+      footer: footer,
+      usableTop: Math.round(safeTop),
+      usableBottom: Math.round(usableBottom),
+      usableHeight: Math.round(usableHeight),
+      updatedAt: new Date().toLocaleTimeString("zh-TW", { hour12: false })
+    };
+  }
+
+  function formatRectEdges(rect) {
+    if (!rect || !rect.exists) return "not found";
+    return "top " + rect.top +
+      " / bottom " + rect.bottom +
+      " / left " + rect.left +
+      " / right " + rect.right +
+      " / size " + rect.width + "×" + rect.height;
+  }
+
   function findOrCreatePanel() {
     var panel = document.getElementById(PANEL_ID);
 
@@ -2262,6 +2409,7 @@
     var backendSummary = summarizeBackend();
     var cssSummary = summarizeCssRuntime();
     var dataSummary = summarizeData();
+    var layoutMetrics = currentLayoutMetrics();
     var summary = document.createElement("div");
     summary.className = "skhps-runtime-summary";
     addCard(summary, "Gate", gateSummary.label, gateSummary.className);
@@ -2290,6 +2438,20 @@
     addRow(env, "Backend Endpoint", state.backend.endpoint || "not loaded", statusClass(state.backend.loaded ? "ok" : "waiting"));
     addRow(env, "Override Reason", state.runtime.overrideReason || "-");
     addRow(env, "Fallback Reason", state.runtime.fallbackReason || "-");
+
+    var layoutSection = addSection(panel, "Layout / Viewport");
+    addRow(layoutSection, "Orientation", layoutMetrics.orientation === "portrait" ? "直式 portrait" : "橫式 landscape", "skhps-runtime-ok");
+    addRow(layoutSection, "RWD mode", layoutMetrics.rwdLabel, "skhps-runtime-ok");
+    addRow(layoutSection, "RWD breakpoint", layoutMetrics.rwdReason);
+    addRow(layoutSection, "Media query", layoutMetrics.mediaMatches);
+    addRow(layoutSection, "Layout viewport", layoutMetrics.layoutWidth + " × " + layoutMetrics.layoutHeight);
+    addRow(layoutSection, "Visual viewport", layoutMetrics.visualWidth + " × " + layoutMetrics.visualHeight);
+    addRow(layoutSection, "Visual offset", "left " + layoutMetrics.visualOffsetLeft + " / top " + layoutMetrics.visualOffsetTop);
+    addRow(layoutSection, "Keyboard / bottom gap", layoutMetrics.keyboardGap + "px");
+    addRow(layoutSection, "Header edges", formatRectEdges(layoutMetrics.header), layoutMetrics.header.exists ? "skhps-runtime-ok" : "skhps-runtime-waiting");
+    addRow(layoutSection, "Footer edges", formatRectEdges(layoutMetrics.footer), layoutMetrics.footer.exists ? "skhps-runtime-ok" : "skhps-runtime-waiting");
+    addRow(layoutSection, "Usable vertical area", "top " + layoutMetrics.usableTop + " / bottom " + layoutMetrics.usableBottom + " / height " + layoutMetrics.usableHeight);
+    addRow(layoutSection, "Realtime updated", layoutMetrics.updatedAt);
 
     var gate = addSection(panel, "Gate / Loading Gate");
     addRow(gate, "Status", gateSummary.reason || gateSummary.label, gateSummary.className);
@@ -2581,6 +2743,50 @@
     },
     __queue: []
   };
+
+  function installRealtimeLayoutMetrics() {
+    var scheduled = false;
+
+    function panelIsOpen() {
+      return document.documentElement.getAttribute("data-skhps-runtime-panel-open") === "true" ||
+        document.documentElement.classList.contains("runtime-state-full");
+    }
+
+    function scheduleLayoutRender() {
+      if (!panelIsOpen()) return;
+      if (scheduled) return;
+
+      scheduled = true;
+      if (window.requestAnimationFrame) {
+        window.requestAnimationFrame(function () {
+          scheduled = false;
+          renderPanel();
+        });
+        return;
+      }
+
+      window.setTimeout(function () {
+        scheduled = false;
+        renderPanel();
+      }, 80);
+    }
+
+    window.addEventListener("resize", scheduleLayoutRender, { passive: true });
+    window.addEventListener("scroll", scheduleLayoutRender, { passive: true });
+    window.addEventListener("orientationchange", scheduleLayoutRender, { passive: true });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", scheduleLayoutRender, { passive: true });
+      window.visualViewport.addEventListener("scroll", scheduleLayoutRender, { passive: true });
+    }
+
+    document.addEventListener("skhps-runtime-updated", scheduleLayoutRender);
+    document.addEventListener("click", function () {
+      window.setTimeout(scheduleLayoutRender, 80);
+    }, true);
+  }
+
+  installRealtimeLayoutMetrics();
 
   flushQueuedRuntimeLogs();
 
