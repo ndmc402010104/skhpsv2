@@ -36,6 +36,7 @@
   var DEFAULT_BOOT_SCRIPTS = [
     "assets/js/runtime.js",
     { path: "assets/js/layout-metrics.js", optional: true },
+    { path: "assets/js/layout-fit.js", optional: true },
     "assets/js/loading-gate.js",
     "assets/js/config.js",
     "assets/js/route.js",

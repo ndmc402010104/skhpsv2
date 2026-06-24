@@ -352,19 +352,4 @@
   }
 
   updateNow();
-
-  try {
-    if (window.SKHPSRuntime && typeof window.SKHPSRuntime.log === "function") {
-      window.SKHPSRuntime.log({
-        level: "info",
-        module: MODULE,
-        message: "layout metrics initialized",
-        source: "layout-metrics.js",
-        category: "runtime",
-        action: "moduleReady",
-        status: "OK",
-        data: clone(state)
-      });
-    }
-  } catch (error) {}
 })();

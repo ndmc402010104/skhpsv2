@@ -698,10 +698,10 @@
       ".skhps-runtime-row{display:grid;grid-template-columns:minmax(120px,auto) minmax(0,1fr);gap:8px;border-bottom:1px solid rgba(255,255,255,.08);padding:3px 0;align-items:start}",
       ".skhps-runtime-row strong{color:#b8d7ff;overflow-wrap:anywhere;word-break:break-word}",
       ".skhps-runtime-row-value{display:block;max-width:100%;min-width:0;overflow-wrap:anywhere;word-break:break-word;white-space:normal}",
-      ".skhps-runtime-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:8px;margin:0 0 14px}",
-      ".skhps-runtime-card{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);border-radius:8px;padding:10px;min-width:0;max-width:100%}",
+      ".skhps-runtime-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0 0 14px}",
+      ".skhps-runtime-card{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);border-radius:8px;padding:10px;min-width:0;max-width:100%;overflow:hidden}",
       ".skhps-runtime-card-label{display:block;color:#9fb1c7;font-size:12px;margin:0 0 3px}",
-      ".skhps-runtime-card-value{display:block;font-weight:700;color:#fff;max-width:100%;overflow-wrap:anywhere;word-break:break-word;white-space:normal}",
+      ".skhps-runtime-card-value{display:block;font-weight:700;color:#fff;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;word-break:normal}",
       ".skhps-runtime-checklist{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:6px}",
       ".skhps-runtime-checkitem{display:flex;align-items:flex-start;gap:8px;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:7px;background:rgba(255,255,255,.035);min-width:0;max-width:100%}",
       ".skhps-runtime-checkmark{flex:0 0 auto;width:22px;text-align:center;font-weight:700}",
@@ -732,7 +732,9 @@
       ".skhps-runtime-flow-step-name{color:#eef4ff;overflow-wrap:anywhere;word-break:break-word;white-space:normal;font-weight:700;font-size:14px}",
       ".skhps-runtime-flow-step-detail{color:#aebbd0;font-size:12px;overflow-wrap:anywhere;word-break:break-word;white-space:normal}",
       ".skhps-runtime-flow-note{color:#aebbd0;font-size:12px;margin:-4px 0 8px}",
-      "@media (max-width:720px){.skhps-runtime-row{grid-template-columns:1fr;gap:2px}.skhps-runtime-flow-step{grid-template-columns:70px minmax(0,1fr);gap:10px}.skhps-runtime-flow-step-status{min-width:58px;padding:0 6px}.skhps-runtime-flow-step::before{left:13px}}",
+            "html[data-skhps-rwd-mode='phone-compact'] .skhps-runtime-summary,html[data-skhps-rwd-mode='phone'] .skhps-runtime-summary{grid-template-columns:1fr}",
+      "html[data-skhps-rwd-mode='tablet'] .skhps-runtime-summary,html[data-skhps-rwd-mode='desktop'] .skhps-runtime-summary,html[data-skhps-rwd-mode='wide'] .skhps-runtime-summary{grid-template-columns:repeat(5,minmax(0,1fr))}",
+"@media (max-width:720px){.skhps-runtime-row{grid-template-columns:1fr;gap:2px}.skhps-runtime-flow-step{grid-template-columns:70px minmax(0,1fr);gap:10px}.skhps-runtime-flow-step-status{min-width:58px;padding:0 6px}.skhps-runtime-flow-step::before{left:13px}}",
       ".skhps-runtime-call-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:8px}",
       ".skhps-runtime-call{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035);border-radius:8px;padding:9px;min-width:0;max-width:100%}",
       ".skhps-runtime-call-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}",
@@ -2230,41 +2232,141 @@
     });
   }
 
-  function currentLayoutMetrics() {
-    var provider = window.SKHPSLayoutMetrics || null;
-    var state = null;
+  function roundedRectInfo(element) {
+    var rect;
 
-    try {
-      if (provider && typeof provider.getState === "function") {
-        state = provider.getState();
-      } else if (provider && typeof provider.measure === "function") {
-        state = provider.measure();
-      }
-    } catch (error) {
-      state = null;
+    if (!element || !element.getBoundingClientRect) {
+      return {
+        exists: false,
+        top: null,
+        bottom: null,
+        left: null,
+        right: null,
+        width: 0,
+        height: 0
+      };
     }
 
-    state = state || {};
+    rect = element.getBoundingClientRect();
 
     return {
-      orientation: state.orientation || "unknown",
-      rwdMode: state.rwdMode || "unknown",
-      rwdLabel: state.rwdLabel || "not loaded",
-      rwdReason: state.rwdReason || "layout-metrics.js not loaded",
-      mediaMatches: state.mediaMatches || "-",
-      layoutWidth: state.layoutWidth || 0,
-      layoutHeight: state.layoutHeight || 0,
-      visualWidth: state.visualWidth || 0,
-      visualHeight: state.visualHeight || 0,
-      visualOffsetLeft: state.visualOffsetLeft || 0,
-      visualOffsetTop: state.visualOffsetTop || 0,
-      keyboardGap: state.keyboardGap || 0,
-      header: state.header || { exists: false },
-      footer: state.footer || { exists: false },
-      usableTop: state.usableTop || 0,
-      usableBottom: state.usableBottom || 0,
-      usableHeight: state.usableHeight || 0,
-      updatedAt: state.updatedAt || "-"
+      exists: true,
+      top: Math.round(rect.top),
+      bottom: Math.round(rect.bottom),
+      left: Math.round(rect.left),
+      right: Math.round(rect.right),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height)
+    };
+  }
+
+  function findRuntimeHeader() {
+    return document.querySelector("[data-skhps-header]") ||
+      document.querySelector(".skhps-header") ||
+      document.getElementById("header");
+  }
+
+  function findRuntimeFooter() {
+    return document.querySelector("[data-skhps-footer]") ||
+      document.querySelector(".skhps-footer") ||
+      document.querySelector("footer");
+  }
+
+  function rwdModeForWidth(width) {
+    width = Math.round(Number(width || 0));
+
+    if (width <= 480) {
+      return {
+        mode: "phone-compact",
+        label: "手機窄版 phone-compact",
+        reason: "layoutWidth <= 480"
+      };
+    }
+
+    if (width <= 720) {
+      return {
+        mode: "phone",
+        label: "手機版 phone",
+        reason: "481 <= layoutWidth <= 720"
+      };
+    }
+
+    if (width <= 960) {
+      return {
+        mode: "tablet",
+        label: "平板 / 窄版 tablet",
+        reason: "721 <= layoutWidth <= 960"
+      };
+    }
+
+    if (width <= 1200) {
+      return {
+        mode: "desktop",
+        label: "桌機版 desktop",
+        reason: "961 <= layoutWidth <= 1200"
+      };
+    }
+
+    return {
+      mode: "wide",
+      label: "寬版 wide",
+      reason: "layoutWidth > 1200"
+    };
+  }
+
+  function mediaQueryMatches() {
+    function match(query) {
+      try {
+        return Boolean(window.matchMedia && window.matchMedia(query).matches);
+      } catch (error) {
+        return false;
+      }
+    }
+
+    return [
+      "(max-width:480px)=" + (match("(max-width:480px)") ? "true" : "false"),
+      "(max-width:720px)=" + (match("(max-width:720px)") ? "true" : "false"),
+      "(max-width:960px)=" + (match("(max-width:960px)") ? "true" : "false"),
+      "(min-width:961px)=" + (match("(min-width:961px)") ? "true" : "false")
+    ].join(" / ");
+  }
+
+  function currentLayoutMetrics() {
+    var viewport = window.visualViewport || null;
+    var layoutWidth = Math.round(window.innerWidth || document.documentElement.clientWidth || 0);
+    var layoutHeight = Math.round(window.innerHeight || document.documentElement.clientHeight || 0);
+    var visualWidth = Math.round(viewport && viewport.width ? viewport.width : layoutWidth);
+    var visualHeight = Math.round(viewport && viewport.height ? viewport.height : layoutHeight);
+    var offsetLeft = Math.round(viewport && viewport.offsetLeft ? viewport.offsetLeft : 0);
+    var offsetTop = Math.round(viewport && viewport.offsetTop ? viewport.offsetTop : 0);
+    var header = roundedRectInfo(findRuntimeHeader());
+    var footer = roundedRectInfo(findRuntimeFooter());
+    var orientation = layoutHeight >= layoutWidth ? "portrait" : "landscape";
+    var rwd = rwdModeForWidth(layoutWidth);
+    var safeTop = header.exists ? Math.max(0, header.bottom) : 0;
+    var usableBottom = footer.exists ? Math.max(0, Math.min(layoutHeight, footer.top)) : layoutHeight;
+    var usableHeight = Math.max(0, usableBottom - safeTop);
+    var keyboardGap = Math.max(0, Math.round(layoutHeight - visualHeight - offsetTop));
+
+    return {
+      orientation: orientation,
+      rwdMode: rwd.mode,
+      rwdLabel: rwd.label,
+      rwdReason: rwd.reason,
+      mediaMatches: mediaQueryMatches(),
+      layoutWidth: layoutWidth,
+      layoutHeight: layoutHeight,
+      visualWidth: visualWidth,
+      visualHeight: visualHeight,
+      visualOffsetLeft: offsetLeft,
+      visualOffsetTop: offsetTop,
+      keyboardGap: keyboardGap,
+      header: header,
+      footer: footer,
+      usableTop: Math.round(safeTop),
+      usableBottom: Math.round(usableBottom),
+      usableHeight: Math.round(usableHeight),
+      updatedAt: new Date().toLocaleTimeString("zh-TW", { hour12: false })
     };
   }
 
@@ -2657,7 +2759,6 @@
       if (scheduled) return;
 
       scheduled = true;
-
       if (window.requestAnimationFrame) {
         window.requestAnimationFrame(function () {
           scheduled = false;
@@ -2672,7 +2773,15 @@
       }, 80);
     }
 
-    document.addEventListener("skhps-layout-metrics-updated", scheduleLayoutRender);
+    window.addEventListener("resize", scheduleLayoutRender, { passive: true });
+    window.addEventListener("scroll", scheduleLayoutRender, { passive: true });
+    window.addEventListener("orientationchange", scheduleLayoutRender, { passive: true });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", scheduleLayoutRender, { passive: true });
+      window.visualViewport.addEventListener("scroll", scheduleLayoutRender, { passive: true });
+    }
+
     document.addEventListener("skhps-runtime-updated", scheduleLayoutRender);
     document.addEventListener("click", function () {
       window.setTimeout(scheduleLayoutRender, 80);
