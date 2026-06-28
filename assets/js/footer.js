@@ -253,6 +253,19 @@
     };
   }
 
+  function detectDeviceLabel() {
+    var ua = String(navigator.userAgent || "").toLowerCase();
+    var hasTouchPoints = typeof navigator.maxTouchPoints !== "undefined" && navigator.maxTouchPoints > 0;
+    var hasTouch = hasTouchPoints || ("ontouchstart" in window);
+    var w = window.screen ? Math.max(window.screen.width || 0, window.screen.height || 0)
+                          : Math.max(window.innerWidth || 0, window.innerHeight || 0);
+
+    if (!hasTouch) return "Desktop";
+    if (/ipad/.test(ua) || (hasTouchPoints && !/mobile/.test(ua) && w >= 768)) return "Tablet";
+    if (/mobile|android|iphone|ipod|blackberry|windows phone/.test(ua) || w < 768) return "Mobile";
+    return "Touch";
+  }
+
   function hostEnvLabel(state) {
     state = state || {};
     var host = state.host || {};
@@ -1629,11 +1642,21 @@
     scriptChip.className = "skhps-footer-env-chip skhps-footer-script-chip";
     scriptChip.textContent = envSummary.script;
 
+    var deviceSep = document.createElement("span");
+    deviceSep.className = "skhps-footer-separator";
+    deviceSep.textContent = "｜";
+
+    var deviceChip = document.createElement("span");
+    deviceChip.className = "skhps-footer-env-chip skhps-footer-device-chip";
+    deviceChip.textContent = detectDeviceLabel();
+
     runtimeLine.appendChild(pageChip);
     runtimeLine.appendChild(runtimeSep);
     runtimeLine.appendChild(runtimeChip);
     runtimeLine.appendChild(scriptSep);
     runtimeLine.appendChild(scriptChip);
+    runtimeLine.appendChild(deviceSep);
+    runtimeLine.appendChild(deviceChip);
 
     left.appendChild(runtimeLine);
 
