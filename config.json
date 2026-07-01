@@ -152,6 +152,12 @@
           "route": "/api/action",
           "method": "POST",
           "timeoutMs": 12000
+        },
+        "saveCssSheetRows": {
+          "enabled": true,
+          "route": "/api/action",
+          "method": "POST",
+          "timeoutMs": 8000
         }
       }
     }
