@@ -2,6 +2,8 @@
  * 檔案位置：skhpsv2/apps-script/CssSheetWriteApi.gs
  * 時間戳記：2026-06-11 UTC+8
  * 用途：CSS Setting 寫回 Google Sheet；固定寫入 gid 0 / CSS總表；同一組 component + className + property 採 upsert，不再無限 append。
+ * TODO(拆除 Sheet 殭屍路徑，2026-07-03)：Google Sheet 已 retire，正式存檔路徑是 Cloudflare Worker → Supabase CssRegistryRule。
+ * 本檔只剩直接打 GAS webApp 的 saveCssSheetRows 會碰到；之後整檔拆除（連同 Code.gs 白名單與 handler）並重新部署 GAS。
  */
 
 var CSS_MAIN_TAB_KEY_ = 'cssMain';

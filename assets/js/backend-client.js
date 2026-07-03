@@ -23,6 +23,12 @@
     setExternalAppActive: true
   };
 
+  /*
+    注意（2026-07-03）：saveCssSheetRows 必須走 Worker → Supabase CssRegistryRule。
+    若 worker 設定失效，call() 會落到最後的 callJsonp fallback → GAS → Google Sheet（殭屍路徑），
+    而且 css-setting 的狀態文字仍會顯示「已寫入 Supabase」，等於無聲寫錯地方。
+    TODO(拆除 Sheet 殭屍路徑)：改成 saveCssSheetRows 在 worker 不可用時直接 reject，不得退回 JSONP。
+  */
   var WORKER_JSON_ACTIONS = {
     getCssRegistryRuntime: true,
     getCssSheetRuntime: true,
@@ -1130,6 +1136,10 @@
         return callWorkerUploadFile(config, env, action, payload, options);
       }
 
+      /*
+        TODO(拆除 Sheet 殭屍路徑，2026-07-03)：其他 action 走 JSONP→GAS 是正常路徑，
+        但 saveCssSheetRows 落到這裡代表 worker 設定壞掉，會寫回已 retire 的 Google Sheet——應直接 reject。
+      */
       return callJsonp(endpoint, action, payload, options);
     }).then(function (response) {
       if (response && response.ok === false && response.error) {

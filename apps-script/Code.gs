@@ -58,6 +58,11 @@ function routeAction_(action, params) {
     'getCssSheetPreview',
     'getCssSheetRuntime',
     'getQuickLoginStaff',
+    /*
+      TODO(拆除 Sheet 殭屍路徑，2026-07-03)：saveCssSheetRows 正式路徑已是 Cloudflare Worker → Supabase CssRegistryRule，
+      這裡只剩直接打 GAS webApp 才會碰到的舊 Sheet 寫入。拆除時：移除此白名單項 + 下方 handler + CssSheetWriteApi.gs，
+      改完要重新部署 Apps Script。水庫層 CSS 不再接 Google Sheet。
+    */
     'saveCssSheetRows',
     'registerExternalApp',
     'listExternalApps',
@@ -164,6 +169,10 @@ function routeAction_(action, params) {
     };
   }
 
+  /*
+    TODO(拆除 Sheet 殭屍路徑，2026-07-03)：正式存檔已走 Worker → Supabase，此 handler 仍會寫 Google Sheet，
+    僅直接呼叫 GAS webApp 時可達。拆除時連同上方白名單項與 CssSheetWriteApi.gs 一起移除，並重新部署。
+  */
   if (action === 'saveCssSheetRows') {
     var savePayload = parsePayload_(params);
     var saveResult = saveCssSheetRows_(savePayload);
