@@ -1,6 +1,6 @@
 /*
 檔案位置：skhpsv2/assets/js/css-sheet-runtime.js
-時間戳記：2026-07-01 23:59 UTC+8
+時間戳記：2026-07-10 23:40 UTC+8
 用途：統一 CSS runtime；正式資料來源固定為後端 worker 讀取 Supabase CssRegistryRuntimeRow，失敗時回報錯誤不套假樣式。
 */
 
@@ -674,15 +674,81 @@
   function sharedSwipeTableScaleCss() {
     return [
       "",
-      "/* shared swipe table scale settings */",
+      "/* shared swipe/expand table visual baseline */",
       ".sk-swipe-table {",
+      "  width: 100%;",
+      "  border-collapse: collapse;",
+      "  table-layout: fixed;",
       "  font-size: var(--sk-swipe-table-font-size, calc(17px * var(--sk-swipe-table-scale, 1))) !important;",
       "}",
       "",
+      ".sk-swipe-table thead th {",
+      "  padding: 10px 16px;",
+      "  background: var(--sk-primary, #516d87);",
+      "  color: #fff;",
+      "  font-size: 13px;",
+      "  font-weight: 950;",
+      "  text-align: left;",
+      "  white-space: nowrap;",
+      "}",
+      "",
+      ".sk-swipe-table tbody tr.sk-data-row td {",
+      "  height: var(--sk-swipe-table-row-min-height, calc(64px * var(--sk-swipe-table-scale, 1)));",
+      "  padding: 0 16px;",
+      "  border-bottom: 1px solid var(--sk-line, rgba(208, 217, 227, .9));",
+      "  background: var(--sk-surface, #fbfcf8);",
+      "  color: var(--sk-text, #23323d);",
+      "  vertical-align: middle;",
+      "}",
+      "",
+      ".sk-swipe-table tbody tr.sk-data-row:hover td {",
+      "  background: var(--sk-surface-hover, #f8f8f2);",
+      "}",
+      "",
+      ".sk-swipe-table .sk-project-cell {",
+      "  padding: 0 !important;",
+      "}",
+      "",
       ".sk-swipe-table .sk-project-main {",
+      "  display: flex;",
+      "  align-items: center;",
       "  min-height: var(--sk-swipe-table-row-min-height, calc(64px * var(--sk-swipe-table-scale, 1))) !important;",
       "  padding: var(--sk-swipe-table-main-padding, calc(10px * var(--sk-swipe-table-scale, 1)) calc(16px * var(--sk-swipe-table-scale, 1))) !important;",
       "  gap: var(--sk-swipe-table-main-gap, calc(8px * var(--sk-swipe-table-scale, 1))) !important;",
+      "  background: var(--sk-surface, #fbfcf8);",
+      "}",
+      "",
+      ".sk-swipe-table .sk-project-text {",
+      "  display: grid;",
+      "  gap: 3px;",
+      "  min-width: 0;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-project-text strong,",
+      ".sk-swipe-table .sk-project-title-line {",
+      "  overflow: hidden;",
+      "  color: var(--sk-text-strong, #10243a);",
+      "  font-weight: 950;",
+      "  text-overflow: ellipsis;",
+      "  white-space: nowrap;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-project-text span,",
+      ".sk-swipe-table .sk-project-subtitle {",
+      "  overflow: hidden;",
+      "  color: var(--sk-muted, #5f7185);",
+      "  font-size: 13px;",
+      "  font-weight: 850;",
+      "  text-overflow: ellipsis;",
+      "  white-space: nowrap;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-reorder-handle,",
+      ".sk-swipe-table .sk-expand-mark,",
+      ".sk-swipe-table .sk-radio-circle {",
+      "  border: 1px solid var(--sk-line, rgba(208, 217, 227, .95));",
+      "  background: var(--sk-surface, #fbfcf8);",
+      "  color: var(--sk-primary, #516d87);",
       "}",
       "",
       ".sk-swipe-table .sk-row-action-rail {",
@@ -693,6 +759,23 @@
       "",
       ".sk-swipe-table .sk-row-action {",
       "  min-height: var(--sk-swipe-table-row-min-height, calc(64px * var(--sk-swipe-table-scale, 1))) !important;",
+      "  color: #fff;",
+      "  font-weight: 950;",
+      "}",
+      "",
+      ".sk-swipe-table .sk-row-action.edit,",
+      ".sk-swipe-table .sk-row-action[data-swipe-action-key='edit'] {",
+      "  background: var(--sk-primary, #516d87);",
+      "}",
+      "",
+      ".sk-swipe-table .sk-row-action.delete,",
+      ".sk-swipe-table .sk-row-action[data-swipe-action-key='delete'],",
+      ".sk-swipe-table .sk-row-action[data-swipe-action-key='disableStaff'] {",
+      "  background: var(--sk-danger, #b06f6a);",
+      "}",
+      "",
+      ".sk-swipe-table .sk-row-action[data-swipe-action-key='enableStaff'] {",
+      "  background: var(--sk-ok, #5f8a79);",
       "}",
       "",
       ".sk-swipe-table .sk-data-row.is-action-open .sk-row-action-rail {",
@@ -703,10 +786,35 @@
       "  padding-left: var(--sk-swipe-table-reorder-main-padding-left, calc(16px * var(--sk-swipe-table-scale, 1))) !important;",
       "}",
       "",
+      ".sk-toolbar-table-group .sk-table-toolbar .sk-btn {",
+      "  min-height: 42px;",
+      "  border: 1px solid var(--sk-line, rgba(208, 217, 227, .95));",
+      "  border-radius: 999px;",
+      "  background: var(--sk-surface, #fbfcf8);",
+      "  color: var(--sk-primary, #516d87);",
+      "  cursor: pointer;",
+      "  font: inherit;",
+      "  font-size: 14px;",
+      "  font-weight: 950;",
+      "  padding: 0 18px;",
+      "}",
+      "",
+      ".sk-toolbar-table-group .sk-table-toolbar .sk-btn-primary {",
+      "  border-color: var(--sk-primary, #516d87);",
+      "  background: var(--sk-primary, #516d87);",
+      "  color: #fff;",
+      "}",
+      "",
       ".sk-swipe-global-overflow-menu .sk-row-action-menu-item {",
       "  font-size: var(--sk-swipe-menu-font-size, calc(16px * var(--sk-swipe-table-scale, 1))) !important;",
       "}"
     ].join("\n");
+  }
+
+  function appendSharedSwipeTableCss(cssText) {
+    var text = String(cssText || "");
+    if (text.indexOf("shared swipe/expand table visual baseline") >= 0) return text;
+    return text + sharedSwipeTableScaleCss();
   }
 
   function rowsFromStyles(styles) {
@@ -773,7 +881,7 @@
     }
 
     built = rows.length ? buildCss(rows) : {
-      cssText: cssText,
+      cssText: appendSharedSwipeTableCss(cssText),
       latestRows: []
     };
 
@@ -968,6 +1076,7 @@
 
     if (options.skipIfSame && lastAppliedHash && lastAppliedHash === model.hash) {
       var current = window.SKHPSCssSheetRuntime || {};
+      var currentStyle = document.getElementById(STYLE_ID);
       var kept = normalizeCssModel({
         schemaVersion: current.schemaVersion || model.schemaVersion || 1,
         generatedAt: current.generatedAt || model.generatedAt || "",
@@ -983,6 +1092,14 @@
       }, current.source || model.source);
 
       kept.hash = model.hash;
+      if (!currentStyle || String(currentStyle.textContent || "").indexOf("shared swipe/expand table visual baseline") < 0) {
+        injectCss(kept.cssText, {
+          source: kept.source,
+          hash: kept.hash,
+          updatedAt: kept.generatedAt || kept.updatedAt || "",
+          version: kept.version || ""
+        });
+      }
       setRuntimeObject(kept, Object.assign({}, options, {
         updatedAt: current.updatedAt || current.generatedAt || model.generatedAt || "",
         lastRefreshAt: options.lastRefreshAt || nowTaipeiText(),

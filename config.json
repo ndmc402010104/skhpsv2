@@ -158,6 +158,30 @@
           "route": "/api/action",
           "method": "POST",
           "timeoutMs": 8000
+        },
+        "listStaffMaster": {
+          "enabled": true,
+          "route": "/api/action",
+          "method": "POST",
+          "timeoutMs": 12000
+        },
+        "upsertStaffMaster": {
+          "enabled": true,
+          "route": "/api/action",
+          "method": "POST",
+          "timeoutMs": 12000
+        },
+        "updateStaffMasterStatus": {
+          "enabled": true,
+          "route": "/api/action",
+          "method": "POST",
+          "timeoutMs": 12000
+        },
+        "reorderStaffMaster": {
+          "enabled": true,
+          "route": "/api/action",
+          "method": "POST",
+          "timeoutMs": 12000
         }
       }
     }

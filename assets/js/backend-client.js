@@ -1,7 +1,7 @@
 /*
 檔案位置：skhpsv2/assets/js/backend-client.js
-時間戳記：2026-07-01 23:59 UTC+8
-用途：全站唯一後端呼叫入口；external registry 可競速讀取，CSS Registry runtime、saveCssSheetRows 與 uploadFile 固定走 Cloudflare Worker。CSS Setting Studio 存檔（saveCssSheetRows）已retire Google Sheet 那條路，只寫 Supabase CssRegistryRule，Sheet 不再維護。
+時間戳記：2026-07-10 23:59 UTC+8
+用途：全站唯一後端呼叫入口；external registry 可競速讀取，CSS Registry runtime、StaffMaster 管理、saveCssSheetRows 與 uploadFile 固定走 Cloudflare Worker。CSS Setting Studio 存檔（saveCssSheetRows）已retire Google Sheet 那條路，只寫 Supabase CssRegistryRule，Sheet 不再維護。
 */
 
 (function () {
@@ -32,7 +32,11 @@
   var WORKER_JSON_ACTIONS = {
     getCssRegistryRuntime: true,
     getCssSheetRuntime: true,
-    saveCssSheetRows: true
+    saveCssSheetRows: true,
+    listStaffMaster: true,
+    upsertStaffMaster: true,
+    updateStaffMasterStatus: true,
+    reorderStaffMaster: true
   };
 
   function runtime() {
