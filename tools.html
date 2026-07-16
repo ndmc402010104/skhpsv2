@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<!--
+檔案位置：skhpsv2/tools.html
+時間戳記：2026-07-17 00:40 UTC+8
+用途：後台「工具包」頁；收納貼到院內系統 console 執行的自動化小工具
+（目前：18:00 跳台倒數自動送出）。提供「拖到書籤列」的 bookmarklet 與
+「複製到剪貼簿」兩種取用方式。
+
+水庫理論（跟 admin.html 同一套，嚴格遵守）：
+- 本頁是 skhpsv2 水庫本體頁面，Header 由 header.js、Footer 由 footer.js 掛載。
+- 不寫 inline CSS：版面只用既有 skhps-* class（樣式由 CSS Sheet / Supabase
+  CSS registry 提供），腳本顯示用純 <textarea readonly>（瀏覽器預設樣式，
+  用 rows/cols/readonly 這些 HTML 屬性控制，不是 style）。
+- loading 階段樣式只由 skhps-loading.css 管理；本頁 loading task 由
+  assets/js/tools.js 完成回報（platform-tools）。
+- 注意：assets/js/tools/platform-timer.bookmarklet.js 裡面有 inline style，
+  但那是要「跑在院內系統頁面」的自包含工具，不是 skhpsv2 水庫頁面，
+  不受本頁水庫原則約束。
+-->
+<html
+  lang="zh-Hant"
+  class="skhps-loading skhps-css-loading skhps-shell-loading skhps-main-loading"
+  data-skhps-entry-scope="skhps-core"
+  data-skhps-page-id="tools"
+  data-skhps-page-map-current="工具包"
+  data-loading-title="工具包"
+  data-skhps-loading-tasks="css-runtime,platform-tools"
+  data-skhps-shell-ready="false"
+  data-skhps-page-ready="false"
+>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <script>
+    (function () {
+      "use strict";
+
+      var host = String(location.hostname || "").toLowerCase();
+      var isDev =
+        host === "127.0.0.1" ||
+        host === "localhost" ||
+        host.indexOf("dev-skhps") >= 0;
+
+      var version = isDev ? String(Date.now()) : "prod";
+
+      document.write(
+        '<link rel="stylesheet" href="assets/css/skhps-loading.css?v=' +
+        encodeURIComponent(version) +
+        '">'
+      );
+
+      document.write(
+        '<script src="assets/js/skhps-entry.js?v=' +
+        encodeURIComponent(version) +
+        '"><\/script>'
+      );
+    })();
+  </script>
+  <title>工具包</title>
+</head>
+
+<body class="skhps-body">
+  <header id="header" class="skhps-header" data-skhps-header></header>
+
+  <main class="skhps-page skhps-admin-page" data-skhps-main>
+    <div class="skhps-container skhps-admin-shell">
+      <section class="skhps-hero skhps-admin-hero" aria-labelledby="toolsTitle">
+        <div class="skhps-hero-card skhps-admin-card">
+          <div class="skhps-admin-hero-content">
+            <p class="skhps-eyebrow">Tools</p>
+            <h1 id="toolsTitle" class="skhps-page-title skhps-admin-title">
+              工具包
+            </h1>
+            <p class="skhps-page-subtitle skhps-admin-subtitle">
+              收納要貼到院內系統執行的自動化小工具。這些工具在你自己有權限的院內系統頁面上執行，等同把你本來就會手動點的操作自動化。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="skhps-section skhps-admin-section" aria-labelledby="platformTimerTitle">
+        <div class="skhps-section-head skhps-admin-section-head">
+          <div>
+            <p class="skhps-eyebrow">院內系統</p>
+            <h2 id="platformTimerTitle" class="skhps-section-title">18:00 跳台倒數自動送出</h2>
+          </div>
+        </div>
+
+        <p class="skhps-page-subtitle">
+          在院內開刀系統的跳台申請頁面執行；預設篩選「住院手術 + 三房」，可自行勾選，時間到（18:00）會自動送出並按「是」。
+          兩種用法：把下面按鈕拖到瀏覽器書籤列，之後在該頁面點一下即可；或複製整段程式碼，在該頁面按 F12 開 Console 貼上執行。
+        </p>
+
+        <nav class="skhps-action-grid skhps-admin-actions" aria-label="工具取用方式">
+          <a class="skhps-btn skhps-btn-primary skhps-btn-lg"
+             data-skhps-platform-timer-bookmarklet
+             href="#"
+             draggable="true"
+             title="拖我到瀏覽器書籤列">
+            ⬆ 拖到書籤列：18:00 跳台
+          </a>
+          <button type="button"
+                  class="skhps-btn skhps-btn-secondary skhps-btn-lg"
+                  data-skhps-platform-timer-copy>
+            複製程式碼
+          </button>
+        </nav>
+
+        <p class="skhps-page-subtitle" data-skhps-platform-timer-status>
+          載入程式碼中...
+        </p>
+
+        <label class="skhps-page-subtitle" for="platformTimerSource">程式碼（唯讀，可全選複製）：</label>
+        <textarea id="platformTimerSource"
+                  data-skhps-platform-timer-source
+                  readonly
+                  rows="16"
+                  cols="100"
+                  spellcheck="false"
+                  aria-label="18:00 跳台倒數自動送出程式碼"></textarea>
+      </section>
+
+      <section class="skhps-section skhps-admin-section" aria-labelledby="platformTimerMobileTitle">
+        <div class="skhps-section-head skhps-admin-section-head">
+          <div>
+            <p class="skhps-eyebrow">手機版</p>
+            <h2 id="platformTimerMobileTitle" class="skhps-section-title">在手機上使用（userscript）</h2>
+          </div>
+        </div>
+
+        <p class="skhps-page-subtitle">
+          手機沒有 F12 Console 可以貼、書籤在院內系統的內容安全政策（CSP）下也不可靠，所以手機要靠「userscript 管理器」——它把腳本跑在獨立沙盒、不受頁面 CSP 限制。裝好之後，點下面的安裝連結一次即可；之後打開院內系統的跳台頁面，左下角會自動浮出一顆「▶ 18:00 跳台」按鈕，點它就開啟工具。
+        </p>
+
+        <nav class="skhps-action-grid skhps-admin-actions" aria-label="安裝手機腳本">
+          <a class="skhps-btn skhps-btn-primary skhps-btn-lg"
+             data-skhps-platform-timer-userscript
+             href="assets/js/tools/platform-timer.user.js">
+            📲 安裝手機腳本（.user.js）
+          </a>
+        </nav>
+        <p class="skhps-page-subtitle">
+          （這個連結要在「已經裝好 userscript 管理器的瀏覽器」裡打開才會跳出安裝視窗；直接點只會看到純文字程式碼，那是正常的。）
+        </p>
+
+        <h3 class="skhps-section-title">Android 安裝步驟</h3>
+        <ol class="skhps-page-subtitle">
+          <li>Google Play 安裝「<strong>Kiwi Browser</strong>」（少數支援 Chrome 擴充的手機瀏覽器）。</li>
+          <li>用 Kiwi 開 Chrome 線上應用程式商店，安裝「<strong>Tampermonkey</strong>」擴充。</li>
+          <li>用 Kiwi 打開這一頁，點上面的「📲 安裝手機腳本」，Tampermonkey 會跳出安裝視窗，按安裝。</li>
+          <li>打開院內系統跳台頁面，左下角浮出「▶ 18:00 跳台」按鈕，點它即可（跟電腦上跑起來一模一樣）。</li>
+        </ol>
+
+        <h3 class="skhps-section-title">iPhone / iPad 安裝步驟</h3>
+        <ol class="skhps-page-subtitle">
+          <li>App Store 安裝免費的「<strong>Userscripts</strong>」App。</li>
+          <li>到 iOS 設定 → Safari → 擴充功能 → 開啟「Userscripts」並允許存取網站。</li>
+          <li>用 Safari 打開這一頁，點上面的「📲 安裝手機腳本」；若沒直接跳安裝，改用 Safari 分享／Userscripts App 匯入這個 .user.js 連結。</li>
+          <li>打開院內系統跳台頁面，左下角浮出「▶ 18:00 跳台」按鈕，點它即可。</li>
+        </ol>
+      </section>
+    </div>
+  </main>
+
+  <footer data-skhps-footer class="skhps-footer">
+    Footer 載入中...
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      function loadToolsScript() {
+        var script = document.createElement("script");
+        var host = String(location.hostname || "").toLowerCase();
+        var isDev =
+          host === "127.0.0.1" ||
+          host === "localhost" ||
+          host.indexOf("dev-skhps") >= 0;
+        var version = isDev ? String(Date.now()) : "prod";
+        script.src = "assets/js/tools.js?v=" + encodeURIComponent(version);
+        script.async = false;
+        document.body.appendChild(script);
+      }
+
+      function waitForEntryCoreReady() {
+        var startedAt = Date.now();
+
+        function ready() {
+          return Boolean(
+            window.SKHPSLoading ||
+            window.SKHPSBackend ||
+            window.SKHPS_CONFIG ||
+            window.SKHPSCssRuntime ||
+            window.SKHPSCssSheetRuntime
+          );
+        }
+
+        function tick() {
+          if (ready() || Date.now() - startedAt > 6000) {
+            loadToolsScript();
+            return;
+          }
+          window.setTimeout(tick, 50);
+        }
+
+        tick();
+      }
+
+      waitForEntryCoreReady();
+    })();
+  </script>
+</body>
+</html>

@@ -36,6 +36,15 @@
       }
     },
     {
+      "id": "tools",
+      "title": "工具包",
+      "href": {
+        "local-dev": "tools.html",
+        "dev": "tools.html",
+        "prod": "tools.html"
+      }
+    },
+    {
       "id": "css-setting",
       "title": "CSS Setting",
       "href": {
