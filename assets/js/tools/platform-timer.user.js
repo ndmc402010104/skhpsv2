@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         SKHPS 18:00 跳台倒數自動送出
 // @namespace    https://skhps.jonaminz.com/
-// @version      2.0.1
+// @version      2.0.2
 // @description  院內開刀系統跳台申請：18:00 伺服器校時倒數，時間到自動對勾選列送出並按「是」。手機版由 SKHPS 工具包提供。
 // @author       SKHPS
 // @match        *://*/*
 // @run-at       document-idle
 // @grant        none
 // @noframes
+// @updateURL    https://skhps.jonaminz.com/assets/js/tools/platform-timer.user.js
+// @downloadURL  https://skhps.jonaminz.com/assets/js/tools/platform-timer.user.js
 // ==/UserScript==
 
 /*
@@ -15,6 +17,8 @@
   邏輯（由工具包產生器自動包出，改 bookmarklet 就重跑產生器，不要手改這裡）。
   @grant none：跑在頁面原生環境，ko / document / fetch 全部是頁面真身，跟電腦
   console 貼上行為一致。偵測到頁面有 Knockout(ko) 才浮出啟動鈕，避免污染其他網站。
+  @updateURL/@downloadURL 指向 prod 檔：改版 bump @version 後 Via/Tampermonkey
+  會自動抓新版，使用者不用重裝。
 */
 
 (function () {

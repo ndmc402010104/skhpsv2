@@ -5,15 +5,18 @@
 userscript。純新增檔案＋admin 連結＋config pages 登記 tools，未動 env/CNAME。
 2026-07-17：真機回饋——面板/啟動鈕移左上/右上＋自適應；工具頁加快速登入／用
 Via 開啟(intent)按鈕；前台首頁加「跳台工具」入口。純程式碼/HTML，未動 env/CNAME。
+2026-07-17：userscript v2.0.2 加 @updateURL（改版自動更新免重裝）；工具頁加
+「下載 Via」；移除失敗的 intent 改共用「開啟醫院系統快速登入」；跳台工具去 emoji。
+未動 env/CNAME/config/StaffMaster。
 */
 window.SKHPS_VERSION = {
   appId: "skhpsv2",
-  version: "v2.11.8-202607170146",
+  version: "v2.11.9-202607170209",
   major: 2,
   minor: 11,
-  patch: 8,
-  buildTime: "202607170146",
-  updatedAt: "2026-07-17T01:46:00+08:00",
+  patch: 9,
+  buildTime: "202607170209",
+  updatedAt: "2026-07-17T02:09:00+08:00",
   source: "version.js"
 };
 

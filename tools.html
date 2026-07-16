@@ -129,7 +129,7 @@
         </div>
 
         <p class="skhps-page-subtitle">
-          手機沒有 F12 Console 可以貼、書籤在院內系統的內容安全政策（CSP）下也不可靠，所以手機要靠「userscript 管理器」——它把腳本跑在獨立沙盒、不受頁面 CSP 限制。裝好之後，點下面的安裝連結一次即可；之後進院內系統的跳台頁面，左上角會自動浮出一顆「▶ 18:00 跳台」按鈕，點它就開啟工具。
+          手機沒有 F12 Console 可以貼、書籤在院內系統的內容安全政策（CSP）下也不可靠，所以手機要靠「userscript 管理器」——它把腳本跑在獨立沙盒、不受頁面 CSP 限制。裝好之後點一次安裝連結即可；之後<strong>在同一個瀏覽器</strong>用下面的按鈕進院內系統，跳台頁面左上角就會自動浮出「▶ 18:00 跳台」按鈕。
         </p>
 
         <nav class="skhps-action-grid skhps-admin-actions" aria-label="手機工具">
@@ -140,42 +140,38 @@
           </a>
           <a class="skhps-btn skhps-btn-secondary skhps-btn-lg"
              data-skhps-platform-timer-quicklogin
-             href="https://quick-login.skhps.jonaminz.com/"
-             target="_blank" rel="noopener">
+             href="https://quick-login.skhps.jonaminz.com/">
             🏥 開啟醫院系統快速登入
           </a>
         </nav>
         <p class="skhps-page-subtitle">
-          （安裝連結要在「已經裝好 userscript 管理器的瀏覽器」裡打開才會跳出安裝視窗；直接點只會看到純文字程式碼，那是正常的。）
+          （安裝連結要在「已經裝好 userscript 管理器的瀏覽器」裡打開才會跳出安裝視窗，直接點只會看到純文字程式碼、那是正常的。「開啟醫院系統快速登入」會在你目前這個瀏覽器開，所以請在裝了腳本的那個瀏覽器裡點它。）
         </p>
 
         <h3 class="skhps-section-title">Android 安裝步驟（推薦 Via 瀏覽器）</h3>
-        <ol class="skhps-page-subtitle">
-          <li>Google Play 安裝「<strong>Via 瀏覽器</strong>」（很小、內建 userscript 功能，不用另外裝擴充）。</li>
-          <li>用 Via 打開這一頁，點上面的「📲 安裝手機腳本」，Via 會問要不要加入腳本，按確定。</li>
-          <li>點上面的「🏥 開啟醫院系統快速登入」進院內系統，開到跳台（預約手術病人列表）頁面。</li>
-          <li>畫面左上角浮出「▶ 18:00 跳台」按鈕，點它即可（跟電腦上跑起來一模一樣）。</li>
-        </ol>
-
-        <p class="skhps-page-subtitle">
-          裝好之後日常直接用這顆一鍵進院內系統（會強制用 Via 開，userscript 才會生效）：
-        </p>
-        <nav class="skhps-action-grid skhps-admin-actions" aria-label="用 Via 開啟醫院系統">
-          <a class="skhps-btn skhps-btn-primary skhps-btn-lg"
-             href="intent://quick-login.skhps.jonaminz.com/#Intent;scheme=https;package=mark.via.gp;S.browser_fallback_url=https%3A%2F%2Fquick-login.skhps.jonaminz.com%2F;end">
-            🚀 用 Via 開啟醫院系統（Android）
+        <nav class="skhps-action-grid skhps-admin-actions" aria-label="下載 Via 瀏覽器">
+          <a class="skhps-btn skhps-btn-secondary skhps-btn-lg"
+             href="https://play.google.com/store/apps/details?id=mark.via.gp"
+             target="_blank" rel="noopener">
+            📥 下載 Via 瀏覽器
           </a>
         </nav>
+        <ol class="skhps-page-subtitle">
+          <li>沒有 Via 的話，先點上面「<strong>📥 下載 Via 瀏覽器</strong>」到 Google Play 安裝（很小、內建 userscript，不用另外裝擴充）。</li>
+          <li>用 Via 打開這一頁，點「<strong>📲 安裝手機腳本</strong>」，Via 會問要不要加入腳本，按確定。</li>
+          <li>接著在 Via 裡點「<strong>🏥 開啟醫院系統快速登入</strong>」，登入進到跳台（預約手術病人列表）頁面。</li>
+          <li>畫面左上角浮出「▶ 18:00 跳台」按鈕，點它即可（跟電腦上跑起來一模一樣）。</li>
+        </ol>
         <p class="skhps-page-subtitle">
-          小提醒：想更快的話，用 Via 開啟醫院快速登入後，Via 選單裡有「加到主畫面」，就能在手機桌面放一顆捷徑，每天一點直達。（也可以用 <strong>Firefox</strong> ＋ Tampermonkey，流程一樣；先前提過的 Kiwi 較難操作，不建議。）
+          小提醒：在 Via 開啟醫院快速登入後，用 Via 選單的「加到主畫面」做一顆桌面捷徑，以後每天一點就直接用 Via 進院內系統，最快。裝好之後我再更新腳本，Via 會自動抓新版、不用重裝。（也可以用 <strong>Firefox</strong> ＋ Tampermonkey；先前提過的 Kiwi 較難操作，不建議。）
         </p>
 
         <h3 class="skhps-section-title">iPhone / iPad 安裝步驟</h3>
         <ol class="skhps-page-subtitle">
           <li>App Store 安裝免費的「<strong>Userscripts</strong>」App。</li>
           <li>到 iOS 設定 → Safari → 擴充功能 → 開啟「Userscripts」並允許存取網站。</li>
-          <li>用 Safari 打開這一頁，點上面的「📲 安裝手機腳本」；若沒直接跳安裝，改用 Safari 分享／Userscripts App 匯入這個 .user.js 連結。</li>
-          <li>點「🏥 開啟醫院系統快速登入」進院內系統的跳台頁面，左上角浮出「▶ 18:00 跳台」按鈕，點它即可。</li>
+          <li>用 Safari 打開這一頁，點「📲 安裝手機腳本」；若沒直接跳安裝，改用 Safari 分享／Userscripts App 匯入這個 .user.js 連結。</li>
+          <li>接著在 Safari 裡點「🏥 開啟醫院系統快速登入」，登入進跳台頁面，左上角浮出「▶ 18:00 跳台」按鈕，點它即可。</li>
         </ol>
       </section>
     </div>
