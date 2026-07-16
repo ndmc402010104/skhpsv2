@@ -351,6 +351,63 @@
     });
   }
 
+  // 2026-07-17（效能）：loadSequential 是「一支載完＋執行完才請求下一支」
+  // 的序列瀑布——正確但慢，實測首頁光是 JS 串行載入就吃掉約 5 秒。
+  // loadScript 已經用 script.async=false 保證「執行順序」，所以其實可以
+  // 「平行下載、依序執行」。這支在真正開始 loadSequential 前，先對所有
+  // 已解析的 script URL 塞 <link rel="preload" as="script">，讓瀏覽器
+  // 提早平行預抓；序列載入器之後插入 <script> 時直接命中預抓快取，
+  // 近乎瞬間。執行順序、gate 邏輯、事件時序完全不變，只有網路被平行
+  // 預熱。只預抓同源、http(s) 的 URL（跨源要 crossorigin 屬性相符否則
+  // 會重抓，乾脆跳過；相對路徑也跳過交給瀏覽器自己解析）。
+  function preloadScripts(entries) {
+    try {
+      var head = document.head;
+      if (!head || !Array.isArray(entries)) {
+        return;
+      }
+
+      var origin = "";
+      try {
+        origin = window.location.origin || "";
+      } catch (originError) {
+        origin = "";
+      }
+
+      var seen = {};
+
+      entries.forEach(function (entry) {
+        var url = entry && entry.url;
+
+        if (!url || seen[url]) {
+          return;
+        }
+
+        // 只預抓絕對 http(s) 且同源的；跨源／相對路徑跳過。
+        if (!isAbsoluteUrl(url)) {
+          return;
+        }
+
+        if (origin && url.indexOf(origin + "/") !== 0) {
+          return;
+        }
+
+        seen[url] = true;
+
+        var link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "script";
+        link.href = url;
+        link.setAttribute("data-skhps-preload", "true");
+        head.appendChild(link);
+      });
+
+      earlyRuntimeLog("OK", "preloadScripts", Object.keys(seen).length + " scripts");
+    } catch (error) {
+      earlyRuntimeLog("WARN", "preloadScriptsFailed", error && error.message ? error.message : String(error));
+    }
+  }
+
   function loadSequential(entries, eventBaseName) {
     var chain = Promise.resolve();
 
@@ -568,6 +625,11 @@
 
     ensureLoadingClasses();
     normalizeLoadingTaskNames();
+
+    // 效能：在序列載入開始前，先平行預抓所有 boot/shell/page script。
+    // 這不改變任何載入順序或 gate 邏輯，只是把網路預熱平行化（見
+    // preloadScripts 註解）。
+    preloadScripts(bootScripts.concat(shellScripts, specificScripts));
 
     window.SKHPS_ENTRY_CORE_OPTIONS = options;
 
