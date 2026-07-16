@@ -250,11 +250,11 @@
   panel.id = TAG;
   panel.style.cssText = `
     position: fixed;
-    right: 16px;
-    bottom: 16px;
-    z-index: 999999;
-    width: 560px;
-    max-height: 76vh;
+    right: 10px;
+    top: 10px;
+    z-index: 2147483646;
+    width: min(560px, calc(100vw - 20px));
+    max-height: 88vh;
     overflow: auto;
     background: #fff;
     color: #111;

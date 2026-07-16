@@ -123,10 +123,24 @@ element.style、不注入 CSS）；視覺一律交給既有 skhps-* class 與瀏
     }
   }
 
+  // 「開啟醫院系統快速登入」連結：線上一律指向 prod quick-login（使用者
+  // 實際用的入口）；本機開發改指向 dev-server 的 /skhps-quick-login/ 路由。
+  function wireQuickLoginLink() {
+    var link = $("[data-skhps-platform-timer-quicklogin]");
+    if (!link) return;
+    var host = String(location.hostname || "").toLowerCase();
+    var url = "https://quick-login.skhps.jonaminz.com/";
+    if (host === "127.0.0.1" || host === "localhost") {
+      url = "/skhps-quick-login/";
+    }
+    link.setAttribute("href", url);
+  }
+
   function init() {
     var textarea = $("[data-skhps-platform-timer-source]");
 
     wireUserscriptLink();
+    wireQuickLoginLink();
     setStatus("載入程式碼中...");
 
     fetch(withVersion(SOURCE_URL), { cache: "no-store" })

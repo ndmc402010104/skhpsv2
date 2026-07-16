@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SKHPS 18:00 跳台倒數自動送出
 // @namespace    https://skhps.jonaminz.com/
-// @version      2.0.0
+// @version      2.0.1
 // @description  院內開刀系統跳台申請：18:00 伺服器校時倒數，時間到自動對勾選列送出並按「是」。手機版由 SKHPS 工具包提供。
 // @author       SKHPS
 // @match        *://*/*
@@ -272,11 +272,11 @@
   panel.id = TAG;
   panel.style.cssText = `
     position: fixed;
-    right: 16px;
-    bottom: 16px;
-    z-index: 999999;
-    width: 560px;
-    max-height: 76vh;
+    right: 10px;
+    top: 10px;
+    z-index: 2147483646;
+    width: min(560px, calc(100vw - 20px));
+    max-height: 88vh;
     overflow: auto;
     background: #fff;
     color: #111;
@@ -573,9 +573,9 @@
     btn.type = "button";
     btn.textContent = "▶ 18:00 跳台";
     btn.style.cssText = [
-      "position:fixed", "left:12px", "bottom:12px", "z-index:2147483647",
-      "padding:10px 14px", "background:#c0392b", "color:#fff", "border:none",
-      "border-radius:8px", "font-size:15px", "font-weight:700",
+      "position:fixed", "left:10px", "top:10px", "z-index:2147483647",
+      "padding:8px 12px", "background:#c0392b", "color:#fff", "border:none",
+      "border-radius:8px", "font-size:14px", "font-weight:700",
       "box-shadow:0 4px 12px rgba(0,0,0,.3)", "cursor:pointer",
       "font-family:system-ui,-apple-system,sans-serif"
     ].join(";");
