@@ -42,7 +42,13 @@
     // saveAppDefaults），只是漏掛進這個白名單，導致一路退回已 retire
     // 的 GAS JSONP、回一樣措辭的 Unknown action，容易誤判成別的問題。
     getAppDefaults: true,
-    saveAppDefaults: true
+    saveAppDefaults: true,
+    // 2026-07-17（§8 css-setting 儀表化）：hero 儀表列/specimen chip
+    // 要讀 CSS package 清單與跨 component 規則統計，worker 端動作
+    // 已存在，一樣是漏掛白名單。
+    getCssRegistryPackages: true,
+    saveCssRegistryPackage: true,
+    getCssRegistryComponentStats: true
   };
 
   function runtime() {
