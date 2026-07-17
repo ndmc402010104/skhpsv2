@@ -36,7 +36,13 @@
     listStaffMaster: true,
     upsertStaffMaster: true,
     updateStaffMasterStatus: true,
-    reorderStaffMaster: true
+    reorderStaffMaster: true,
+    // 2026-07-17：CSS Setting 的全站主題切換卡片要讀寫 Default 表的
+    // activeCssTheme 指標，worker 端動作已存在（getAppDefaults/
+    // saveAppDefaults），只是漏掛進這個白名單，導致一路退回已 retire
+    // 的 GAS JSONP、回一樣措辭的 Unknown action，容易誤判成別的問題。
+    getAppDefaults: true,
+    saveAppDefaults: true
   };
 
   function runtime() {
